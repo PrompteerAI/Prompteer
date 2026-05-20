@@ -15,6 +15,7 @@ from app.core.observability import init_observability
 from app.core.ratelimit import limiter
 from app.integrations.google_oauth.mock import router as mock_google_oauth_router
 from app.integrations.llm.mock import router as mock_llm_router
+from app.integrations.payments.mock import router as mock_stripe_router
 
 
 async def starlette_http_exception_handler(request: Request, exc: Exception) -> Response:
@@ -71,6 +72,7 @@ def create_app() -> FastAPI:
     app.include_router(api_router)
     app.include_router(mock_google_oauth_router)
     app.include_router(mock_llm_router)
+    app.include_router(mock_stripe_router)
     return app
 
 
