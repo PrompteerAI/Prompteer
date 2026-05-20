@@ -24,17 +24,17 @@ Open `http://localhost`. The default Compose stack serves the app through nginx 
 
 ## Screenshots & Demo
 
-| 1. Landing                           | 2. Mock Google login               | 3. Prompt editor                              |
+| 1. Landing                           | 2. Mock Google login               | 3. Coding challenge                           |
 | ------------------------------------ | ---------------------------------- | --------------------------------------------- |
 | ![](docs/screenshots/01-landing.png) | ![](docs/screenshots/02-login.png) | ![](docs/screenshots/03-coding-challenge.png) |
 
-| 4. Billing upgrade                            | 5. Review board                    | 6. Mock mailbox                      |
-| --------------------------------------------- | ---------------------------------- | ------------------------------------ |
-| ![](docs/screenshots/04-billing-checkout.png) | ![](docs/screenshots/05-board.png) | ![](docs/screenshots/06-mailbox.png) |
+| 4. Prompt editor                           | 5. Billing upgrade                            | 6. Review board                    |
+| ------------------------------------------ | --------------------------------------------- | ---------------------------------- |
+| ![](docs/screenshots/04-prompt-editor.png) | ![](docs/screenshots/05-billing-checkout.png) | ![](docs/screenshots/06-board.png) |
 
-| 7. Profile settings                   |
-| ------------------------------------- |
-| ![](docs/screenshots/07-settings.png) |
+| 7. Mock mailbox                      | 8. Profile settings                   |
+| ------------------------------------ | ------------------------------------- |
+| ![](docs/screenshots/07-mailbox.png) | ![](docs/screenshots/08-settings.png) |
 
 The verified local demo covers seed login, prompt execution through the LLM mock, Stripe-shaped checkout completion, review board reads, profile settings, logout, and captured SendGrid email viewing.
 
