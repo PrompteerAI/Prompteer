@@ -47,3 +47,11 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: cd apps/api && uv run pytest
+      - name: Backend coverage summary
+        if: always()
+        run: |
+          cd apps/api
+          if [ -f .coverage ]; then
+            echo "### Backend coverage" >> "$GITHUB_STEP_SUMMARY"
+            uv run coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
+          fi

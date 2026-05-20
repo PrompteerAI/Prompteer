@@ -39,9 +39,23 @@ line-length = 100
 select = ["E", "F", "I", "UP", "B", "DTZ", "SIM"]
 
 [tool.pytest.ini_options]
+addopts = "--cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=80"
 asyncio_mode = "auto"
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["app"]
+omit = [
+  "app/alembic/*",
+  "app/core/bootstrap.py",
+  "app/db/seed.py",
+  "app/tasks/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 80
 
 [tool.mypy]
 python_version = "3.12"
