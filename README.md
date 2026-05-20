@@ -61,6 +61,40 @@ flowchart LR
 
 Next.js owns authentication and signs RS256 session/API JWTs. Browser mutations go through the same-origin API proxy so Auth.js cookies stay HTTP-only while FastAPI still receives bearer credentials for per-user rate limits and LLM quotas. FastAPI stores domain data in PostgreSQL, uses Redis for shared rate-limit state and Celery, and emits RFC 9457 Problem Details for API errors. See [docs/architecture.md](docs/architecture.md) for deeper notes and ADR links.
 
+## Repository Layout
+
+Prompteer is organized as a monorepo with clear runtime boundaries:
+
+```text
+apps/
+  web/          Next.js frontend, Auth.js, UI, Playwright e2e
+  api/          FastAPI backend, SQLModel/Alembic, Celery, provider mocks
+packages/
+  shared-types/ Generated OpenAPI TypeScript types
+  eslint-config/ Shared ESLint flat config
+  tsconfig/     Shared TypeScript config
+infra/
+  nginx/        Single-origin reverse proxy
+  postgres/     PostgreSQL initialization hooks
+  compose/      Compose overlays
+docs/           Public architecture, ADR, runbook, integration, and screenshot docs
+scripts/        Root developer and verification entrypoints
+```
+
+Root files are repository-level contracts, not frontend/backend ownership leaks.
+`package.json` orchestrates pnpm workspaces, Turborepo, Husky, and commitlint;
+the frontend package still lives at `apps/web/package.json`, and the backend
+package lives at `apps/api/pyproject.toml`. `.env.example` is the canonical
+local stack contract consumed by Compose, the web app, the API, and the worker so
+`cp .env.example .env` is enough for local development. Service-specific
+production deployments can still inject only the variables each service needs.
+
+Use this command when inspecting the structure locally; it hides `node_modules`, `.venv`, `.next`, `.verify`, caches, and other generated output that make a raw `tree` look mixed:
+
+```sh
+make tree
+```
+
 ## Tech Stack
 
 Frontend:

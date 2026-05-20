@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap dev lint typecheck test format build verify env-check types types-check backup-restore-check e2e verify-ui api-dev api-lint api-test seed reset reset-db logs
+.PHONY: help bootstrap dev lint typecheck test format build verify env-check types types-check backup-restore-check e2e verify-ui tree api-dev api-lint api-test seed reset reset-db logs
 
 help: ## Show available Makefile targets.
 	@awk 'BEGIN {FS = ":.*##"; printf "Available targets:\n"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -60,6 +60,9 @@ e2e: ## Run Playwright end-to-end tests against local dev servers.
 
 verify-ui: ## Capture desktop/mobile screenshots against running dev servers.
 	node scripts/verify-ui.mjs
+
+tree: ## Show the source-oriented repository tree without generated artifacts.
+	scripts/tree-project.sh
 
 api-dev: ## Start the FastAPI development server.
 	cd apps/api && uv run fastapi dev app/main.py
