@@ -1,3 +1,4 @@
+// Development mailbox detail page backed by captured mock SendGrid messages.
 import {
   htmlResponse,
   mailboxErrorHtml,

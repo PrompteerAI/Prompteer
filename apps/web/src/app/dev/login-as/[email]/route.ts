@@ -1,3 +1,4 @@
+// Development-only seeded-user login route for Playwright and local demos.
 import { getSeedUser, seedLoginEnabled, signIn } from "@/lib/auth";
 
 interface DevLoginAsRouteContext {

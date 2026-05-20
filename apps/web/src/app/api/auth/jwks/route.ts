@@ -1,3 +1,4 @@
+// JWKS endpoint exposing the public key for API bearer token verification.
 import { getAuthJwtPublicJwk } from "@/server/auth-jwt";
 
 export function GET(): Response {

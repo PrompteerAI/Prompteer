@@ -1,3 +1,4 @@
+// Development mailbox index page backed by captured mock SendGrid messages.
 import {
   htmlResponse,
   listMailboxMessages,

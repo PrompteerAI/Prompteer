@@ -1,3 +1,4 @@
+// next-intl request configuration that loads locale messages for App Router.
 import { getRequestConfig } from "next-intl/server";
 import { hasLocale } from "next-intl";
 import type { AbstractIntlMessages } from "next-intl";
