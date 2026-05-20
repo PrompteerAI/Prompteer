@@ -1,9 +1,10 @@
 node_modules
 .env*
+pnpm-lock.yaml
+uv.lock
 .next
 .turbo
 .venv
-uv.lock
 playwright-report
 test-results
 .mock

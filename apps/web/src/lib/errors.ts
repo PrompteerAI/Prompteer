@@ -20,13 +20,13 @@ export async function normalizeError(error: unknown): Promise<NormalizedError> {
         message: problem.detail,
         status: problem.status,
         requestId: problem.request_id,
-        problem
+        problem,
       };
     }
     return {
       code: "http_error",
       message: error.response.statusText,
-      status: error.response.status
+      status: error.response.status,
     };
   }
 

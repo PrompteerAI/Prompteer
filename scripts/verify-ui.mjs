@@ -9,5 +9,8 @@ await mkdir(outDir, { recursive: true });
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 await page.goto(baseUrl, { waitUntil: "networkidle" });
-await page.screenshot({ path: new URL("home.png", outDir).pathname, fullPage: true });
+await page.screenshot({
+  path: new URL("home.png", outDir).pathname,
+  fullPage: true,
+});
 await browser.close();
