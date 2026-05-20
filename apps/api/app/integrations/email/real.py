@@ -1,9 +1,12 @@
+# Real SendGrid Mail Send client used when SENDGRID_API_KEY is configured.
+# Delivery remains one-shot to avoid duplicate emails on ambiguous upstream failures.
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
 
-import httpx
+from app.integrations.http import request
 
 
 @dataclass(frozen=True)
@@ -14,14 +17,17 @@ class SendGridClient:
     provider: str = "sendgrid"
 
     async def send(self, payload: dict[str, Any]) -> dict[str, str]:
-        async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
-            response = await client.post(
-                f"{self.base_url.rstrip('/')}/v3/mail/send",
-                headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json",
-                },
-                json=payload,
-            )
-            response.raise_for_status()
+        response = await request(
+            provider=self.provider,
+            method="POST",
+            url=f"{self.base_url.rstrip('/')}/v3/mail/send",
+            timeout_seconds=self.timeout_seconds,
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            },
+            json_body=payload,
+            request_body_for_logs=payload,
+        )
+        response.raise_for_status()
         return {"status": "accepted", "captured": "0"}

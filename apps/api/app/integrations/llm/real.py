@@ -1,10 +1,13 @@
+# Real OpenAI and Anthropic clients for production LLM calls.
+# Mock clients stay schema-compatible while these classes handle live upstream traffic.
+
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from typing import Any
 
-import httpx
+from app.integrations.http import request, stream_lines
 
 
 @dataclass(frozen=True)
@@ -15,31 +18,32 @@ class OpenAIClient:
     provider: str = "openai"
 
     async def chat_completion(self, payload: dict[str, Any]) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
-            response = await client.post(
-                f"{self.base_url.rstrip('/')}/chat/completions",
-                headers=self.headers(),
-                json=payload,
-            )
-            response.raise_for_status()
-            body = response.json()
-            if not isinstance(body, dict):
-                raise TypeError("OpenAI chat completion response was not a JSON object.")
-            return body
+        response = await request(
+            provider=self.provider,
+            method="POST",
+            url=f"{self.base_url.rstrip('/')}/chat/completions",
+            timeout_seconds=self.timeout_seconds,
+            headers=self.headers(),
+            json_body=payload,
+            request_body_for_logs=payload,
+        )
+        response.raise_for_status()
+        body = response.json()
+        if not isinstance(body, dict):
+            raise TypeError("OpenAI chat completion response was not a JSON object.")
+        return body
 
     async def chat_completion_stream(self, payload: dict[str, Any]) -> AsyncIterator[str]:
-        async with (
-            httpx.AsyncClient(timeout=self.timeout_seconds) as client,
-            client.stream(
-                "POST",
-                f"{self.base_url.rstrip('/')}/chat/completions",
-                headers=self.headers(),
-                json={**payload, "stream": True},
-            ) as response,
+        async for line in stream_lines(
+            provider=self.provider,
+            method="POST",
+            url=f"{self.base_url.rstrip('/')}/chat/completions",
+            timeout_seconds=self.timeout_seconds,
+            headers=self.headers(),
+            json_body={**payload, "stream": True},
+            request_body_for_logs={**payload, "stream": True},
         ):
-            response.raise_for_status()
-            async for line in response.aiter_lines():
-                yield f"{line}\n"
+            yield f"{line}\n"
 
     async def anthropic_message(self, payload: dict[str, Any]) -> dict[str, Any]:
         raise NotImplementedError("OpenAIClient does not implement Anthropic Messages.")
@@ -75,31 +79,32 @@ class AnthropicClient:
         )
 
     async def anthropic_message(self, payload: dict[str, Any]) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
-            response = await client.post(
-                f"{self.base_url.rstrip('/')}/messages",
-                headers=self.headers(),
-                json=payload,
-            )
-            response.raise_for_status()
-            body = response.json()
-            if not isinstance(body, dict):
-                raise TypeError("Anthropic message response was not a JSON object.")
-            return body
+        response = await request(
+            provider=self.provider,
+            method="POST",
+            url=f"{self.base_url.rstrip('/')}/messages",
+            timeout_seconds=self.timeout_seconds,
+            headers=self.headers(),
+            json_body=payload,
+            request_body_for_logs=payload,
+        )
+        response.raise_for_status()
+        body = response.json()
+        if not isinstance(body, dict):
+            raise TypeError("Anthropic message response was not a JSON object.")
+        return body
 
     async def anthropic_message_stream(self, payload: dict[str, Any]) -> AsyncIterator[str]:
-        async with (
-            httpx.AsyncClient(timeout=self.timeout_seconds) as client,
-            client.stream(
-                "POST",
-                f"{self.base_url.rstrip('/')}/messages",
-                headers=self.headers(),
-                json={**payload, "stream": True},
-            ) as response,
+        async for line in stream_lines(
+            provider=self.provider,
+            method="POST",
+            url=f"{self.base_url.rstrip('/')}/messages",
+            timeout_seconds=self.timeout_seconds,
+            headers=self.headers(),
+            json_body={**payload, "stream": True},
+            request_body_for_logs={**payload, "stream": True},
         ):
-            response.raise_for_status()
-            async for line in response.aiter_lines():
-                yield f"{line}\n"
+            yield f"{line}\n"
 
     def headers(self) -> dict[str, str]:
         return {
