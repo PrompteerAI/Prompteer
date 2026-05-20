@@ -1,15 +1,19 @@
+from datetime import date as LocalDate
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlmodel import Session, col, select
 
+from app.core.errors import ProblemException
 from app.core.ratelimit import GENERAL_RATE_LIMIT, limiter
+from app.core.time import ensure_utc, local_date_window
 from app.db.session import get_session
 from app.models.domain import Challenge, Post, Share, User
 from app.schemas.community import (
     AuthorRead,
     BoardFeedRead,
     ChallengeSummaryRead,
+    DateWindowRead,
     PostRead,
     ShareRead,
 )
@@ -24,18 +28,56 @@ async def read_board_feed(
     response: Response,
     session: Annotated[Session, Depends(get_session)],
     limit: Annotated[int, Query(ge=1, le=50)] = 10,
+    date: Annotated[
+        LocalDate | None,
+        Query(description="Optional user-local board date to filter."),
+    ] = None,
+    timezone: Annotated[
+        str,
+        Query(min_length=1, max_length=64, description="IANA timezone for the date filter."),
+    ] = "UTC",
 ) -> BoardFeedRead:
     del request, response
-    posts = session.exec(select(Post).order_by(col(Post.created_at).desc()).limit(limit)).all()
+    date_window = build_date_window(date, timezone)
+    posts_statement = select(Post)
+    shares_statement = select(Share).where(Share.is_public == True)  # noqa: E712
+    if date_window is not None:
+        posts_statement = posts_statement.where(
+            col(Post.created_at) >= date_window.start_at,
+            col(Post.created_at) < date_window.end_at,
+        )
+        shares_statement = shares_statement.where(
+            col(Share.created_at) >= date_window.start_at,
+            col(Share.created_at) < date_window.end_at,
+        )
+    posts = session.exec(posts_statement.order_by(col(Post.created_at).desc()).limit(limit)).all()
     shares = session.exec(
-        select(Share)
-        .where(Share.is_public == True)  # noqa: E712
-        .order_by(col(Share.created_at).desc())
-        .limit(limit)
+        shares_statement.order_by(col(Share.created_at).desc()).limit(limit)
     ).all()
     return BoardFeedRead(
         posts=[post_to_read(session, post) for post in posts],
         shares=[share_to_read(session, share) for share in shares],
+        date_window=date_window,
+    )
+
+
+def build_date_window(local_date: LocalDate | None, timezone_name: str) -> DateWindowRead | None:
+    if local_date is None:
+        return None
+    try:
+        start_at, end_at = local_date_window(local_date, timezone_name)
+    except ValueError as exc:
+        raise ProblemException(
+            status_code=400,
+            title="Invalid timezone",
+            detail=str(exc),
+            code="invalid_timezone",
+        ) from exc
+    return DateWindowRead(
+        date=local_date,
+        timezone=timezone_name,
+        start_at=start_at,
+        end_at=end_at,
     )
 
 
@@ -50,7 +92,7 @@ def post_to_read(session: Session, post: Post) -> PostRead:
         content=post.content,
         author=author_to_read(author),
         challenge=challenge_to_read(challenge) if challenge else None,
-        created_at=post.created_at,
+        created_at=ensure_utc(post.created_at),
     )
 
 
@@ -65,7 +107,7 @@ def share_to_read(session: Session, share: Share) -> ShareRead:
         is_public=share.is_public,
         author=author_to_read(author),
         challenge=challenge_to_read(challenge),
-        created_at=share.created_at,
+        created_at=ensure_utc(share.created_at),
     )
 
 

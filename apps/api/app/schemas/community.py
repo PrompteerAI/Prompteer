@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel
 
@@ -40,6 +40,14 @@ class ShareRead(BaseModel):
     created_at: datetime
 
 
+class DateWindowRead(BaseModel):
+    date: date
+    timezone: str
+    start_at: datetime
+    end_at: datetime
+
+
 class BoardFeedRead(BaseModel):
     posts: list[PostRead]
     shares: list[ShareRead]
+    date_window: DateWindowRead | None = None

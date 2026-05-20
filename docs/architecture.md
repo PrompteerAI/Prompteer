@@ -48,4 +48,4 @@ LLM token quotas are stored in `llm_usage_days` by UTC date. Free users default 
 
 ## Time
 
-All server-side timestamps are UTC. API responses use ISO 8601 strings with explicit offsets.
+All server-side timestamps are UTC. API responses use ISO 8601 strings with explicit offsets. Routes that accept user-local calendar dates also accept an IANA timezone and convert the local day into a UTC `[start_at, end_at)` window before querying persisted timestamps.

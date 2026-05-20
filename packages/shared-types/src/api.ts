@@ -259,6 +259,7 @@ export interface components {
     };
     /** BoardFeedRead */
     BoardFeedRead: {
+      date_window?: components["schemas"]["DateWindowRead"] | null;
       /** Posts */
       posts: components["schemas"]["PostRead"][];
       /** Shares */
@@ -356,6 +357,26 @@ export interface components {
       status: string;
       /** Url */
       url: string | null;
+    };
+    /** DateWindowRead */
+    DateWindowRead: {
+      /**
+       * Date
+       * Format: date
+       */
+      date: string;
+      /**
+       * End At
+       * Format: date-time
+       */
+      end_at: string;
+      /**
+       * Start At
+       * Format: date-time
+       */
+      start_at: string;
+      /** Timezone */
+      timezone: string;
     };
     /** FeatureFlagsRead */
     FeatureFlagsRead: {
@@ -636,6 +657,10 @@ export interface operations {
     parameters: {
       query?: {
         limit?: number;
+        /** @description Optional user-local board date to filter. */
+        date?: string | null;
+        /** @description IANA timezone for the date filter. */
+        timezone?: string;
       };
       header?: never;
       path?: never;

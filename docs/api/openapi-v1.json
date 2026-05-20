@@ -26,6 +26,16 @@
       },
       "BoardFeedRead": {
         "properties": {
+          "date_window": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DateWindowRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "posts": {
             "items": {
               "$ref": "#/components/schemas/PostRead"
@@ -274,6 +284,32 @@
           "provider"
         ],
         "title": "CheckoutSessionRead",
+        "type": "object"
+      },
+      "DateWindowRead": {
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "end_at": {
+            "format": "date-time",
+            "title": "End At",
+            "type": "string"
+          },
+          "start_at": {
+            "format": "date-time",
+            "title": "Start At",
+            "type": "string"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
+          }
+        },
+        "required": ["date", "timezone", "start_at", "end_at"],
+        "title": "DateWindowRead",
         "type": "object"
       },
       "FeatureFlagsRead": {
@@ -802,6 +838,39 @@
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
+            }
+          },
+          {
+            "description": "Optional user-local board date to filter.",
+            "in": "query",
+            "name": "date",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional user-local board date to filter.",
+              "title": "Date"
+            }
+          },
+          {
+            "description": "IANA timezone for the date filter.",
+            "in": "query",
+            "name": "timezone",
+            "required": false,
+            "schema": {
+              "default": "UTC",
+              "description": "IANA timezone for the date filter.",
+              "maxLength": 64,
+              "minLength": 1,
+              "title": "Timezone",
+              "type": "string"
             }
           }
         ],
