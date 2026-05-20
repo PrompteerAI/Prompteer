@@ -19,7 +19,7 @@ from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from typing import Any, cast
 
-from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 
 from app.core.config import settings
 from app.core.feature_flags import dev_routes_enabled, require_feature_enabled
@@ -113,7 +113,8 @@ class MockStripeClient:
 
 @router.post("/v1/checkout/sessions")
 @limiter.limit(PAYMENTS_RATE_LIMIT)
-async def create_checkout_session(request: Request) -> dict[str, Any]:
+async def create_checkout_session(request: Request, response: Response) -> dict[str, Any]:
+    del response
     require_mock_routes()
     require_feature_enabled("payments")
     payload = await parse_request_payload(request)
@@ -135,8 +136,12 @@ async def retrieve_checkout_session(session_id: str) -> dict[str, Any]:
 
 @router.post("/v1/checkout/sessions/{session_id}/expire")
 @limiter.limit(PAYMENTS_RATE_LIMIT)
-async def expire_checkout_session(request: Request, session_id: str) -> dict[str, Any]:
-    del request
+async def expire_checkout_session(
+    request: Request,
+    response: Response,
+    session_id: str,
+) -> dict[str, Any]:
+    del request, response
     require_mock_routes()
     require_feature_enabled("payments")
     try:
@@ -149,9 +154,10 @@ async def expire_checkout_session(request: Request, session_id: str) -> dict[str
 @limiter.limit(PAYMENTS_RATE_LIMIT)
 async def complete_mock_checkout(
     request: Request,
+    response: Response,
     session_id: str = Query(..., description="Mock Checkout Session id."),
 ) -> dict[str, Any]:
-    del request
+    del request, response
     require_mock_routes()
     require_feature_enabled("payments")
     try:

@@ -6,6 +6,7 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPublicKey
 from fastapi import HTTPException
+from starlette.requests import Request
 
 from app.api.deps import get_current_principal
 from app.core.security import AuthTokenError, verify_jwt_with_jwks
@@ -44,10 +45,14 @@ def test_verify_jwt_with_jwks_rejects_wrong_audience() -> None:
 @pytest.mark.asyncio
 async def test_get_current_principal_requires_bearer_token() -> None:
     with pytest.raises(HTTPException) as exc_info:
-        await get_current_principal()
+        await get_current_principal(request_for_auth())
 
     assert exc_info.value.status_code == 401
     assert exc_info.value.headers == {"WWW-Authenticate": "Bearer"}
+
+
+def request_for_auth() -> Request:
+    return Request({"type": "http", "method": "GET", "path": "/", "headers": []})
 
 
 def sign_test_token(private_key: RSAPrivateKey) -> str:

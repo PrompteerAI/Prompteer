@@ -18,6 +18,18 @@ class Settings(BaseSettings):
         alias="DATABASE_URL",
     )
     redis_url: str = Field(default="redis://localhost:6379/0", alias="REDIS_URL")
+    rate_limit_enabled: bool = Field(default=True, alias="RATE_LIMIT_ENABLED")
+    rate_limit_storage_url: str = Field(default="memory://", alias="RATE_LIMIT_STORAGE_URL")
+    rate_limit_strategy: str = Field(default="moving-window", alias="RATE_LIMIT_STRATEGY")
+    rate_limit_key_prefix: str = Field(default="prompteer", alias="RATE_LIMIT_KEY_PREFIX")
+    rate_limit_headers_enabled: bool = Field(default=True, alias="RATE_LIMIT_HEADERS_ENABLED")
+    rate_limit_in_memory_fallback_enabled: bool = Field(
+        default=True,
+        alias="RATE_LIMIT_IN_MEMORY_FALLBACK_ENABLED",
+    )
+    llm_rate_limit: str = Field(default="10/minute", alias="LLM_RATE_LIMIT")
+    payments_rate_limit: str = Field(default="20/minute", alias="PAYMENTS_RATE_LIMIT")
+    email_rate_limit: str = Field(default="5/minute", alias="EMAIL_RATE_LIMIT")
     auto_seed_on_startup: bool = Field(default=True, alias="AUTO_SEED_ON_STARTUP")
     dev_bootstrap_retries: int = Field(default=30, alias="DEV_BOOTSTRAP_RETRIES")
     dev_bootstrap_retry_seconds: float = Field(default=1.0, alias="DEV_BOOTSTRAP_RETRY_SECONDS")

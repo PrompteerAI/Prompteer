@@ -80,13 +80,14 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(RateLimitExceeded)
     async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> Response:
-        return problem_response(
+        response = problem_response(
             request=request,
             status_code=429,
             title="Too Many Requests",
             detail=f"Rate limit exceeded: {exc.detail}",
             code="rate_limited",
         )
+        return limiter._inject_headers(response, request.state.view_rate_limit)  # noqa: SLF001
 
     @app.get("/")
     async def root() -> dict[str, str]:

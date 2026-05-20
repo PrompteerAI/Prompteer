@@ -35,6 +35,7 @@ def problem_response(
     detail: str,
     code: str,
     errors: list[dict[str, Any]] | None = None,
+    headers: dict[str, str] | None = None,
 ) -> JSONResponse:
     body: dict[str, Any] = {
         "type": f"https://prompteer.dev/errors/{code.replace('_', '-')}",
@@ -50,6 +51,7 @@ def problem_response(
     return JSONResponse(
         status_code=status_code,
         content=body,
+        headers=headers,
         media_type="application/problem+json",
     )
 

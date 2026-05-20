@@ -65,8 +65,12 @@ def require_mock_routes() -> bool:
 
 @router.post("/v3/mail/send", response_model=None)
 @limiter.limit(EMAIL_RATE_LIMIT)
-async def sendgrid_mail_send(request: Request, payload: dict[str, Any]) -> Response:
-    del request
+async def sendgrid_mail_send(
+    request: Request,
+    response: Response,
+    payload: dict[str, Any],
+) -> Response:
+    del request, response
     if not require_mock_routes():
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"detail": "Not found"})
     require_feature_enabled("email")

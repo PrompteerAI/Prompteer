@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlmodel import Session, col, select
 
 from app.core.feature_flags import require_feature_enabled
@@ -36,6 +36,7 @@ async def get_challenge(
 @limiter.limit(LLM_RATE_LIMIT)
 async def run_challenge_prompt(
     request: Request,
+    response: Response,
     challenge_id: str,
     run_request: ChallengeRunRequest,
     session: Annotated[Session, Depends(get_session)],
@@ -44,7 +45,7 @@ async def run_challenge_prompt(
     require_feature_enabled("llm")
     challenge = load_challenge(session, challenge_id)
     llm_client = get_llm_client()
-    response = await llm_client.chat_completion(
+    llm_response = await llm_client.chat_completion(
         {
             "model": "mock-gpt-4.1-mini",
             "messages": [
@@ -66,14 +67,14 @@ async def run_challenge_prompt(
             ],
         }
     )
-    message = response["choices"][0]["message"]
+    message = llm_response["choices"][0]["message"]
     return ChallengeRunResponse(
         challenge=challenge_to_read(challenge),
         prompt=run_request.prompt,
         provider=llm_client.provider,
         output=str(message["content"]),
-        usage=response["usage"],
-        raw=response,
+        usage=llm_response["usage"],
+        raw=llm_response,
     )
 
 

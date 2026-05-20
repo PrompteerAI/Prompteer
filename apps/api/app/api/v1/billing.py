@@ -1,6 +1,6 @@
 from typing import Annotated, Any
 
-from fastapi import APIRouter, HTTPException, Path, Request, status
+from fastapi import APIRouter, HTTPException, Path, Request, Response, status
 
 from app.core.config import settings
 from app.core.feature_flags import dev_routes_enabled, require_feature_enabled
@@ -18,9 +18,10 @@ PRO_MONTHLY_PRICE_CENTS = 1200
 @limiter.limit(PAYMENTS_RATE_LIMIT)
 async def create_checkout(
     request: Request,
+    response: Response,
     checkout_request: CheckoutCreateRequest,
 ) -> CheckoutSessionRead:
-    del request
+    del request, response
     require_feature_enabled("payments")
     client = get_payments_client()
     session = await client.create_checkout_session(checkout_payload(checkout_request))
@@ -44,9 +45,10 @@ async def retrieve_checkout(
 @limiter.limit(PAYMENTS_RATE_LIMIT)
 async def complete_mock_checkout(
     request: Request,
+    response: Response,
     session_id: Annotated[str, Path(min_length=8)],
 ) -> CheckoutSessionRead:
-    del request
+    del request, response
     require_feature_enabled("payments")
     if not dev_routes_enabled() or settings.stripe_secret_key:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")

@@ -34,7 +34,7 @@ The API returns RFC 9457 Problem Details for all errors. Frontend code normalize
 
 ## Rate limits
 
-FastAPI uses `slowapi` for request rate limiting. Cost-sensitive routes have explicit tighter limits: LLM prompt runs and provider-compatible LLM mocks use `10/minute`, payment and checkout routes use `20/minute`, and SendGrid-compatible mail send uses `5/minute`.
+FastAPI uses `slowapi` for request rate limiting. Local Compose config points SlowAPI at Redis so counters are shared across API workers, with in-memory fallback for local resilience and tests. Cost-sensitive routes have explicit configurable limits: LLM prompt runs and provider-compatible LLM mocks default to `10/minute`, payment and checkout routes default to `20/minute`, and SendGrid-compatible mail send defaults to `5/minute`. Keys are scoped by authenticated principal when a route resolves one, otherwise by client IP.
 
 ## Feature kill switches
 
