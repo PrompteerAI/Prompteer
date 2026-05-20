@@ -1,0 +1,24 @@
+name: Build Images
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build web image
+        run: docker build -t ghcr.io/${{ github.repository_owner }}/prompteer-web:latest apps/web
+      - name: Build api image
+        run: docker build -t ghcr.io/${{ github.repository_owner }}/prompteer-api:latest apps/api

@@ -1,0 +1,22 @@
+{
+  "app": {
+    "name": "Prompteer",
+    "tagline": "Practice prompts, compare outputs, and learn from shared challenge runs."
+  },
+  "nav": {
+    "challenges": "Challenges",
+    "board": "Board",
+    "profile": "Profile"
+  },
+  "home": {
+    "title": "Prompt challenge workspace",
+    "subtitle": "Choose a coding, image, or video challenge, draft a prompt, run it through a mock provider locally, and inspect shareable results.",
+    "coding": "Coding",
+    "image": "Image",
+    "video": "Video"
+  },
+  "login": {
+    "title": "Sign in",
+    "mock": "Continue with mock Google"
+  }
+}

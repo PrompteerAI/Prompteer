@@ -1,0 +1,43 @@
+{
+  "name": "@prompteer/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@auth/core": "^0.39.1",
+    "@hookform/resolvers": "^5.1.1",
+    "@prompteer/shared-types": "workspace:*",
+    "@tanstack/react-query": "^5.80.7",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^0.513.0",
+    "next": "^15.3.3",
+    "next-auth": "5.0.0-beta.28",
+    "next-intl": "^4.1.0",
+    "pino": "^9.7.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-hook-form": "^7.57.0",
+    "zod": "^3.25.56"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@prompteer/eslint-config": "workspace:*",
+    "@prompteer/tsconfig": "workspace:*",
+    "@tailwindcss/postcss": "^4.1.8",
+    "@types/node": "^22.15.30",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.6",
+    "eslint": "^9.28.0",
+    "tailwindcss": "^4.1.8",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.3"
+  }
+}
