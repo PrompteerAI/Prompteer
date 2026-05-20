@@ -1,3 +1,4 @@
+import re
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -19,6 +20,7 @@ from app.core.errors import (
     http_exception_handler,
     problem_exception_handler,
     problem_response,
+    unhandled_exception_handler,
     validation_exception_handler,
 )
 from app.core.logging import configure_logging
@@ -30,6 +32,11 @@ from app.integrations.llm.mock import router as mock_llm_router
 from app.integrations.payments.mock import router as mock_stripe_router
 
 logger = structlog.get_logger(__name__)
+REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
+
+
+def is_valid_request_id(value: str) -> bool:
+    return bool(REQUEST_ID_PATTERN.fullmatch(value))
 
 
 @asynccontextmanager
@@ -57,6 +64,10 @@ async def app_problem_exception_handler(request: Request, exc: Exception) -> Res
     raise exc
 
 
+async def app_unhandled_exception_handler(request: Request, exc: Exception) -> Response:
+    return await unhandled_exception_handler(request, exc)
+
+
 def create_app() -> FastAPI:
     configure_logging()
     init_observability()
@@ -64,7 +75,7 @@ def create_app() -> FastAPI:
     app = FastAPI(title="Prompteer API", version="0.1.0", lifespan=lifespan)
     app.state.limiter = limiter
 
-    app.add_middleware(CorrelationIdMiddleware)
+    app.add_middleware(CorrelationIdMiddleware, validator=is_valid_request_id)
     app.add_middleware(SlowAPIMiddleware)
     app.add_middleware(
         CORSMiddleware,
@@ -77,6 +88,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(StarletteHTTPException, starlette_http_exception_handler)
     app.add_exception_handler(ProblemException, app_problem_exception_handler)
     app.add_exception_handler(RequestValidationError, request_validation_exception_handler)
+    app.add_exception_handler(Exception, app_unhandled_exception_handler)
 
     @app.exception_handler(RateLimitExceeded)
     async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> Response:

@@ -1,8 +1,11 @@
 "use client";
 
 // Localized route-level error boundary for recoverable rendering failures.
+import * as Sentry from "@sentry/nextjs";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import { publicEnv } from "@/lib/env";
 
 export default function ErrorPage({
   error,
@@ -15,6 +18,12 @@ export default function ErrorPage({
   const [reportState, setReportState] = useState<"idle" | "sending" | "sent">(
     "idle",
   );
+
+  useEffect(() => {
+    if (publicEnv.NEXT_PUBLIC_SENTRY_DSN) {
+      Sentry.captureException(error);
+    }
+  }, [error]);
 
   async function reportError(): Promise<void> {
     if (reportState !== "idle") {

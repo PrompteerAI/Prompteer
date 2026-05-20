@@ -71,6 +71,7 @@ const pemEnvString = optionalEnvString.transform((value) =>
 
 export const publicEnvSchema = z.object({
   NEXT_PUBLIC_API_URL: envUrl("http://localhost:8000/api/v1"),
+  NEXT_PUBLIC_APP_VERSION: envString("0.1.0"),
   NEXT_PUBLIC_USE_MOCK_GOOGLE: envBoolean(true),
   NEXT_PUBLIC_SENTRY_DSN: envString(""),
 });
@@ -101,6 +102,7 @@ let cachedServerEnv: ServerEnv | undefined;
 export function parsePublicEnv(rawEnv: RawEnv): PublicEnv {
   return publicEnvSchema.parse({
     NEXT_PUBLIC_API_URL: rawEnv.NEXT_PUBLIC_API_URL,
+    NEXT_PUBLIC_APP_VERSION: rawEnv.NEXT_PUBLIC_APP_VERSION,
     NEXT_PUBLIC_USE_MOCK_GOOGLE: rawEnv.NEXT_PUBLIC_USE_MOCK_GOOGLE,
     NEXT_PUBLIC_SENTRY_DSN: rawEnv.NEXT_PUBLIC_SENTRY_DSN,
   });
@@ -112,6 +114,7 @@ export function parseServerEnv(rawEnv: RawEnv): ServerEnv {
     APP_VERSION: rawEnv.APP_VERSION,
     APP_URL: rawEnv.APP_URL,
     NEXT_PUBLIC_API_URL: rawEnv.NEXT_PUBLIC_API_URL,
+    NEXT_PUBLIC_APP_VERSION: rawEnv.NEXT_PUBLIC_APP_VERSION,
     NEXT_PUBLIC_USE_MOCK_GOOGLE: rawEnv.NEXT_PUBLIC_USE_MOCK_GOOGLE,
     NEXT_PUBLIC_SENTRY_DSN: rawEnv.NEXT_PUBLIC_SENTRY_DSN,
     API_INTERNAL_URL: rawEnv.API_INTERNAL_URL,
@@ -136,6 +139,7 @@ export function getServerEnv(): ServerEnv {
 
 export const publicEnv = parsePublicEnv({
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+  NEXT_PUBLIC_APP_VERSION: process.env.NEXT_PUBLIC_APP_VERSION,
   NEXT_PUBLIC_USE_MOCK_GOOGLE: process.env.NEXT_PUBLIC_USE_MOCK_GOOGLE,
   NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
 });

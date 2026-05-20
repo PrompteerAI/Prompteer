@@ -1,12 +1,20 @@
+# RFC 9457 Problem Details handlers shared by API v1 and platform middleware.
+# Unexpected exceptions are captured for observability before returning JSON.
+
 from http import HTTPStatus
 from typing import Any
 
+import structlog
 from asgi_correlation_id import correlation_id
 from fastapi import Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette import status
 from starlette.exceptions import HTTPException as StarletteHTTPException
+
+from app.core.observability import capture_exception
+
+logger = structlog.get_logger(__name__)
 
 
 class ProblemException(Exception):
@@ -27,6 +35,10 @@ class ProblemException(Exception):
         self.errors = errors
 
 
+def request_id_for(request: Request) -> str | None:
+    return correlation_id.get() or request.headers.get("X-Request-ID")
+
+
 def problem_response(
     *,
     request: Request,
@@ -44,7 +56,7 @@ def problem_response(
         "detail": detail,
         "instance": str(request.url.path),
         "code": code,
-        "request_id": correlation_id.get(),
+        "request_id": request_id_for(request),
     }
     if errors is not None:
         body["errors"] = errors
@@ -96,4 +108,21 @@ async def validation_exception_handler(
             }
             for error in exc.errors()
         ],
+    )
+
+
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    capture_exception(exc)
+    logger.error(
+        "unhandled_exception",
+        path=str(request.url.path),
+        request_id=request_id_for(request),
+        exc_info=exc,
+    )
+    return problem_response(
+        request=request,
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        title="Internal Server Error",
+        detail="An unexpected server error occurred.",
+        code="internal_server_error",
     )

@@ -17,6 +17,7 @@ describe("parsePublicEnv", () => {
     const parsed = parsePublicEnv({});
 
     expect(parsed.NEXT_PUBLIC_USE_MOCK_GOOGLE).toBe(true);
+    expect(parsed.NEXT_PUBLIC_APP_VERSION).toBe("0.1.0");
   });
 
   it("rejects malformed public API URLs", () => {
