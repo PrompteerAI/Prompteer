@@ -30,7 +30,13 @@ class Settings(BaseSettings):
         alias="AUTH_MOCK_GOOGLE_ISSUER",
     )
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
+    openai_base_url: str = Field(default="https://api.openai.com/v1", alias="OPENAI_BASE_URL")
     anthropic_api_key: str = Field(default="", alias="ANTHROPIC_API_KEY")
+    anthropic_base_url: str = Field(
+        default="https://api.anthropic.com/v1",
+        alias="ANTHROPIC_BASE_URL",
+    )
+    anthropic_version: str = Field(default="2023-06-01", alias="ANTHROPIC_VERSION")
     stripe_secret_key: str = Field(default="", alias="STRIPE_SECRET_KEY")
     stripe_webhook_secret: str = Field(default="", alias="STRIPE_WEBHOOK_SECRET")
     sendgrid_api_key: str = Field(default="", alias="SENDGRID_API_KEY")
