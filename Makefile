@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help dev lint typecheck test format build verify types types-check backup-restore-check api-dev api-lint api-test seed reset-db
+.PHONY: help dev lint typecheck test format build verify types types-check backup-restore-check api-dev api-lint api-test seed reset-db logs
 
 help: ## Show available Makefile targets.
 	@awk 'BEGIN {FS = ":.*##"; printf "Available targets:\n"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -28,6 +28,7 @@ build: ## Build frontend packages.
 	pnpm build
 
 verify: ## Run the core local verification suite.
+	pnpm format:check
 	$(MAKE) lint
 	$(MAKE) typecheck
 	$(MAKE) test
@@ -59,3 +60,6 @@ seed: ## Seed idempotent local demo data.
 
 reset-db: ## Reset local Docker database and Redis containers.
 	scripts/reset-db.sh
+
+logs: ## Follow local Docker Compose logs.
+	docker compose logs -f
