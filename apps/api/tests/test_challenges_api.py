@@ -1,13 +1,17 @@
 from collections.abc import Generator
+from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.engine import Engine
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine, select
 from starlette.requests import Request
 
 import app.models  # noqa: F401
 from app.api.deps import get_current_principal
+from app.api.v1 import challenges as challenge_routes
+from app.core.config import settings
 from app.core.ratelimit import limiter
 from app.core.security import Principal
 from app.db.seed import seed
@@ -110,6 +114,66 @@ def test_challenge_run_can_skip_public_share_creation() -> None:
     with Session(engine) as assertion_session:
         after_count = len(assertion_session.exec(select(Share)).all())
     assert after_count == before_count
+
+
+def test_challenge_run_uses_configured_openai_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    client, _engine, challenge_id = create_seeded_challenge_client()
+    fake_client = CapturingOpenAIClient()
+    monkeypatch.setattr(challenge_routes, "get_llm_client", lambda: fake_client)
+    monkeypatch.setattr(settings, "openai_chat_model", "gpt-4.1-mini")
+
+    response = client.post(
+        f"/api/v1/challenges/{challenge_id}/run",
+        json={
+            "prompt": "Explain FizzBuzz clearly and write compact Python.",
+            "publish_to_board": False,
+        },
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["provider"] == "openai"
+    assert result["output"] == "OpenAI feedback"
+    assert result["usage"] == {
+        "prompt_tokens": 11,
+        "completion_tokens": 7,
+        "total_tokens": 18,
+    }
+    assert fake_client.payload is not None
+    assert fake_client.payload["model"] == "gpt-4.1-mini"
+
+
+def test_challenge_run_supports_real_anthropic_provider(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, _engine, challenge_id = create_seeded_challenge_client()
+    fake_client = CapturingAnthropicClient()
+    monkeypatch.setattr(challenge_routes, "get_llm_client", lambda: fake_client)
+    monkeypatch.setattr(settings, "anthropic_model", "claude-sonnet-4-20250514")
+
+    response = client.post(
+        f"/api/v1/challenges/{challenge_id}/run",
+        json={
+            "prompt": "Explain FizzBuzz clearly and write compact Python.",
+            "publish_to_board": False,
+        },
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["provider"] == "anthropic"
+    assert result["output"] == "Anthropic feedback"
+    assert result["usage"] == {
+        "prompt_tokens": 13,
+        "completion_tokens": 5,
+        "total_tokens": 18,
+        "input_tokens": 13,
+        "output_tokens": 5,
+    }
+    assert fake_client.payload is not None
+    assert fake_client.payload["model"] == "claude-sonnet-4-20250514"
+    assert fake_client.payload["max_tokens"] == 512
+    assert fake_client.payload["messages"][0]["role"] == "user"
 
 
 def test_challenge_run_requires_authentication() -> None:
@@ -220,3 +284,79 @@ async def override_principal() -> Principal:
         email="admin@prompteer.dev",
         is_admin=True,
     )
+
+
+def create_seeded_challenge_client() -> tuple[TestClient, Engine, str]:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    SQLModel.metadata.create_all(engine)
+    with Session(engine) as seed_session:
+        seed(seed_session)
+        challenge_id = seed_session.exec(
+            select(Challenge.id).where(Challenge.challenge_number == 1)
+        ).one()
+
+    def override_session() -> Generator[Session, None, None]:
+        with Session(engine) as session:
+            yield session
+
+    app = create_app()
+    app.dependency_overrides[get_session] = override_session
+    app.dependency_overrides[get_current_principal] = override_principal
+    return TestClient(app), engine, challenge_id
+
+
+class CapturingOpenAIClient:
+    provider = "openai"
+
+    def __init__(self) -> None:
+        self.payload: dict[str, Any] | None = None
+
+    async def chat_completion(self, payload: dict[str, Any]) -> dict[str, Any]:
+        self.payload = payload
+        return {
+            "id": "chatcmpl_real_test",
+            "object": "chat.completion",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {"role": "assistant", "content": "OpenAI feedback"},
+                    "finish_reason": "stop",
+                    "logprobs": None,
+                }
+            ],
+            "usage": {
+                "prompt_tokens": 11,
+                "completion_tokens": 7,
+                "total_tokens": 18,
+            },
+        }
+
+    async def anthropic_message(self, payload: dict[str, Any]) -> dict[str, Any]:
+        raise AssertionError(f"Unexpected Anthropic call: {payload}")
+
+
+class CapturingAnthropicClient:
+    provider = "anthropic"
+
+    def __init__(self) -> None:
+        self.payload: dict[str, Any] | None = None
+
+    async def chat_completion(self, payload: dict[str, Any]) -> dict[str, Any]:
+        raise AssertionError(f"Unexpected OpenAI call: {payload}")
+
+    async def anthropic_message(self, payload: dict[str, Any]) -> dict[str, Any]:
+        self.payload = payload
+        return {
+            "id": "msg_real_test",
+            "type": "message",
+            "role": "assistant",
+            "model": payload["model"],
+            "content": [{"type": "text", "text": "Anthropic feedback"}],
+            "stop_reason": "end_turn",
+            "stop_sequence": None,
+            "usage": {"input_tokens": 13, "output_tokens": 5},
+        }

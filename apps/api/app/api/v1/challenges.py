@@ -1,17 +1,19 @@
 """API v1 challenge routes; no sibling challenge API version exists yet."""
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlmodel import Session, col, select
 
 from app.api.deps import get_current_principal
+from app.core.config import settings
 from app.core.feature_flags import require_feature_enabled
 from app.core.ratelimit import GENERAL_RATE_LIMIT, LLM_RATE_LIMIT, limiter
 from app.core.security import Principal
 from app.core.time import ensure_utc
 from app.db.session import get_session
 from app.integrations.llm import get_llm_client
+from app.integrations.llm.base import LLMClient
 from app.models.domain import Challenge, ChallengeTag, Share
 from app.schemas.challenge import (
     ChallengeRead,
@@ -26,6 +28,13 @@ from app.services.llm_quota import (
 )
 
 router = APIRouter(prefix="/challenges", tags=["challenges"])
+
+MOCK_CHAT_MODEL = "mock-gpt-4.1-mini"
+ANTHROPIC_MAX_TOKENS = 512
+SYSTEM_PROMPT = (
+    "You are evaluating a Prompteer challenge submission. "
+    "Respond with concise feedback and a stronger prompt."
+)
 
 
 @router.get("")
@@ -71,45 +80,142 @@ async def run_challenge_prompt(
     user = resolve_user_for_principal(session, principal)
     assert_llm_quota_available(session, user)
     llm_client = get_llm_client()
-    llm_response = await llm_client.chat_completion(
-        {
-            "model": "mock-gpt-4.1-mini",
-            "messages": [
-                {
-                    "role": "system",
-                    "content": (
-                        "You are evaluating a Prompteer challenge submission. "
-                        "Respond with concise feedback and a stronger prompt."
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Challenge: {challenge.title}\n"
-                        f"Instructions: {challenge.content or 'No extra instructions.'}\n"
-                        f"Submitted prompt: {run_request.prompt}"
-                    ),
-                },
-            ],
-        }
+    llm_result = await run_feedback_prompt(
+        llm_client,
+        challenge=challenge,
+        prompt=run_request.prompt,
     )
-    record_llm_usage(session, user, llm_response["usage"])
+    record_llm_usage(session, user, llm_result["usage"])
     share = create_prompt_share(
         session,
         user_id=user.id,
         challenge_id=challenge.id,
         run=run_request,
     )
-    message = llm_response["choices"][0]["message"]
     return ChallengeRunResponse(
         challenge=challenge_to_read(challenge),
         prompt=run_request.prompt,
         provider=llm_client.provider,
-        output=str(message["content"]),
-        usage=llm_response["usage"],
-        raw=llm_response,
+        output=llm_result["output"],
+        usage=llm_result["usage"],
+        raw=llm_result["raw"],
         share=share_to_run_read(share) if share is not None else None,
     )
+
+
+async def run_feedback_prompt(
+    llm_client: LLMClient,
+    *,
+    challenge: Challenge,
+    prompt: str,
+) -> dict[str, Any]:
+    user_content = challenge_prompt_content(challenge=challenge, prompt=prompt)
+    if llm_client.provider == "anthropic":
+        response = await llm_client.anthropic_message(
+            {
+                "model": settings.anthropic_model,
+                "max_tokens": ANTHROPIC_MAX_TOKENS,
+                "system": SYSTEM_PROMPT,
+                "messages": [{"role": "user", "content": user_content}],
+            }
+        )
+        return {
+            "output": extract_anthropic_text(response),
+            "usage": normalize_anthropic_usage(response.get("usage")),
+            "raw": response,
+        }
+
+    response = await llm_client.chat_completion(
+        {
+            "model": chat_model_for_provider(llm_client.provider),
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_content},
+            ],
+        }
+    )
+    return {
+        "output": extract_openai_text(response),
+        "usage": normalize_openai_usage(response.get("usage")),
+        "raw": response,
+    }
+
+
+def challenge_prompt_content(*, challenge: Challenge, prompt: str) -> str:
+    return (
+        f"Challenge: {challenge.title}\n"
+        f"Instructions: {challenge.content or 'No extra instructions.'}\n"
+        f"Submitted prompt: {prompt}"
+    )
+
+
+def chat_model_for_provider(provider: str) -> str:
+    if provider == "openai":
+        return settings.openai_chat_model
+    return MOCK_CHAT_MODEL
+
+
+def extract_openai_text(response: dict[str, Any]) -> str:
+    choices = response.get("choices")
+    if not isinstance(choices, list) or not choices:
+        return ""
+    first_choice = choices[0]
+    if not isinstance(first_choice, dict):
+        return ""
+    message = first_choice.get("message")
+    if not isinstance(message, dict):
+        return ""
+    content = message.get("content")
+    return content if isinstance(content, str) else ""
+
+
+def extract_anthropic_text(response: dict[str, Any]) -> str:
+    content = response.get("content")
+    if not isinstance(content, list):
+        return ""
+    parts = [
+        block["text"]
+        for block in content
+        if isinstance(block, dict)
+        and block.get("type") == "text"
+        and isinstance(block.get("text"), str)
+    ]
+    return "\n".join(parts)
+
+
+def normalize_openai_usage(usage: Any) -> dict[str, int]:
+    if not isinstance(usage, dict):
+        return {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+    prompt_tokens = non_negative_int(usage.get("prompt_tokens"))
+    completion_tokens = non_negative_int(usage.get("completion_tokens"))
+    total_tokens = non_negative_int(usage.get("total_tokens"))
+    return {
+        "prompt_tokens": prompt_tokens,
+        "completion_tokens": completion_tokens,
+        "total_tokens": total_tokens,
+    }
+
+
+def normalize_anthropic_usage(usage: Any) -> dict[str, int]:
+    if not isinstance(usage, dict):
+        input_tokens = 0
+        output_tokens = 0
+    else:
+        input_tokens = non_negative_int(usage.get("input_tokens"))
+        output_tokens = non_negative_int(usage.get("output_tokens"))
+    return {
+        "prompt_tokens": input_tokens,
+        "completion_tokens": output_tokens,
+        "total_tokens": input_tokens + output_tokens,
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+    }
+
+
+def non_negative_int(value: Any) -> int:
+    if isinstance(value, int) and value > 0:
+        return value
+    return 0
 
 
 def load_challenge(session: Session, challenge_id: str) -> Challenge:

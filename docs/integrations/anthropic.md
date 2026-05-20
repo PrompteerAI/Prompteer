@@ -7,10 +7,11 @@ Sources:
 - https://docs.anthropic.com/en/api/overview
 - https://docs.anthropic.com/en/api/messages
 - https://docs.anthropic.com/en/docs/build-with-claude/streaming
+- https://docs.anthropic.com/en/docs/about-claude/models/all-models
 
 Prompteer uses `ANTHROPIC_API_KEY` for real Anthropic Messages access when OpenAI is not configured. When both LLM keys are blank, Prompteer uses deterministic local mock responses.
 
-`ANTHROPIC_BASE_URL` defaults to `https://api.anthropic.com/v1`. `ANTHROPIC_VERSION` defaults to `2023-06-01` and is sent as the `anthropic-version` header for real API calls.
+`ANTHROPIC_BASE_URL` defaults to `https://api.anthropic.com/v1`. `ANTHROPIC_MODEL` defaults to `claude-sonnet-4-20250514`, one of Anthropic's documented API model names. `ANTHROPIC_VERSION` defaults to `2023-06-01` and is sent as the `anthropic-version` header for real API calls.
 
 ## Local mock
 

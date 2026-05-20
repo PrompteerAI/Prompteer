@@ -6,10 +6,11 @@ Sources:
 
 - https://platform.openai.com/docs/api-reference/introduction
 - https://platform.openai.com/docs/api-reference/chat/create
+- https://platform.openai.com/docs/models/gpt-4.1-mini
 
 Prompteer uses `OPENAI_API_KEY` for real OpenAI access. When it is blank and `ANTHROPIC_API_KEY` is also blank, the API selects the deterministic mock LLM client.
 
-`OPENAI_BASE_URL` defaults to `https://api.openai.com/v1` and exists for tests, proxies, or local upstream-shaped mocks.
+`OPENAI_BASE_URL` defaults to `https://api.openai.com/v1` and exists for tests, proxies, or local upstream-shaped mocks. `OPENAI_CHAT_MODEL` defaults to `gpt-4.1-mini`, which the current OpenAI model reference lists as Chat Completions-compatible.
 
 ## Local mock
 
