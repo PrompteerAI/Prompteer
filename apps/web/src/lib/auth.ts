@@ -137,8 +137,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     decode: decodeAuthJwt,
   },
   callbacks: {
-    jwt({ token, user }) {
+    jwt({ token, user, account }) {
       if (user) {
+        token.sub = account?.providerAccountId ?? user.id;
         token.email = user.email;
         token.name = user.name;
         const role = (user as Partial<SeedUser>).role;

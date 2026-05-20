@@ -86,7 +86,10 @@ test("real checkout sessions expose hosted Stripe URL", async ({ page }) => {
 test("seeded user can view profile settings", async ({ page }) => {
   await loginAs(page);
 
-  await page.getByRole("link", { name: "Profile settings" }).click();
+  await Promise.all([
+    page.waitForURL(/\/en\/profile$/),
+    page.getByRole("link", { name: "Profile settings" }).click(),
+  ]);
   await expect(
     page.getByRole("heading", { name: "Profile settings" }),
   ).toBeVisible();
