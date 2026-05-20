@@ -130,6 +130,12 @@ pnpm format:check
 cd apps/api && uv run ruff check . && uv run mypy app tests
 ```
 
+Run the full local verification suite:
+
+```sh
+make verify
+```
+
 Add a database migration:
 
 ```sh
