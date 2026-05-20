@@ -137,6 +137,12 @@ Run the full local verification suite:
 make verify
 ```
 
+Capture desktop and mobile UI screenshots against running dev servers:
+
+```sh
+make verify-ui
+```
+
 Add a database migration:
 
 ```sh
