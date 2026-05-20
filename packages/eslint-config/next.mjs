@@ -1,23 +1,14 @@
-import js from "@eslint/js";
-import tseslint from "typescript-eslint";
+import nextPlugin from "@next/eslint-plugin-next";
 
-export default [
-  {
-    ignores: [
-      "*.config.mjs",
-      "*.config.ts",
-      "eslint.config.mjs",
-      ".next/**",
-      "next-env.d.ts",
-    ],
-  },
-  js.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
-  {
-    languageOptions: {
-      parserOptions: {
-        projectService: true,
-      },
+import baseConfig from "./base.mjs";
+
+const nextCoreWebVitals = {
+  ...nextPlugin.flatConfig.coreWebVitals,
+  settings: {
+    next: {
+      rootDir: ".",
     },
   },
-];
+};
+
+export default [...baseConfig, nextCoreWebVitals];

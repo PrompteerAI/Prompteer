@@ -1,7 +1,7 @@
-import nextConfig from "@prompteer/eslint-config/next";
+import baseConfig from "@prompteer/eslint-config/base";
 
 export default [
-  ...nextConfig,
+  ...baseConfig,
   {
     ignores: ["dist/**"],
   },
