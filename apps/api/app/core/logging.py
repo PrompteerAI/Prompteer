@@ -27,18 +27,43 @@ def configure_logging() -> None:
     else:
         renderer = structlog.dev.ConsoleRenderer(colors=True)
 
-    processors: list[structlog.types.Processor] = [
+    shared_processors: list[structlog.types.Processor] = [
         structlog.contextvars.merge_contextvars,
         add_request_id,
         structlog.stdlib.add_log_level,
         timestamper,
         structlog.processors.format_exc_info,
-        renderer,
     ]
 
-    logging.basicConfig(format="%(message)s", stream=sys.stdout, level=logging.INFO)
+    formatter = structlog.stdlib.ProcessorFormatter(
+        foreign_pre_chain=shared_processors,
+        processors=[
+            structlog.stdlib.ProcessorFormatter.remove_processors_meta,
+            renderer,
+        ],
+    )
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(formatter)
+
+    logging.disable(logging.NOTSET)
+    root_logger = logging.getLogger()
+    root_logger.disabled = False
+    root_logger.handlers.clear()
+    root_logger.addHandler(handler)
+    root_logger.setLevel(logging.INFO)
+
+    for logger_name in ("uvicorn", "uvicorn.error", "uvicorn.access", "sqlalchemy"):
+        named_logger = logging.getLogger(logger_name)
+        named_logger.disabled = False
+        named_logger.handlers.clear()
+        named_logger.setLevel(logging.NOTSET)
+        named_logger.propagate = True
+
     structlog.configure(
-        processors=processors,
+        processors=[
+            *shared_processors,
+            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+        ],
         wrapper_class=structlog.stdlib.BoundLogger,
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,

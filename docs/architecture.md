@@ -57,7 +57,7 @@ The API returns RFC 9457 Problem Details for all errors. Frontend code normalize
 
 ## Observability
 
-FastAPI emits structured logs with `service`, `version`, `env`, and propagated `request_id` fields. `X-Request-ID` values are accepted when they match a conservative printable identifier shape; otherwise a new request id is generated. Unhandled API exceptions are captured through `sentry-sdk[fastapi]` only when `SENTRY_DSN` is configured, so local development remains fully offline by default.
+FastAPI emits structured logs with `service`, `version`, `env`, and propagated `request_id` fields. A structlog `ProcessorFormatter` bridge routes stdlib, uvicorn, and SQLAlchemy logs through the same processors as application logs. `X-Request-ID` values are accepted when they match a conservative printable identifier shape; otherwise a new request id is generated. Unhandled API exceptions are captured through `sentry-sdk[fastapi]` only when `SENTRY_DSN` is configured, so local development remains fully offline by default.
 
 Next.js uses `@sentry/nextjs` instrumentation for server, edge, router, and client error capture. Browser and web-server capture is enabled only when `NEXT_PUBLIC_SENTRY_DSN` is set. Source map uploads require `SENTRY_ORG`, `SENTRY_PROJECT`, and `SENTRY_AUTH_TOKEN`; empty values skip uploads.
 
