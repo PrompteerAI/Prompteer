@@ -17,10 +17,11 @@ from dataclasses import dataclass
 from hashlib import sha256
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 
 from app.core.feature_flags import dev_routes_enabled
+from app.core.ratelimit import LLM_RATE_LIMIT, limiter
 
 OPENAI_BASE_CREATED_AT = 1_735_689_600
 
@@ -163,7 +164,12 @@ def require_mock_routes() -> None:
 
 
 @router.post("/v1/chat/completions", response_model=None)
-async def openai_chat_completions(payload: dict[str, Any]) -> dict[str, Any] | StreamingResponse:
+@limiter.limit(LLM_RATE_LIMIT)
+async def openai_chat_completions(
+    request: Request,
+    payload: dict[str, Any],
+) -> dict[str, Any] | StreamingResponse:
+    del request
     require_mock_routes()
     client = MockLLMClient()
     try:
@@ -178,7 +184,12 @@ async def openai_chat_completions(payload: dict[str, Any]) -> dict[str, Any] | S
 
 
 @router.post("/v1/messages", response_model=None)
-async def anthropic_messages(payload: dict[str, Any]) -> dict[str, Any] | StreamingResponse:
+@limiter.limit(LLM_RATE_LIMIT)
+async def anthropic_messages(
+    request: Request,
+    payload: dict[str, Any],
+) -> dict[str, Any] | StreamingResponse:
+    del request
     require_mock_routes()
     client = MockLLMClient()
     try:

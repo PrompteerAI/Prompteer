@@ -28,6 +28,10 @@ The Next.js app is the SSO surface. Auth.js signs JWT sessions with RS256 throug
 
 The API returns RFC 9457 Problem Details for all errors. Frontend code normalizes API, network, and parse errors through one typed helper.
 
+## Rate limits
+
+FastAPI uses `slowapi` for request rate limiting. Cost-sensitive routes have explicit tighter limits: LLM prompt runs and provider-compatible LLM mocks use `10/minute`, payment and checkout routes use `20/minute`, and SendGrid-compatible mail send uses `5/minute`.
+
 ## Time
 
 All server-side timestamps are UTC. API responses use ISO 8601 strings with explicit offsets.

@@ -23,6 +23,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, status
 
 from app.core.config import settings
 from app.core.feature_flags import dev_routes_enabled
+from app.core.ratelimit import PAYMENTS_RATE_LIMIT, limiter
 
 MOCK_STRIPE_WEBHOOK_SECRET = "whsec_mock_prompteer"
 MOCK_CHECKOUT_BASE_URL = "https://checkout.stripe.com/c/pay"
@@ -111,6 +112,7 @@ class MockStripeClient:
 
 
 @router.post("/v1/checkout/sessions")
+@limiter.limit(PAYMENTS_RATE_LIMIT)
 async def create_checkout_session(request: Request) -> dict[str, Any]:
     require_mock_routes()
     payload = await parse_request_payload(request)
@@ -130,7 +132,9 @@ async def retrieve_checkout_session(session_id: str) -> dict[str, Any]:
 
 
 @router.post("/v1/checkout/sessions/{session_id}/expire")
-async def expire_checkout_session(session_id: str) -> dict[str, Any]:
+@limiter.limit(PAYMENTS_RATE_LIMIT)
+async def expire_checkout_session(request: Request, session_id: str) -> dict[str, Any]:
+    del request
     require_mock_routes()
     try:
         return await MockStripeClient().expire_checkout_session(session_id)
@@ -139,9 +143,12 @@ async def expire_checkout_session(session_id: str) -> dict[str, Any]:
 
 
 @router.get("/dev/stripe/complete")
+@limiter.limit(PAYMENTS_RATE_LIMIT)
 async def complete_mock_checkout(
+    request: Request,
     session_id: str = Query(..., description="Mock Checkout Session id."),
 ) -> dict[str, Any]:
+    del request
     require_mock_routes()
     try:
         result = await MockStripeClient().complete_checkout_session(session_id)

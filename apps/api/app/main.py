@@ -14,7 +14,7 @@ from starlette.responses import Response
 from app.api.v1.router import api_router
 from app.core.bootstrap import bootstrap_development_state, integration_modes
 from app.core.config import settings
-from app.core.errors import http_exception_handler, validation_exception_handler
+from app.core.errors import http_exception_handler, problem_response, validation_exception_handler
 from app.core.logging import configure_logging
 from app.core.observability import init_observability
 from app.core.ratelimit import limiter
@@ -66,8 +66,14 @@ def create_app() -> FastAPI:
     app.add_exception_handler(RequestValidationError, request_validation_exception_handler)
 
     @app.exception_handler(RateLimitExceeded)
-    async def rate_limit_handler(request, exc):  # type: ignore[no-untyped-def]
-        return await http_exception_handler(request, exc)
+    async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> Response:
+        return problem_response(
+            request=request,
+            status_code=429,
+            title="Too Many Requests",
+            detail=f"Rate limit exceeded: {exc.detail}",
+            code="rate_limited",
+        )
 
     @app.get("/")
     async def root() -> dict[str, str]:

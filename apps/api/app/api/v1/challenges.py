@@ -1,8 +1,9 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlmodel import Session, col, select
 
+from app.core.ratelimit import LLM_RATE_LIMIT, limiter
 from app.db.session import get_session
 from app.integrations.llm import get_llm_client
 from app.models.domain import Challenge, ChallengeTag
@@ -31,11 +32,14 @@ async def get_challenge(
 
 
 @router.post("/{challenge_id}/run")
+@limiter.limit(LLM_RATE_LIMIT)
 async def run_challenge_prompt(
+    request: Request,
     challenge_id: str,
-    request: ChallengeRunRequest,
+    run_request: ChallengeRunRequest,
     session: Annotated[Session, Depends(get_session)],
 ) -> ChallengeRunResponse:
+    del request
     challenge = load_challenge(session, challenge_id)
     llm_client = get_llm_client()
     response = await llm_client.chat_completion(
@@ -54,7 +58,7 @@ async def run_challenge_prompt(
                     "content": (
                         f"Challenge: {challenge.title}\n"
                         f"Instructions: {challenge.content or 'No extra instructions.'}\n"
-                        f"Submitted prompt: {request.prompt}"
+                        f"Submitted prompt: {run_request.prompt}"
                     ),
                 },
             ],
@@ -63,7 +67,7 @@ async def run_challenge_prompt(
     message = response["choices"][0]["message"]
     return ChallengeRunResponse(
         challenge=challenge_to_read(challenge),
-        prompt=request.prompt,
+        prompt=run_request.prompt,
         provider=llm_client.provider,
         output=str(message["content"]),
         usage=response["usage"],

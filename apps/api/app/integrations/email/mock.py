@@ -12,12 +12,13 @@ from pathlib import Path
 from re import sub
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel, EmailStr, Field, ValidationError, field_validator
 from starlette import status
 from starlette.responses import JSONResponse, Response
 
 from app.core.feature_flags import dev_routes_enabled
+from app.core.ratelimit import EMAIL_RATE_LIMIT, limiter
 
 router = APIRouter(tags=["mock-sendgrid"])
 
@@ -63,7 +64,9 @@ def require_mock_routes() -> bool:
 
 
 @router.post("/v3/mail/send", response_model=None)
-async def sendgrid_mail_send(payload: dict[str, Any]) -> Response:
+@limiter.limit(EMAIL_RATE_LIMIT)
+async def sendgrid_mail_send(request: Request, payload: dict[str, Any]) -> Response:
+    del request
     if not require_mock_routes():
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"detail": "Not found"})
     client = MockSendGridClient()

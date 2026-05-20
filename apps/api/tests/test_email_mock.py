@@ -3,9 +3,15 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from app.core.ratelimit import EMAIL_RATE_LIMIT, limiter
 from app.integrations.email import mock as email_mock
 from app.integrations.email.mock import MockSendGridClient
 from app.main import create_app
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limiter() -> None:
+    limiter.reset()
 
 
 @pytest.mark.asyncio
@@ -80,3 +86,26 @@ def test_mock_sendgrid_http_route_rejects_invalid_payload(
         "personalizations.0.to.0.email",
         "content.0.type",
     }
+
+
+def test_mock_sendgrid_http_route_is_rate_limited(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(email_mock, "default_mailbox_dir", lambda: tmp_path / ".mock" / "email")
+    client = TestClient(create_app())
+    payload = {
+        "personalizations": [{"to": [{"email": "paid@prompteer.dev"}]}],
+        "from": {"email": "no-reply@prompteer.dev"},
+        "subject": "Rate limit check",
+        "content": [{"type": "text/plain", "value": "Hello"}],
+    }
+
+    allowed_requests = int(EMAIL_RATE_LIMIT.split("/", 1)[0])
+    for _ in range(allowed_requests):
+        assert client.post("/v3/mail/send", json=payload).status_code == 202
+
+    response = client.post("/v3/mail/send", json=payload)
+
+    assert response.status_code == 429
+    assert response.headers["content-type"].startswith("application/problem+json")
+    assert response.json()["code"] == "rate_limited"

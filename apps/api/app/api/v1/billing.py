@@ -1,9 +1,10 @@
 from typing import Annotated, Any
 
-from fastapi import APIRouter, HTTPException, Path, status
+from fastapi import APIRouter, HTTPException, Path, Request, status
 
 from app.core.config import settings
 from app.core.feature_flags import dev_routes_enabled
+from app.core.ratelimit import PAYMENTS_RATE_LIMIT, limiter
 from app.integrations.payments import get_payments_client
 from app.integrations.payments.mock import MockStripeClient, MockStripeError
 from app.schemas.billing import CheckoutCreateRequest, CheckoutSessionRead
@@ -14,9 +15,14 @@ PRO_MONTHLY_PRICE_CENTS = 1200
 
 
 @router.post("/checkout")
-async def create_checkout(request: CheckoutCreateRequest) -> CheckoutSessionRead:
+@limiter.limit(PAYMENTS_RATE_LIMIT)
+async def create_checkout(
+    request: Request,
+    checkout_request: CheckoutCreateRequest,
+) -> CheckoutSessionRead:
+    del request
     client = get_payments_client()
-    session = await client.create_checkout_session(checkout_payload(request))
+    session = await client.create_checkout_session(checkout_payload(checkout_request))
     return checkout_session_to_read(session, provider=client.provider)
 
 
@@ -33,9 +39,12 @@ async def retrieve_checkout(
 
 
 @router.post("/checkout/{session_id}/complete")
+@limiter.limit(PAYMENTS_RATE_LIMIT)
 async def complete_mock_checkout(
+    request: Request,
     session_id: Annotated[str, Path(min_length=8)],
 ) -> CheckoutSessionRead:
+    del request
     if not dev_routes_enabled() or settings.stripe_secret_key:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     try:
