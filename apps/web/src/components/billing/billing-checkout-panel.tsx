@@ -4,6 +4,7 @@ import { CheckCircle2, CreditCard, Loader2, RotateCcw } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { apiPost } from "@/lib/api-client";
+import { normalizeError } from "@/lib/errors";
 
 interface CheckoutSession {
   id: string;
@@ -54,10 +55,19 @@ export function BillingCheckoutPanel({
       });
       setSession(response);
       setStep("created");
-    } catch {
-      setError(
-        "Checkout could not be started. Check that the API server is running.",
-      );
+    } catch (caughtError) {
+      const normalizedError = await normalizeError(caughtError);
+      if (normalizedError.code === "rate_limited") {
+        setError(
+          "Checkout is temporarily rate limited. Wait a moment, then try again.",
+        );
+      } else if (normalizedError.status === 401) {
+        setError("Sign in before starting checkout.");
+      } else {
+        setError(
+          "Checkout could not be started. Check that the API server is running.",
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -80,8 +90,17 @@ export function BillingCheckoutPanel({
       );
       setSession(response);
       setStep("complete");
-    } catch {
-      setError("Mock checkout could not be completed.");
+    } catch (caughtError) {
+      const normalizedError = await normalizeError(caughtError);
+      if (normalizedError.code === "rate_limited") {
+        setError(
+          "Checkout is temporarily rate limited. Wait a moment, then try again.",
+        );
+      } else if (normalizedError.status === 401) {
+        setError("Sign in before completing checkout.");
+      } else {
+        setError("Mock checkout could not be completed.");
+      }
     } finally {
       setIsLoading(false);
     }

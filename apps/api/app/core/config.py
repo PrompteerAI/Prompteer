@@ -27,9 +27,12 @@ class Settings(BaseSettings):
         default=True,
         alias="RATE_LIMIT_IN_MEMORY_FALLBACK_ENABLED",
     )
-    llm_rate_limit: str = Field(default="10/minute", alias="LLM_RATE_LIMIT")
-    payments_rate_limit: str = Field(default="20/minute", alias="PAYMENTS_RATE_LIMIT")
-    email_rate_limit: str = Field(default="5/minute", alias="EMAIL_RATE_LIMIT")
+    general_rate_limit: str = Field(default="60/minute", alias="GENERAL_RATE_LIMIT")
+    llm_rate_limit: str = Field(default="10/minute;200/hour", alias="LLM_RATE_LIMIT")
+    payments_rate_limit: str = Field(default="5/minute", alias="PAYMENTS_RATE_LIMIT")
+    email_rate_limit: str = Field(default="5/minute;20/day", alias="EMAIL_RATE_LIMIT")
+    llm_free_daily_token_cap: int = Field(default=50_000, alias="LLM_FREE_DAILY_TOKEN_CAP")
+    llm_paid_daily_token_cap: int = Field(default=500_000, alias="LLM_PAID_DAILY_TOKEN_CAP")
     auto_seed_on_startup: bool = Field(default=True, alias="AUTO_SEED_ON_STARTUP")
     dev_bootstrap_retries: int = Field(default=30, alias="DEV_BOOTSTRAP_RETRIES")
     dev_bootstrap_retry_seconds: float = Field(default=1.0, alias="DEV_BOOTSTRAP_RETRY_SECONDS")

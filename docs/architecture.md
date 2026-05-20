@@ -5,7 +5,8 @@ Prompteer is a monorepo with a Next.js web app, a FastAPI API, PostgreSQL, Redis
 ## Local topology
 
 - Browser talks to `http://localhost:3000` during frontend development.
-- The web app calls the API at `http://localhost:8000/api/v1`.
+- Server-rendered web reads call the API at `http://localhost:8000/api/v1`.
+- Browser mutations call the same-origin Next.js `/api/backend/*` proxy, which attaches a short-lived Auth.js RS256 bearer token before forwarding to FastAPI.
 - Docker Compose runs PostgreSQL 16 and Redis 7 for local development.
 - External providers are selected by environment variables. Empty credentials select schema-faithful mocks.
 
@@ -22,7 +23,7 @@ The rebuild keeps those domain concepts while replacing password auth with Auth.
 
 ## Authentication
 
-The Next.js app is the SSO surface. Auth.js signs JWT sessions with RS256 through custom encode/decode hooks and exposes the public key set at `/api/auth/jwks`. FastAPI validates `Authorization: Bearer <token>` credentials against that JWKS endpoint, issuer, and audience before constructing a `Principal`.
+The Next.js app is the SSO surface. Auth.js signs JWT sessions with RS256 through custom encode/decode hooks and exposes the public key set at `/api/auth/jwks`. FastAPI validates `Authorization: Bearer <token>` credentials against that JWKS endpoint, issuer, and audience before constructing a `Principal`. Browser-side mutations do not read Auth.js cookies directly; they use a same-origin Next.js API proxy that mints a five-minute API bearer from the active session.
 
 ## Error model
 
@@ -34,7 +35,9 @@ The API returns RFC 9457 Problem Details for all errors. Frontend code normalize
 
 ## Rate limits
 
-FastAPI uses `slowapi` for request rate limiting. Local Compose config points SlowAPI at Redis so counters are shared across API workers, with in-memory fallback for local resilience and tests. Cost-sensitive routes have explicit configurable limits: LLM prompt runs and provider-compatible LLM mocks default to `10/minute`, payment and checkout routes default to `20/minute`, and SendGrid-compatible mail send defaults to `5/minute`. Keys are scoped by authenticated principal when a route resolves one, otherwise by client IP.
+FastAPI uses `slowapi` for request rate limiting. Local Compose config points SlowAPI at Redis so counters are shared across API workers, with in-memory fallback for local resilience and tests. Cost-sensitive routes have explicit configurable limits: LLM prompt runs and provider-compatible LLM mocks default to `10/minute;200/hour`, payment and checkout routes default to `5/minute`, and SendGrid-compatible mail send defaults to `5/minute;20/day`. General challenge and community reads default to `60/minute`. Keys are scoped by authenticated principal when a route resolves one, otherwise by client IP.
+
+LLM token quotas are stored in `llm_usage_days` by UTC date. Free users default to 50,000 tokens/day, paid users default to 500,000 tokens/day, and admins are uncapped while still being auditable through usage rows. Quota exhaustion returns RFC 9457 Problem Details with `code: "quota_exceeded"`.
 
 ## Feature kill switches
 

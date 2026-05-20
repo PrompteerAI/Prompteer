@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from enum import StrEnum
 from typing import Any
 from uuid import uuid4
@@ -43,6 +43,21 @@ class User(TimestampMixin, table=True):
     role: str = Field(default="user", max_length=30)
     plan: str = Field(default="free", max_length=30)
     is_active: bool = Field(default=True)
+
+
+class LLMUsageDay(SQLModel, table=True):
+    __tablename__ = "llm_usage_days"
+
+    user_id: str = Field(foreign_key="users.id", primary_key=True)
+    usage_date: date = Field(primary_key=True, index=True)
+    prompt_tokens: int = Field(default=0, ge=0)
+    completion_tokens: int = Field(default=0, ge=0)
+    total_tokens: int = Field(default=0, ge=0)
+    request_count: int = Field(default=0, ge=0)
+    updated_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+    )
 
 
 class Profile(SQLModel, table=True):

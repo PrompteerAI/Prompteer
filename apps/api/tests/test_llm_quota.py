@@ -1,0 +1,115 @@
+from collections.abc import Generator
+
+import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from sqlalchemy.engine import Engine
+from sqlalchemy.pool import StaticPool
+from sqlmodel import Session, SQLModel, create_engine, select
+
+import app.models  # noqa: F401
+from app.api.deps import get_current_principal
+from app.core.config import settings
+from app.core.security import Principal
+from app.db.seed import seed
+from app.db.session import get_session
+from app.main import create_app
+from app.models.domain import Challenge, LLMUsageDay, User
+from app.services.llm_quota import current_usage_date
+
+
+@pytest.fixture(autouse=True)
+def reset_quota_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "llm_free_daily_token_cap", 50_000)
+    monkeypatch.setattr(settings, "llm_paid_daily_token_cap", 500_000)
+
+
+def test_challenge_run_records_daily_llm_usage() -> None:
+    engine = seeded_engine()
+    app = create_quota_test_app(engine)
+    client = TestClient(app)
+    challenge_id = first_challenge_id(engine)
+
+    response = client.post(
+        f"/api/v1/challenges/{challenge_id}/run",
+        json={"prompt": "Explain FizzBuzz clearly and write concise Python."},
+    )
+
+    assert response.status_code == 200
+    with Session(engine) as session:
+        user = session.exec(select(User).where(User.email == "free@prompteer.dev")).one()
+        usage = session.get(LLMUsageDay, (user.id, current_usage_date()))
+    assert usage is not None
+    assert usage.request_count == 1
+    assert usage.total_tokens == response.json()["usage"]["total_tokens"]
+
+
+def test_challenge_run_halts_when_daily_quota_is_exhausted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "llm_free_daily_token_cap", 100)
+    engine = seeded_engine()
+    with Session(engine) as session:
+        user = session.exec(select(User).where(User.email == "free@prompteer.dev")).one()
+        session.add(
+            LLMUsageDay(
+                user_id=user.id,
+                usage_date=current_usage_date(),
+                total_tokens=100,
+                prompt_tokens=70,
+                completion_tokens=30,
+                request_count=2,
+            )
+        )
+        session.commit()
+
+    app = create_quota_test_app(engine)
+    client = TestClient(app)
+    challenge_id = first_challenge_id(engine)
+
+    response = client.post(
+        f"/api/v1/challenges/{challenge_id}/run",
+        json={"prompt": "Explain FizzBuzz clearly and write concise Python."},
+    )
+
+    assert response.status_code == 402
+    assert response.headers["content-type"].startswith("application/problem+json")
+    body = response.json()
+    assert body["code"] == "quota_exceeded"
+    assert body["type"] == "https://prompteer.dev/errors/quota-exceeded"
+
+
+def seeded_engine() -> Engine:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    SQLModel.metadata.create_all(engine)
+    with Session(engine) as session:
+        seed(session)
+    return engine
+
+
+def create_quota_test_app(engine: Engine) -> FastAPI:
+    def override_session() -> Generator[Session, None, None]:
+        with Session(engine) as session:
+            yield session
+
+    app = create_app()
+    app.dependency_overrides[get_session] = override_session
+    app.dependency_overrides[get_current_principal] = override_free_principal
+    return app
+
+
+async def override_free_principal() -> Principal:
+    return Principal(
+        subject="mock-google-oauth2|free",
+        email="free@prompteer.dev",
+        is_admin=False,
+    )
+
+
+def first_challenge_id(engine: Engine) -> str:
+    with Session(engine) as session:
+        return session.exec(select(Challenge.id).where(Challenge.challenge_number == 1)).one()

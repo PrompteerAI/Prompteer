@@ -26,3 +26,12 @@ async def get_current_principal(
         ) from exc
     request.state.principal = principal
     return principal
+
+
+async def get_optional_principal(
+    request: Request,
+    authorization: Annotated[str | None, Header()] = None,
+) -> Principal | None:
+    if authorization is None:
+        return None
+    return await get_current_principal(request, authorization)

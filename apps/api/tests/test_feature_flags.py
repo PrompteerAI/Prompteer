@@ -7,8 +7,10 @@ from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
 import app.models  # noqa: F401
+from app.api.deps import get_current_principal
 from app.core.config import settings
 from app.core.ratelimit import limiter
+from app.core.security import Principal
 from app.db.session import get_session
 from app.integrations.payments.mock import STORE
 from app.main import create_app
@@ -70,6 +72,7 @@ def test_disabled_challenge_run_returns_problem_details(
 
     app = create_app()
     app.dependency_overrides[get_session] = override_session
+    app.dependency_overrides[get_current_principal] = override_principal
     client = TestClient(app)
 
     response = client.post(
@@ -117,3 +120,11 @@ def assert_feature_disabled(response: Response) -> None:
     body = response.json()
     assert body["code"] == "feature_disabled"
     assert body["type"] == "https://prompteer.dev/errors/feature-disabled"
+
+
+async def override_principal() -> Principal:
+    return Principal(
+        subject="mock-google-oauth2|admin",
+        email="admin@prompteer.dev",
+        is_admin=True,
+    )

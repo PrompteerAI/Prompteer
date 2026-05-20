@@ -435,7 +435,9 @@ export interface operations {
   create_checkout_api_v1_billing_checkout_post: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        authorization?: string | null;
+      };
       path?: never;
       cookie?: never;
     };
@@ -468,7 +470,9 @@ export interface operations {
   retrieve_checkout_api_v1_billing_checkout__session_id__get: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        authorization?: string | null;
+      };
       path: {
         session_id: string;
       };
@@ -499,7 +503,9 @@ export interface operations {
   complete_mock_checkout_api_v1_billing_checkout__session_id__complete_post: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        authorization?: string | null;
+      };
       path: {
         session_id: string;
       };
@@ -592,7 +598,9 @@ export interface operations {
   run_challenge_prompt_api_v1_challenges__challenge_id__run_post: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        authorization?: string | null;
+      };
       path: {
         challenge_id: string;
       };

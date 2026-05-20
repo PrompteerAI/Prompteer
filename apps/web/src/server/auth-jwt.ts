@@ -12,6 +12,7 @@ import type { JWT, JWTDecodeParams, JWTEncodeParams } from "next-auth/jwt";
 
 const DEFAULT_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 const JWT_ALGORITHM = "RS256";
+const DEV_AUTH_JWT_KEY_PAIR_SYMBOL = Symbol.for("prompteer.authJwtKeyPair");
 
 interface AuthJwtClaims extends JWT {
   iss: string;
@@ -112,18 +113,47 @@ function getAuthJwtKeyPair(): AuthJwtKeyPair {
     return cachedKeyPair;
   }
 
-  const privateKeyPem = process.env.AUTH_JWT_PRIVATE_KEY?.replaceAll(
+  const configuredPrivateKey = process.env.AUTH_JWT_PRIVATE_KEY?.replaceAll(
     "\\n",
     "\n",
   ).trim();
-  if (privateKeyPem) {
-    const privateKey = createPrivateKey(privateKeyPem);
-    cachedKeyPair = { privateKey, publicKey: createPublicKey(privateKey) };
+  if (configuredPrivateKey) {
+    cachedKeyPair = keyPairFromPem(configuredPrivateKey);
+    return cachedKeyPair;
+  }
+  if (isProduction()) {
+    throw new Error("AUTH_JWT_PRIVATE_KEY is required in production.");
+  }
+
+  const devKeyPair = getGlobalDevKeyPair();
+  if (devKeyPair) {
+    cachedKeyPair = devKeyPair;
     return cachedKeyPair;
   }
 
   cachedKeyPair = generateKeyPairSync("rsa", { modulusLength: 2048 });
+  setGlobalDevKeyPair(cachedKeyPair);
   return cachedKeyPair;
+}
+
+function getGlobalDevKeyPair(): AuthJwtKeyPair | undefined {
+  return (globalThis as Record<symbol, AuthJwtKeyPair | undefined>)[
+    DEV_AUTH_JWT_KEY_PAIR_SYMBOL
+  ];
+}
+
+function setGlobalDevKeyPair(keyPair: AuthJwtKeyPair): void {
+  (globalThis as Record<symbol, AuthJwtKeyPair | undefined>)[
+    DEV_AUTH_JWT_KEY_PAIR_SYMBOL
+  ] = keyPair;
+}
+
+function keyPairFromPem(privateKeyPem: string): AuthJwtKeyPair {
+  if (privateKeyPem) {
+    const privateKey = createPrivateKey(privateKeyPem);
+    return { privateKey, publicKey: createPublicKey(privateKey) };
+  }
+  throw new Error("Unable to initialize Auth.js JWT key pair.");
 }
 
 function base64urlJson(value: unknown): string {
@@ -144,4 +174,10 @@ function authJwtAudience(): string {
 
 function authJwtKeyId(): string {
   return process.env.AUTH_JWT_KEY_ID || "prompteer-dev-auth";
+}
+
+function isProduction(): boolean {
+  return (
+    process.env.NODE_ENV === "production" || process.env.ENV === "production"
+  );
 }

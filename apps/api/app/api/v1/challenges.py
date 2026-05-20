@@ -3,21 +3,32 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlmodel import Session, col, select
 
+from app.api.deps import get_current_principal
 from app.core.feature_flags import require_feature_enabled
-from app.core.ratelimit import LLM_RATE_LIMIT, limiter
+from app.core.ratelimit import GENERAL_RATE_LIMIT, LLM_RATE_LIMIT, limiter
+from app.core.security import Principal
 from app.db.session import get_session
 from app.integrations.llm import get_llm_client
 from app.models.domain import Challenge, ChallengeTag
 from app.schemas.challenge import ChallengeRead, ChallengeRunRequest, ChallengeRunResponse
+from app.services.llm_quota import (
+    assert_llm_quota_available,
+    record_llm_usage,
+    resolve_user_for_principal,
+)
 
 router = APIRouter(prefix="/challenges", tags=["challenges"])
 
 
 @router.get("")
+@limiter.limit(GENERAL_RATE_LIMIT)
 async def list_challenges(
+    request: Request,
+    response: Response,
     session: Annotated[Session, Depends(get_session)],
     tag: Annotated[ChallengeTag | None, Query()] = None,
 ) -> list[ChallengeRead]:
+    del request, response
     statement = select(Challenge).order_by(col(Challenge.challenge_number))
     if tag is not None:
         statement = statement.where(Challenge.tag == tag)
@@ -25,10 +36,14 @@ async def list_challenges(
 
 
 @router.get("/{challenge_id}")
+@limiter.limit(GENERAL_RATE_LIMIT)
 async def get_challenge(
+    request: Request,
+    response: Response,
     challenge_id: str,
     session: Annotated[Session, Depends(get_session)],
 ) -> ChallengeRead:
+    del request, response
     return challenge_to_read(load_challenge(session, challenge_id))
 
 
@@ -40,10 +55,13 @@ async def run_challenge_prompt(
     challenge_id: str,
     run_request: ChallengeRunRequest,
     session: Annotated[Session, Depends(get_session)],
+    principal: Annotated[Principal, Depends(get_current_principal)],
 ) -> ChallengeRunResponse:
-    del request
+    del request, response
     require_feature_enabled("llm")
     challenge = load_challenge(session, challenge_id)
+    user = resolve_user_for_principal(session, principal)
+    assert_llm_quota_available(session, user)
     llm_client = get_llm_client()
     llm_response = await llm_client.chat_completion(
         {
@@ -67,6 +85,7 @@ async def run_challenge_prompt(
             ],
         }
     )
+    record_llm_usage(session, user, llm_response["usage"])
     message = llm_response["choices"][0]["message"]
     return ChallengeRunResponse(
         challenge=challenge_to_read(challenge),

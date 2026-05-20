@@ -1,8 +1,9 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlmodel import Session, col, select
 
+from app.core.ratelimit import GENERAL_RATE_LIMIT, limiter
 from app.db.session import get_session
 from app.models.domain import Challenge, Post, Share, User
 from app.schemas.community import (
@@ -17,10 +18,14 @@ router = APIRouter(prefix="/community", tags=["community"])
 
 
 @router.get("/board")
+@limiter.limit(GENERAL_RATE_LIMIT)
 async def read_board_feed(
+    request: Request,
+    response: Response,
     session: Annotated[Session, Depends(get_session)],
     limit: Annotated[int, Query(ge=1, le=50)] = 10,
 ) -> BoardFeedRead:
+    del request, response
     posts = session.exec(select(Post).order_by(col(Post.created_at).desc()).limit(limit)).all()
     shares = session.exec(
         select(Share)

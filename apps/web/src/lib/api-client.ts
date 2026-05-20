@@ -7,8 +7,15 @@ export class ApiResponseError extends Error {
   }
 }
 
+function apiBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    return "/api/backend";
+  }
+  return env.NEXT_PUBLIC_API_URL;
+}
+
 export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${env.NEXT_PUBLIC_API_URL}${path}`, {
+  const response = await fetch(`${apiBaseUrl()}${path}`, {
     ...init,
     headers: {
       accept: "application/json",
@@ -28,7 +35,7 @@ export async function apiPost<T>(
   body: unknown,
   init?: RequestInit,
 ): Promise<T> {
-  const response = await fetch(`${env.NEXT_PUBLIC_API_URL}${path}`, {
+  const response = await fetch(`${apiBaseUrl()}${path}`, {
     ...init,
     method: "POST",
     headers: {

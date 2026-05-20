@@ -24,6 +24,7 @@ limiter = Limiter(
     strategy=settings.rate_limit_strategy,
 )
 
+GENERAL_RATE_LIMIT = settings.general_rate_limit
 LLM_RATE_LIMIT = settings.llm_rate_limit
 PAYMENTS_RATE_LIMIT = settings.payments_rate_limit
 EMAIL_RATE_LIMIT = settings.email_rate_limit

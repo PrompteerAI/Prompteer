@@ -12,6 +12,7 @@ def test_domain_tables_are_registered() -> None:
         "img_challenges",
         "img_references",
         "img_shares",
+        "llm_usage_days",
         "posts",
         "profiles",
         "ps_challenges",

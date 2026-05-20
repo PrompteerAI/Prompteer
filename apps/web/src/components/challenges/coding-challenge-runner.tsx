@@ -4,6 +4,7 @@ import { Loader2, Play, WandSparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { apiPost } from "@/lib/api-client";
+import { normalizeError } from "@/lib/errors";
 
 export interface Challenge {
   id: string;
@@ -72,10 +73,21 @@ export function CodingChallengeRunner({
         { prompt },
       );
       setResult(response);
-    } catch {
-      setError(
-        "The prompt run failed. Check that the API server and seed data are running.",
-      );
+    } catch (caughtError) {
+      const normalizedError = await normalizeError(caughtError);
+      if (normalizedError.code === "rate_limited") {
+        setError(
+          "Prompt runs are temporarily rate limited. Wait a moment, then try again.",
+        );
+      } else if (normalizedError.code === "quota_exceeded") {
+        setError(normalizedError.message);
+      } else if (normalizedError.status === 401) {
+        setError("Sign in before running a prompt.");
+      } else {
+        setError(
+          "The prompt run failed. Check that the API server and seed data are running.",
+        );
+      }
     } finally {
       setIsRunning(false);
     }
