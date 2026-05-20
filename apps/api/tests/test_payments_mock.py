@@ -1,15 +1,20 @@
 import json
+from urllib.parse import parse_qs
 
+import httpx
 import pytest
+import respx
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
+from app.integrations.payments import get_payments_client
 from app.integrations.payments.mock import (
     MOCK_STRIPE_WEBHOOK_SECRET,
     STORE,
     MockStripeClient,
     MockStripeSignatureError,
 )
+from app.integrations.payments.real import StripeClient
 from app.main import create_app
 
 CHECKOUT_PAYLOAD = {
@@ -125,3 +130,41 @@ def test_mock_stripe_expire_route() -> None:
 def test_mock_stripe_uses_default_webhook_secret_when_env_is_empty() -> None:
     client = MockStripeClient()
     assert client.webhook_secret() == MOCK_STRIPE_WEBHOOK_SECRET
+
+
+def test_payments_factory_selects_real_client(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test")
+    assert isinstance(get_payments_client(), StripeClient)
+
+    monkeypatch.setattr(settings, "stripe_secret_key", "")
+    assert isinstance(get_payments_client(), MockStripeClient)
+
+
+@pytest.mark.asyncio
+async def test_stripe_real_client_posts_checkout_form_payload() -> None:
+    expected = {
+        "id": "cs_test_real",
+        "object": "checkout.session",
+        "mode": "subscription",
+        "status": "open",
+        "payment_status": "unpaid",
+        "amount_total": 1200,
+        "currency": "usd",
+        "url": "https://checkout.stripe.com/c/pay/cs_test_real",
+    }
+    with respx.mock:
+        route = respx.post("https://stripe.example/v1/checkout/sessions").mock(
+            return_value=httpx.Response(200, json=expected)
+        )
+        client = StripeClient(api_key="sk_test", base_url="https://stripe.example")
+
+        result = await client.create_checkout_session(CHECKOUT_PAYLOAD)
+
+    assert result == expected
+    request = route.calls.last.request
+    assert request.headers["authorization"] == "Bearer sk_test"
+    form = parse_qs(request.content.decode("utf-8"))
+    assert form["mode"] == ["subscription"]
+    assert form["customer_email"] == ["paid@prompteer.dev"]
+    assert form["metadata[user_id]"] == ["00000000-0000-4000-8000-000000000002"]
+    assert form["line_items[0][price_data][unit_amount]"] == ["1200"]

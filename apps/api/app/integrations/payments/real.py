@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, cast
+from urllib.parse import urlencode
 
 import httpx
 
@@ -32,11 +33,15 @@ class StripeClient:
         return await self.post_form(f"/v1/checkout/sessions/{session_id}/expire", {})
 
     async def post_form(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
+        form_body = urlencode(cast(Any, list(flatten_form(payload))))
         async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
             response = await client.post(
                 f"{self.base_url.rstrip('/')}{path}",
-                headers=self.headers(),
-                data=cast(Any, list(flatten_form(payload))),
+                headers={
+                    **self.headers(),
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                content=form_body,
             )
             response.raise_for_status()
             body = response.json()

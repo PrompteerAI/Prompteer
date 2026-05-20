@@ -1,11 +1,17 @@
+import json
 from pathlib import Path
 
+import httpx
 import pytest
+import respx
 from fastapi.testclient import TestClient
 
+from app.core.config import settings
 from app.core.ratelimit import EMAIL_RATE_LIMIT, limiter
+from app.integrations.email import get_email_client
 from app.integrations.email import mock as email_mock
 from app.integrations.email.mock import MockSendGridClient
+from app.integrations.email.real import SendGridClient
 from app.main import create_app
 
 
@@ -109,3 +115,34 @@ def test_mock_sendgrid_http_route_is_rate_limited(
     assert response.status_code == 429
     assert response.headers["content-type"].startswith("application/problem+json")
     assert response.json()["code"] == "rate_limited"
+
+
+def test_email_factory_selects_real_client(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "sendgrid_api_key", "SG.test")
+    assert isinstance(get_email_client(), SendGridClient)
+
+    monkeypatch.setattr(settings, "sendgrid_api_key", "")
+    assert isinstance(get_email_client(), MockSendGridClient)
+
+
+@pytest.mark.asyncio
+async def test_sendgrid_real_client_posts_mail_send_payload() -> None:
+    payload = {
+        "personalizations": [{"to": [{"email": "paid@prompteer.dev"}]}],
+        "from": {"email": "no-reply@prompteer.dev"},
+        "subject": "Receipt",
+        "content": [{"type": "text/plain", "value": "Thanks for subscribing."}],
+    }
+    with respx.mock:
+        route = respx.post("https://sendgrid.example/v3/mail/send").mock(
+            return_value=httpx.Response(202)
+        )
+        client = SendGridClient(api_key="SG.test", base_url="https://sendgrid.example")
+
+        result = await client.send(payload)
+
+    assert result == {"status": "accepted", "captured": "0"}
+    request = route.calls.last.request
+    assert request.headers["authorization"] == "Bearer SG.test"
+    assert request.headers["content-type"] == "application/json"
+    assert json.loads(request.content) == payload
