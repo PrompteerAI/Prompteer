@@ -70,15 +70,17 @@ services:
       redis:
         condition: service_healthy
     command:
-      [
-        "uv",
-        "run",
-        "celery",
-        "-A",
-        "app.tasks.celery_app",
-        "worker",
-        "--loglevel=INFO",
-      ]
+      ["celery", "-A", "app.tasks.celery_app", "worker", "--loglevel=INFO"]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "celery -A app.tasks.celery_app inspect ping -d celery@$${HOSTNAME} --timeout=5 | grep -q pong",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   web:
     profiles: ["app"]

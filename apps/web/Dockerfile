@@ -1,4 +1,4 @@
-FROM node:22-slim AS deps
+FROM node:22-alpine@sha256:968df39aedcea65eeb078fb336ed7191baf48f972b4479711397108be0966920 AS deps
 WORKDIR /app
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
@@ -10,12 +10,13 @@ FROM deps AS build
 COPY apps/web apps/web
 RUN pnpm --filter @prompteer/web build
 
-FROM node:22-slim AS runtime
+FROM node:22-alpine@sha256:968df39aedcea65eeb078fb336ed7191baf48f972b4479711397108be0966920 AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
-RUN corepack enable
-COPY --from=build /app/apps/web/.next/standalone ./
-COPY --from=build /app/apps/web/.next/static ./apps/web/.next/static
-COPY --from=build /app/apps/web/public ./apps/web/public
+COPY --from=build --chown=node:node /app/apps/web/.next/standalone ./
+COPY --from=build --chown=node:node /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=build --chown=node:node /app/apps/web/public ./apps/web/public
+USER node
 EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 CMD node -e "require('node:http').get('http://127.0.0.1:3000/api/health', (response) => process.exit(response.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 CMD ["node", "apps/web/server.js"]

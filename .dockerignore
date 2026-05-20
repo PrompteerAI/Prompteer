@@ -1,4 +1,7 @@
 .git
+.codex
+AGENTS.md
+AGENTS.override.md
 .env
 .env.local
 .env.*.local
@@ -10,9 +13,13 @@ __pycache__
 .pytest_cache
 .ruff_cache
 .mypy_cache
+.coverage
 coverage
+coverage.xml
 playwright-report
 test-results
 .mock
 .verify
 backups
+.DS_Store
+Thumbs.db
