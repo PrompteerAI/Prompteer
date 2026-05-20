@@ -4,11 +4,44 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    groups:
+      production-dependencies:
+        dependency-type: production
+        patterns:
+          - "*"
+      development-dependencies:
+        dependency-type: development
+        patterns:
+          - "*"
   - package-ecosystem: pip
     directory: /apps/api
     schedule:
       interval: weekly
+    groups:
+      python-dependencies:
+        patterns:
+          - "*"
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+  - package-ecosystem: docker
+    directory: /apps/web
+    schedule:
+      interval: monthly
+    groups:
+      web-base-images:
+        patterns:
+          - "*"
+  - package-ecosystem: docker
+    directory: /apps/api
+    schedule:
+      interval: monthly
+    groups:
+      api-base-images:
+        patterns:
+          - "*"
