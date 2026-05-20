@@ -89,6 +89,12 @@ pnpm install
 uv sync --project apps/api --dev
 ```
 
+Bootstrap a fresh machine:
+
+```sh
+./scripts/bootstrap.sh
+```
+
 Run the full local development stack:
 
 ```sh

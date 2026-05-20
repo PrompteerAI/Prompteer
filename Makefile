@@ -1,9 +1,12 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help dev lint typecheck test format build verify types types-check backup-restore-check api-dev api-lint api-test seed reset-db logs
+.PHONY: help bootstrap dev lint typecheck test format build verify types types-check backup-restore-check api-dev api-lint api-test seed reset reset-db logs
 
 help: ## Show available Makefile targets.
 	@awk 'BEGIN {FS = ":.*##"; printf "Available targets:\n"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+bootstrap: ## Install deps, start Compose, migrate, and seed local data.
+	scripts/bootstrap.sh
 
 dev: ## Start the local API and web dev servers.
 	pnpm dev
@@ -57,6 +60,9 @@ api-test: ## Run API tests.
 
 seed: ## Seed idempotent local demo data.
 	cd apps/api && uv run python -m app.db.seed
+
+reset: ## Reset local Docker database and Redis containers.
+	scripts/reset-db.sh
 
 reset-db: ## Reset local Docker database and Redis containers.
 	scripts/reset-db.sh
