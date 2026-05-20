@@ -68,6 +68,8 @@ Mock Google OAuth demo accounts:
 
 ![Prompteer coding challenge workspace](docs/screenshots/03-coding-challenge.png)
 
+![Prompteer billing checkout](docs/screenshots/04-billing-checkout.png)
+
 ## Verification
 
 The scaffold currently passes:
@@ -86,3 +88,5 @@ pnpm --filter @prompteer/web build
 The login flow was also verified in headless Chromium against local FastAPI and Next.js servers: selecting `Admin demo` completes the mock Google OIDC authorization-code flow and redirects back to `/en`.
 
 The coding challenge workspace was verified in headless Chromium against a production Next.js build and local FastAPI API: `/en/challenges/coding` loads seeded PS challenges and `Run prompt` returns deterministic mock LLM feedback.
+
+The billing checkout workspace was verified in headless Chromium against a production Next.js build and local FastAPI API: `/en/billing` creates a Stripe-shaped checkout session and completes it through the dev mock flow.

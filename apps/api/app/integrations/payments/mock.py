@@ -55,6 +55,7 @@ STORE = MockStripeStore()
 @dataclass(frozen=True)
 class MockStripeClient:
     store: MockStripeStore = field(default_factory=lambda: STORE)
+    provider: str = "mock"
 
     async def create_checkout_session(self, payload: dict[str, Any]) -> dict[str, Any]:
         session = build_checkout_session(payload)

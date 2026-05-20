@@ -20,6 +20,9 @@ The dev mock exposes the Stripe-shaped Checkout Session endpoints:
 - `POST /v1/checkout/sessions`
 - `GET /v1/checkout/sessions/:id`
 - `POST /v1/checkout/sessions/:id/expire`
+- `POST /api/v1/billing/checkout`
+- `GET /api/v1/billing/checkout/:id`
+- `POST /api/v1/billing/checkout/:id/complete`
 
 It accepts JSON payloads and Stripe-style bracket form payloads such as `line_items[0][price_data][unit_amount]=1200`.
 
@@ -48,5 +51,7 @@ The mock Checkout Session response keeps the upstream fields the app needs for b
 ```
 
 `GET /dev/stripe/complete?session_id=...` is dev-only. It marks an open mock session complete, sets `payment_status` to `paid`, creates a mock `payment_intent` or `subscription` depending on the session mode, and returns a `checkout.session.completed` event plus a mock `Stripe-Signature` header value.
+
+`POST /api/v1/billing/checkout/:id/complete` is the product-facing local-dev wrapper used by the Next.js billing screen. It is available only when dev routes are enabled and no real `STRIPE_SECRET_KEY` is configured.
 
 Webhook signature verification follows Stripe's documented `t=timestamp,v1=signature` HMAC-SHA256 scheme. Empty `STRIPE_WEBHOOK_SECRET` uses the local-only `whsec_mock_prompteer` secret.
