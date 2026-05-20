@@ -27,5 +27,85 @@ services:
       timeout: 5s
       retries: 5
 
+  api:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-prompteer}:${POSTGRES_PASSWORD:-prompteer}@postgres:5432/${POSTGRES_DB:-prompteer}
+      REDIS_URL: redis://redis:6379/0
+      AUTH_JWKS_URL: http://web:3000/api/auth/jwks
+      AUTH_MOCK_GOOGLE_ISSUER: http://api:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://127.0.0.1:8000/api/v1/health/live'', timeout=2)"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-prompteer}:${POSTGRES_PASSWORD:-prompteer}@postgres:5432/${POSTGRES_DB:-prompteer}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command:
+      [
+        "uv",
+        "run",
+        "celery",
+        "-A",
+        "app.tasks.celery_app",
+        "worker",
+        "--loglevel=INFO",
+      ]
+
+  web:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    env_file: .env
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost/api/v1
+      AUTH_URL: http://localhost
+      AUTH_MOCK_GOOGLE_ISSUER: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+
+  nginx:
+    profiles: ["app"]
+    image: nginx:1.27-alpine
+    depends_on:
+      - web
+      - api
+    ports:
+      - "80:80"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+
 volumes:
   postgres-data:

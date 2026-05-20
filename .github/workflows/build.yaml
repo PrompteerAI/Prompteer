@@ -19,6 +19,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build web image
-        run: docker build -t ghcr.io/${{ github.repository_owner }}/prompteer-web:latest apps/web
+        run: docker build -f apps/web/Dockerfile -t ghcr.io/${{ github.repository_owner }}/prompteer-web:latest .
       - name: Build api image
-        run: docker build -t ghcr.io/${{ github.repository_owner }}/prompteer-api:latest apps/api
+        run: docker build -f apps/api/Dockerfile -t ghcr.io/${{ github.repository_owner }}/prompteer-api:latest .
