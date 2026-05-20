@@ -41,6 +41,7 @@ Health checks:
 - Web: `http://localhost:3000/api/health`
 - API: `http://localhost:8000/api/v1/health/live`
 - API readiness: `http://localhost:8000/api/v1/health/ready`
+- API startup: `http://localhost:8000/api/v1/health/startup`
 
 The default Compose command starts only PostgreSQL and Redis so local `pnpm dev` can own ports 3000 and 8000. To run the containerized app topology with API, worker, web, and nginx:
 

@@ -8,3 +8,7 @@ Production database changes follow expand-contract:
 4. Contract: remove the old shape after at least one observed release cycle.
 
 Local development migrations may be simpler, but destructive production migrations need either this pattern or an ADR explaining why a one-step migration is safe.
+
+## Startup probe
+
+`GET /api/v1/health/startup` compares the database's current Alembic revision with the repository's Alembic head. It returns `200` only when they match. A `503` response means the database should not receive traffic until migrations are applied or the revision mismatch is investigated.

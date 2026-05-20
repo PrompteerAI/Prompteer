@@ -8,6 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from starlette.responses import JSONResponse
 
 from app.core.config import settings
+from app.core.migrations import MigrationState, migration_state
 from app.db.session import engine
 
 router = APIRouter(prefix="/health", tags=["health"])
@@ -51,5 +52,24 @@ async def ready() -> JSONResponse:
 
 
 @router.get("/startup")
-async def startup() -> dict[str, str]:
-    return {"status": "ok", "migrations": "not_checked_yet"}
+async def startup() -> JSONResponse:
+    migrations = check_migrations()
+    status_code = 200 if migrations.status == "ok" else 503
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "ok" if migrations.status == "ok" else "degraded",
+            "checks": {
+                "migrations": {
+                    "status": migrations.status,
+                    "current": migrations.current,
+                    "head": migrations.head,
+                    "detail": migrations.detail,
+                }
+            },
+        },
+    )
+
+
+def check_migrations() -> MigrationState:
+    return migration_state()

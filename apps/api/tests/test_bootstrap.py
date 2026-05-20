@@ -6,6 +6,7 @@ from sqlmodel import Session, select
 
 from app.core import bootstrap
 from app.core.config import settings
+from app.core.migrations import migration_state
 from app.integrations.email import mock as email_mock
 from app.models.domain import Post, Share, User
 
@@ -26,6 +27,9 @@ def test_development_bootstrap_runs_migrations_and_seed(
     bootstrap.run_development_bootstrap()
     bootstrap.run_development_bootstrap()
 
+    migrations = migration_state(engine)
+    assert migrations.status == "ok"
+    assert migrations.current == migrations.head
     with Session(engine) as session:
         assert len(session.exec(select(User)).all()) == 3
         assert len(session.exec(select(Share)).all()) == 3

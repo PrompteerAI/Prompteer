@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import asyncio
-from pathlib import Path
 
 import structlog
 from alembic import command
-from alembic.config import Config
 from sqlmodel import Session
 
 from app.core.config import settings
+from app.core.migrations import alembic_config
 from app.db.seed import seed, seed_mock_emails
 from app.db.session import engine
 
@@ -47,14 +46,6 @@ def run_development_bootstrap() -> None:
     with Session(engine) as session:
         seed(session)
     seed_mock_emails()
-
-
-def alembic_config() -> Config:
-    api_root = Path(__file__).resolve().parents[2]
-    config = Config(str(api_root / "alembic.ini"))
-    config.set_main_option("script_location", str(api_root / "app" / "alembic"))
-    config.set_main_option("sqlalchemy.url", settings.database_url)
-    return config
 
 
 def integration_modes() -> dict[str, str]:
