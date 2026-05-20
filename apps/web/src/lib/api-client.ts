@@ -1,4 +1,6 @@
-import { env } from "./env";
+// Typed fetch wrapper around the FastAPI backend. Browser calls go through the
+// same-origin API proxy while server calls can use the configured backend URL.
+import { publicEnv } from "./env";
 
 export class ApiResponseError extends Error {
   constructor(public readonly response: Response) {
@@ -11,7 +13,7 @@ function apiBaseUrl(): string {
   if (typeof window !== "undefined") {
     return "/api/backend";
   }
-  return env.NEXT_PUBLIC_API_URL;
+  return publicEnv.NEXT_PUBLIC_API_URL;
 }
 
 export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {

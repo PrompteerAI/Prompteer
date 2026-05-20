@@ -1,7 +1,10 @@
+// Same-origin API proxy. It attaches a short-lived Auth.js JWT before
+// forwarding browser requests to the FastAPI backend.
 import type { Session } from "next-auth";
 import { type NextRequest } from "next/server";
 
 import { auth } from "@/lib/auth";
+import { getServerEnv } from "@/lib/env";
 import { encodeAuthJwt } from "@/server/auth-jwt";
 
 type RouteContext = {
@@ -72,14 +75,12 @@ async function forwardToApi(
 }
 
 function upstreamUrl(request: NextRequest, params: { path: string[] }): URL {
+  const serverEnv = getServerEnv();
   const base = (
-    process.env.API_INTERNAL_URL ??
-    process.env.NEXT_PUBLIC_API_URL ??
-    ""
+    serverEnv.API_INTERNAL_URL || serverEnv.NEXT_PUBLIC_API_URL
   ).replace(/\/+$/, "");
-  const fallbackBase = base || "http://localhost:8000/api/v1";
   const encodedPath = params.path.map(encodeURIComponent).join("/");
-  const url = new URL(`${fallbackBase}/${encodedPath}`);
+  const url = new URL(`${base}/${encodedPath}`);
   url.search = request.nextUrl.search;
   return url;
 }
@@ -105,7 +106,7 @@ function apiTokenForSession(session: Session): string {
     },
     maxAge: 5 * 60,
     salt: "api-proxy",
-    secret: process.env.AUTH_SECRET ?? "dev-auth-secret-change-in-production",
+    secret: getServerEnv().AUTH_SECRET,
   });
 }
 

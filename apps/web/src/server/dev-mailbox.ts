@@ -1,3 +1,7 @@
+// Server-side renderer for the dev-only mock mailbox HTML pages. It reads
+// captured emails through the FastAPI dev mailbox endpoints.
+import { getServerEnv } from "@/lib/env";
+
 interface MailboxMessage {
   id: string;
   path: string;
@@ -135,11 +139,11 @@ async function apiGet<T>(path: string): Promise<T> {
 }
 
 function apiBaseUrl(): string {
-  return (
-    process.env.API_INTERNAL_URL ??
-    process.env.NEXT_PUBLIC_API_URL ??
-    "http://localhost:8000/api/v1"
-  ).replace(/\/+$/, "");
+  const serverEnv = getServerEnv();
+  return (serverEnv.API_INTERNAL_URL || serverEnv.NEXT_PUBLIC_API_URL).replace(
+    /\/+$/,
+    "",
+  );
 }
 
 function shell(title: string, body: string): string {

@@ -1,3 +1,5 @@
+// RS256 JWT utilities for Auth.js sessions shared with the FastAPI backend via
+// the web app's JWKS endpoint.
 import {
   createPrivateKey,
   createPublicKey,
@@ -9,6 +11,8 @@ import {
 } from "node:crypto";
 
 import type { JWT, JWTDecodeParams, JWTEncodeParams } from "next-auth/jwt";
+
+import { getServerEnv } from "@/lib/env";
 
 const DEFAULT_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 const JWT_ALGORITHM = "RS256";
@@ -113,10 +117,7 @@ function getAuthJwtKeyPair(): AuthJwtKeyPair {
     return cachedKeyPair;
   }
 
-  const configuredPrivateKey = process.env.AUTH_JWT_PRIVATE_KEY?.replaceAll(
-    "\\n",
-    "\n",
-  ).trim();
+  const configuredPrivateKey = getServerEnv().AUTH_JWT_PRIVATE_KEY;
   if (configuredPrivateKey) {
     cachedKeyPair = keyPairFromPem(configuredPrivateKey);
     return cachedKeyPair;
@@ -161,23 +162,18 @@ function base64urlJson(value: unknown): string {
 }
 
 function authJwtIssuer(): string {
-  return (
-    process.env.AUTH_JWT_ISSUER ||
-    process.env.AUTH_URL ||
-    "http://localhost:3000"
-  ).replace(/\/+$/, "");
+  const serverEnv = getServerEnv();
+  return (serverEnv.AUTH_JWT_ISSUER ?? serverEnv.AUTH_URL).replace(/\/+$/, "");
 }
 
 function authJwtAudience(): string {
-  return process.env.AUTH_JWT_AUDIENCE || "prompteer-api";
+  return getServerEnv().AUTH_JWT_AUDIENCE;
 }
 
 function authJwtKeyId(): string {
-  return process.env.AUTH_JWT_KEY_ID || "prompteer-dev-auth";
+  return getServerEnv().AUTH_JWT_KEY_ID;
 }
 
 function isProduction(): boolean {
-  return (
-    process.env.NODE_ENV === "production" || process.env.ENV === "production"
-  );
+  return getServerEnv().ENV === "production";
 }

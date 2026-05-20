@@ -1,7 +1,9 @@
+// Login screen for real Google OAuth and deterministic seed-user mock login.
 import { LogIn, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 import { signIn } from "@/lib/auth";
+import { getServerEnv, publicEnv } from "@/lib/env";
 
 async function signInWithGoogle(formData: FormData): Promise<void> {
   "use server";
@@ -18,9 +20,10 @@ async function signInWithGoogle(formData: FormData): Promise<void> {
 
 export default async function LoginPage(): Promise<React.ReactElement> {
   const t = await getTranslations("login");
+  const serverEnv = getServerEnv();
   const useMockGoogle =
-    process.env.NEXT_PUBLIC_USE_MOCK_GOOGLE !== "false" &&
-    !(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+    publicEnv.NEXT_PUBLIC_USE_MOCK_GOOGLE &&
+    !(serverEnv.GOOGLE_CLIENT_ID && serverEnv.GOOGLE_CLIENT_SECRET);
   const accounts = useMockGoogle
     ? [
         { email: "admin@prompteer.dev", label: t("admin"), Icon: ShieldCheck },

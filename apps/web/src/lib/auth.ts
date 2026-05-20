@@ -1,8 +1,11 @@
+// Auth.js provider configuration. Uses real Google OAuth when credentials are
+// present, otherwise routes login through the local mock OIDC server.
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import type { OAuthConfig, Provider } from "next-auth/providers";
 
+import { getServerEnv } from "@/lib/env";
 import { decodeAuthJwt, encodeAuthJwt } from "@/server/auth-jwt";
 
 const MOCK_GOOGLE_CLIENT_ID = "mock-google-client";
@@ -45,14 +48,12 @@ interface GoogleOidcProfile {
 }
 
 function mockGoogleIssuer(): string {
-  return (
-    process.env.AUTH_MOCK_GOOGLE_ISSUER || "http://localhost:8000"
-  ).replace(/\/+$/, "");
+  return getServerEnv().AUTH_MOCK_GOOGLE_ISSUER.replace(/\/+$/, "");
 }
 
 function mockGoogleWellKnown(issuer: string): string {
   return (
-    process.env.AUTH_MOCK_GOOGLE_DISCOVERY_URL ||
+    getServerEnv().AUTH_MOCK_GOOGLE_DISCOVERY_URL ??
     `${issuer}/.well-known/openid-configuration`
   ).replace(/\/+$/, "");
 }
@@ -85,10 +86,11 @@ function mockGoogleProvider(): OAuthConfig<GoogleOidcProfile> {
 }
 
 function googleProvider(): Provider {
-  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  const serverEnv = getServerEnv();
+  if (serverEnv.GOOGLE_CLIENT_ID && serverEnv.GOOGLE_CLIENT_SECRET) {
     return Google({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      clientId: serverEnv.GOOGLE_CLIENT_ID,
+      clientSecret: serverEnv.GOOGLE_CLIENT_SECRET,
     });
   }
 
@@ -96,10 +98,8 @@ function googleProvider(): Provider {
 }
 
 export function seedLoginEnabled(): boolean {
-  return (
-    process.env.AUTH_ALLOW_SEED_LOGIN !== "false" &&
-    process.env.ENV !== "production"
-  );
+  const serverEnv = getServerEnv();
+  return serverEnv.AUTH_ALLOW_SEED_LOGIN && serverEnv.ENV !== "production";
 }
 
 export function getSeedUser(email: string): SeedUser | undefined {
