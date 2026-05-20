@@ -2,10 +2,14 @@ name: E2E
 
 on:
   pull_request:
+    types: [labeled, synchronize, reopened]
+  schedule:
+    - cron: "17 3 * * *"
   workflow_dispatch:
 
 jobs:
   playwright:
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'run-e2e')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
