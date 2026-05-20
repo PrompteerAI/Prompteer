@@ -42,6 +42,14 @@ Health checks:
 - API: `http://localhost:8000/api/v1/health/live`
 - API readiness: `http://localhost:8000/api/v1/health/ready`
 
+Seed demo data:
+
+```sh
+make seed
+```
+
+The seed command is idempotent and creates demo users, challenge categories, one public share, and one board post.
+
 ![Prompteer home screen](docs/screenshots/01-home.png)
 
 ## Verification
