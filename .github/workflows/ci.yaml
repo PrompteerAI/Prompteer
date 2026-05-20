@@ -8,6 +8,22 @@ on:
 jobs:
   lint-typecheck-test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: prompteer
+          POSTGRES_PASSWORD: prompteer
+          POSTGRES_DB: postgres
+          TZ: UTC
+          PGTZ: UTC
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U prompteer -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -16,9 +32,17 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - uses: astral-sh/setup-uv@v5
+      - run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
       - run: pnpm install --frozen-lockfile
       - run: uv sync --project apps/api --dev
       - run: make types-check
+      - run: make backup-restore-check
+        env:
+          MAINTENANCE_DATABASE_URL: postgresql://prompteer:prompteer@localhost:5432/postgres
+          SOURCE_DATABASE_URL: postgresql://prompteer:prompteer@localhost:5432/prompteer_backup_source
+          RESTORE_DATABASE_URL: postgresql://prompteer:prompteer@localhost:5432/prompteer_backup_restore
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test

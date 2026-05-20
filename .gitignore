@@ -12,6 +12,7 @@ AGENTS.override.md
 # Verification and mock runtime output
 .verify/
 .mock/
+backups/
 
 # Dependencies
 node_modules/

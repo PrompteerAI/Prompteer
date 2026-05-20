@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help dev lint typecheck test format build verify types types-check api-dev api-lint api-test seed reset-db
+.PHONY: help dev lint typecheck test format build verify types types-check backup-restore-check api-dev api-lint api-test seed reset-db
 
 help: ## Show available Makefile targets.
 	@awk 'BEGIN {FS = ":.*##"; printf "Available targets:\n"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -41,6 +41,9 @@ types: ## Generate OpenAPI and TypeScript API types.
 
 types-check: ## Verify generated OpenAPI artifacts are committed.
 	scripts/check-openapi-types.sh
+
+backup-restore-check: ## Verify PostgreSQL backup and restore scripts against throwaway databases.
+	scripts/verify-backup-restore.sh
 
 api-dev: ## Start the FastAPI development server.
 	cd apps/api && uv run fastapi dev app/main.py
