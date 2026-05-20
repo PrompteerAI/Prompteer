@@ -36,10 +36,10 @@ export function mailboxIndexHtml(messages: MailboxMessage[]): string {
     .map(
       (message) => `
         <tr>
-          <td><a href="/dev/mailbox/${encodeURIComponent(message.id)}">${escapeHtml(message.subject)}</a></td>
-          <td>${escapeHtml(message.to)}</td>
-          <td>${escapeHtml(message.from)}</td>
-          <td><code>${escapeHtml(message.id)}</code></td>
+          <td data-label="Subject"><a href="/dev/mailbox/${encodeURIComponent(message.id)}">${escapeHtml(message.subject)}</a></td>
+          <td data-label="To">${escapeHtml(message.to)}</td>
+          <td data-label="From">${escapeHtml(message.from)}</td>
+          <td data-label="Message"><code>${escapeHtml(message.id)}</code></td>
         </tr>`,
     )
     .join("");
@@ -67,7 +67,7 @@ export function mailboxIndexHtml(messages: MailboxMessage[]): string {
           <tbody>
             ${
               rows ||
-              `<tr><td colspan="4" class="empty">No captured messages yet.</td></tr>`
+              `<tr class="empty-row"><td colspan="4" class="empty">No captured messages yet.</td></tr>`
             }
           </tbody>
         </table>
@@ -295,11 +295,67 @@ function shell(title: string, body: string): string {
         h1 {
           font-size: 30px;
         }
-        th:nth-child(3),
-        td:nth-child(3),
-        th:nth-child(4),
-        td:nth-child(4) {
-          display: none;
+        table,
+        thead,
+        tbody,
+        tr,
+        td {
+          display: block;
+        }
+        thead {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip: rect(0 0 0 0);
+          white-space: nowrap;
+        }
+        tbody {
+          display: grid;
+          gap: 12px;
+          padding: 12px;
+        }
+        tr {
+          border: 1px solid #e4e4e7;
+          border-radius: 6px;
+          padding: 14px;
+        }
+        tr:last-child td {
+          border-bottom: 1px solid #e4e4e7;
+        }
+        td {
+          display: grid;
+          grid-template-columns: 78px minmax(0, 1fr);
+          gap: 12px;
+          padding: 10px 0;
+          border-bottom: 1px solid #e4e4e7;
+          overflow-wrap: anywhere;
+        }
+        td:first-child {
+          padding-top: 0;
+        }
+        td:last-child {
+          padding-bottom: 0;
+          border-bottom: 0;
+        }
+        td::before {
+          content: attr(data-label);
+          color: #71717a;
+          font-size: 12px;
+          font-weight: 700;
+          text-transform: uppercase;
+        }
+        .empty-row {
+          padding: 0;
+          border: 0;
+        }
+        .empty-row td {
+          display: block;
+          padding: 4px;
+          border: 0;
+        }
+        .empty-row td::before {
+          content: none;
         }
       }
     </style>
