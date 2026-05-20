@@ -5,20 +5,11 @@ import { CheckCircle2, CreditCard, Loader2, RotateCcw } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
-import { apiPost } from "@/lib/api-client";
+import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
 import { normalizeError } from "@/lib/errors";
+import type { components } from "@prompteer/shared-types";
 
-interface CheckoutSession {
-  id: string;
-  mode: string;
-  status: string;
-  payment_status: string;
-  amount_total: number | null;
-  currency: string | null;
-  url: string | null;
-  customer_email: string | null;
-  provider: string;
-}
+type CheckoutSession = components["schemas"]["CheckoutSessionRead"];
 
 type CheckoutStep = "idle" | "created" | "complete";
 
@@ -54,9 +45,15 @@ export function BillingCheckoutPanel({
     setIsLoading(true);
     setError(null);
     try {
-      const response = await apiPost<CheckoutSession>("/billing/checkout", {
-        customer_email: "paid@prompteer.dev",
-      });
+      const api = createPrompteerApiClient();
+      const response = unwrapApiResponse(
+        await api.POST("/api/v1/billing/checkout", {
+          body: {
+            customer_email: "paid@prompteer.dev",
+            plan: "pro_monthly",
+          },
+        }),
+      );
       setSession(response);
       setStep("created");
     } catch (caughtError) {
@@ -84,9 +81,11 @@ export function BillingCheckoutPanel({
     setIsLoading(true);
     setError(null);
     try {
-      const response = await apiPost<CheckoutSession>(
-        `/billing/checkout/${session.id}/complete`,
-        {},
+      const api = createPrompteerApiClient();
+      const response = unwrapApiResponse(
+        await api.POST("/api/v1/billing/checkout/{session_id}/complete", {
+          params: { path: { session_id: session.id } },
+        }),
       );
       setSession(response);
       setStep("complete");

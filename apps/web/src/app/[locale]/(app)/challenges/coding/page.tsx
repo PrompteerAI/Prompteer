@@ -5,21 +5,24 @@ import {
   CodingChallengeRunner,
   type Challenge,
 } from "@/components/challenges/coding-challenge-runner";
-import { apiGet } from "@/lib/api-client";
-import type { FeatureFlags } from "@prompteer/shared-types";
+import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function CodingChallengesPage(): Promise<React.ReactElement> {
   const t = await getTranslations("coding");
-  const [challenges, features] = await Promise.all([
-    apiGet<Challenge[]>("/challenges?tag=ps", {
+  const api = createPrompteerApiClient();
+  const [challengesResult, featuresResult] = await Promise.all([
+    api.GET("/api/v1/challenges", {
+      params: { query: { tag: "ps" } },
       cache: "no-store",
     }),
-    apiGet<FeatureFlags>("/config/features", {
+    api.GET("/api/v1/config/features", {
       cache: "no-store",
     }),
   ]);
+  const challenges = unwrapApiResponse(challengesResult) satisfies Challenge[];
+  const features = unwrapApiResponse(featuresResult);
 
   return (
     <main className="min-h-screen bg-zinc-50 px-6 py-8 text-zinc-950">

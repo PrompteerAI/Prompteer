@@ -79,7 +79,11 @@ function upstreamUrl(request: NextRequest, params: { path: string[] }): URL {
   const base = (
     serverEnv.API_INTERNAL_URL || serverEnv.NEXT_PUBLIC_API_URL
   ).replace(/\/+$/, "");
-  const encodedPath = params.path.map(encodeURIComponent).join("/");
+  const upstreamPath =
+    params.path[0] === "api" && params.path[1] === "v1"
+      ? params.path.slice(2)
+      : params.path;
+  const encodedPath = upstreamPath.map(encodeURIComponent).join("/");
   const url = new URL(`${base}/${encodedPath}`);
   url.search = request.nextUrl.search;
   return url;

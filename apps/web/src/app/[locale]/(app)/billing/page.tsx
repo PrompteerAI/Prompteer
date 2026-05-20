@@ -2,16 +2,18 @@
 import { getTranslations } from "next-intl/server";
 
 import { BillingCheckoutPanel } from "@/components/billing/billing-checkout-panel";
-import { apiGet } from "@/lib/api-client";
-import type { FeatureFlags } from "@prompteer/shared-types";
+import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function BillingPage(): Promise<React.ReactElement> {
   const t = await getTranslations("billing");
-  const features = await apiGet<FeatureFlags>("/config/features", {
-    cache: "no-store",
-  });
+  const api = createPrompteerApiClient();
+  const features = unwrapApiResponse(
+    await api.GET("/api/v1/config/features", {
+      cache: "no-store",
+    }),
+  );
 
   return (
     <main className="min-h-screen bg-zinc-50 px-6 py-8 text-zinc-950">

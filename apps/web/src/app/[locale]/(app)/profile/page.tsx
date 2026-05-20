@@ -15,9 +15,8 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import { auth, signOut } from "@/lib/auth";
-import { apiGet } from "@/lib/api-client";
+import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
 import { getServerEnv } from "@/lib/env";
-import type { FeatureFlags, IntegrationModes } from "@prompteer/shared-types";
 
 export const dynamic = "force-dynamic";
 
@@ -59,10 +58,13 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
     );
   }
 
-  const [features, integrations] = await Promise.all([
-    apiGet<FeatureFlags>("/config/features", { cache: "no-store" }),
-    apiGet<IntegrationModes>("/config/integrations", { cache: "no-store" }),
+  const api = createPrompteerApiClient();
+  const [featuresResult, integrationsResult] = await Promise.all([
+    api.GET("/api/v1/config/features", { cache: "no-store" }),
+    api.GET("/api/v1/config/integrations", { cache: "no-store" }),
   ]);
+  const features = unwrapApiResponse(featuresResult);
+  const integrations = unwrapApiResponse(integrationsResult);
   const serverEnv = getServerEnv();
   const featureRows = [
     { label: t("features.llm"), enabled: features.llm },

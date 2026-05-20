@@ -68,6 +68,7 @@ Frontend:
 - [Next.js 15](https://nextjs.org/) App Router with [React 19](https://react.dev/) and strict [TypeScript](https://www.typescriptlang.org/)
 - [Tailwind CSS v4](https://tailwindcss.com/), [lucide-react](https://lucide.dev/), [next-intl](https://next-intl.dev/)
 - [Auth.js v5](https://authjs.dev/), [TanStack Query](https://tanstack.com/query), [React Hook Form](https://react-hook-form.com/), [Zod](https://zod.dev/)
+- [openapi-fetch](https://openapi-ts.dev/openapi-fetch/) over generated OpenAPI types for schema-checked API calls
 - [Vitest](https://vitest.dev/) and [Playwright](https://playwright.dev/) with headless Chromium coverage
 
 Backend:

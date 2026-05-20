@@ -5,29 +5,12 @@ import { Loader2, Play, WandSparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
-import { apiPost } from "@/lib/api-client";
+import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
 import { normalizeError } from "@/lib/errors";
+import type { components } from "@prompteer/shared-types";
 
-export interface Challenge {
-  id: string;
-  challenge_number: number;
-  tag: "ps" | "img" | "video";
-  level: "easy" | "medium" | "hard";
-  title: string;
-  content: string | null;
-}
-
-interface ChallengeRunResponse {
-  challenge: Challenge;
-  prompt: string;
-  provider: string;
-  output: string;
-  usage: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
-}
+export type Challenge = components["schemas"]["ChallengeRead"];
+type ChallengeRunResponse = components["schemas"]["ChallengeRunResponse"];
 
 interface CodingChallengeRunnerProps {
   challenges: Challenge[];
@@ -69,9 +52,12 @@ export function CodingChallengeRunner({
     setIsRunning(true);
     setError(null);
     try {
-      const response = await apiPost<ChallengeRunResponse>(
-        `/challenges/${selectedChallenge.id}/run`,
-        { prompt },
+      const api = createPrompteerApiClient();
+      const response = unwrapApiResponse(
+        await api.POST("/api/v1/challenges/{challenge_id}/run", {
+          params: { path: { challenge_id: selectedChallenge.id } },
+          body: { prompt },
+        }),
       );
       setResult(response);
     } catch (caughtError) {

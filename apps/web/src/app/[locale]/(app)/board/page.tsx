@@ -2,53 +2,18 @@
 import { MessageSquareText, Sparkles } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
-import { apiGet } from "@/lib/api-client";
+import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
 
 export const dynamic = "force-dynamic";
 
-interface BoardFeed {
-  posts: BoardPost[];
-  shares: BoardShare[];
-}
-
-interface Author {
-  display_name: string;
-  email: string;
-  plan: string;
-}
-
-interface ChallengeSummary {
-  challenge_number: number;
-  tag: "ps" | "img" | "video";
-  level: "easy" | "medium" | "hard";
-  title: string;
-}
-
-interface BoardPost {
-  id: string;
-  type: "question" | "share";
-  tag: "ps" | "img" | "video";
-  title: string;
-  content: string | null;
-  author: Author;
-  challenge: ChallengeSummary | null;
-  created_at: string;
-}
-
-interface BoardShare {
-  id: string;
-  prompt: string | null;
-  is_public: boolean;
-  author: Author;
-  challenge: ChallengeSummary;
-  created_at: string;
-}
-
 export default async function BoardPage(): Promise<React.ReactElement> {
   const t = await getTranslations("board");
-  const feed = await apiGet<BoardFeed>("/community/board", {
-    cache: "no-store",
-  });
+  const api = createPrompteerApiClient();
+  const feed = unwrapApiResponse(
+    await api.GET("/api/v1/community/board", {
+      cache: "no-store",
+    }),
+  );
 
   return (
     <main className="min-h-screen bg-zinc-50 px-6 py-8 text-zinc-950">
