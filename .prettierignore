@@ -1,0 +1,9 @@
+node_modules
+.next
+.turbo
+.venv
+uv.lock
+playwright-report
+test-results
+.mock
+.verify

@@ -1,0 +1,77 @@
+# Defensive local agent files
+AGENTS.md
+AGENTS.override.md
+.codex/
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Verification and mock runtime output
+.verify/
+.mock/
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Turborepo
+.turbo/
+
+# Tests and coverage
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+blob-report/
+vitest.workspace.ts.timestamp-*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+env/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Alembic/runtime database artifacts
+*.sqlite
+*.sqlite3
+alembic-debug.log
+
+# Docker and local services
+docker-compose.override.yml
+compose.override.yaml
+*.pid
+
+# Logs
+*.log
+logs/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json

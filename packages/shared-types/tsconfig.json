@@ -1,0 +1,4 @@
+{
+  "extends": "@prompteer/tsconfig/base.json",
+  "include": ["src"]
+}
