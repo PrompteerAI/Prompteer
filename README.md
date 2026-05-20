@@ -32,7 +32,11 @@ Open `http://localhost`. The default Compose stack serves the app through nginx 
 | --------------------------------------------- | ---------------------------------- | ------------------------------------ |
 | ![](docs/screenshots/04-billing-checkout.png) | ![](docs/screenshots/05-board.png) | ![](docs/screenshots/06-mailbox.png) |
 
-The verified local demo covers seed login, prompt execution through the LLM mock, Stripe-shaped checkout completion, review board reads, logout, and captured SendGrid email viewing.
+| 7. Profile settings                   |
+| ------------------------------------- |
+| ![](docs/screenshots/07-settings.png) |
+
+The verified local demo covers seed login, prompt execution through the LLM mock, Stripe-shaped checkout completion, review board reads, profile settings, logout, and captured SendGrid email viewing.
 
 ## Architecture
 

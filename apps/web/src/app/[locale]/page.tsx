@@ -6,7 +6,9 @@ import {
   LogIn,
   LogOut,
   MessageSquareText,
+  UserRound,
 } from "lucide-react";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import { auth, signOut } from "@/lib/auth";
@@ -44,21 +46,27 @@ export default async function HomePage(): Promise<React.ReactElement> {
             </p>
           </div>
           {session?.user ? (
-            <form
-              action={signOutAction}
-              className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white p-3 shadow-sm"
-            >
+            <div className="flex flex-wrap items-center gap-3 rounded-lg border border-zinc-200 bg-white p-3 shadow-sm">
               <span className="max-w-48 truncate text-sm font-medium text-zinc-700">
                 {session.user.name ?? session.user.email}
               </span>
-              <button
+              <Link
                 className="inline-flex h-9 items-center gap-2 rounded-md border border-zinc-300 px-3 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
-                type="submit"
+                href="/en/profile"
               >
-                <LogOut aria-hidden="true" className="h-4 w-4" />
-                {t("logout")}
-              </button>
-            </form>
+                <UserRound aria-hidden="true" className="h-4 w-4" />
+                {t("profileSettings")}
+              </Link>
+              <form action={signOutAction}>
+                <button
+                  className="inline-flex h-9 items-center gap-2 rounded-md border border-zinc-300 px-3 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
+                  type="submit"
+                >
+                  <LogOut aria-hidden="true" className="h-4 w-4" />
+                  {t("logout")}
+                </button>
+              </form>
+            </div>
           ) : null}
         </div>
         <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">

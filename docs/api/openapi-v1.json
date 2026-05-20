@@ -344,6 +344,33 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "IntegrationModesRead": {
+        "properties": {
+          "email": {
+            "enum": ["mock", "real"],
+            "title": "Email",
+            "type": "string"
+          },
+          "google_oauth": {
+            "enum": ["mock", "real"],
+            "title": "Google Oauth",
+            "type": "string"
+          },
+          "llm": {
+            "enum": ["mock", "real"],
+            "title": "Llm",
+            "type": "string"
+          },
+          "payments": {
+            "enum": ["mock", "real"],
+            "title": "Payments",
+            "type": "string"
+          }
+        },
+        "required": ["google_oauth", "llm", "payments", "email"],
+        "title": "IntegrationModesRead",
+        "type": "object"
+      },
       "PostRead": {
         "properties": {
           "author": {
@@ -916,6 +943,25 @@
           }
         },
         "summary": "Get Features",
+        "tags": ["config"]
+      }
+    },
+    "/api/v1/config/integrations": {
+      "get": {
+        "operationId": "get_integration_modes_api_v1_config_integrations_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationModesRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Integration Modes",
         "tags": ["config"]
       }
     },

@@ -23,7 +23,12 @@ def reset_feature_settings(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "feature_llm_enabled", True)
     monkeypatch.setattr(settings, "feature_payments_enabled", True)
     monkeypatch.setattr(settings, "feature_email_enabled", True)
+    monkeypatch.setattr(settings, "google_client_id", "")
+    monkeypatch.setattr(settings, "google_client_secret", "")
+    monkeypatch.setattr(settings, "openai_api_key", "")
+    monkeypatch.setattr(settings, "anthropic_api_key", "")
     monkeypatch.setattr(settings, "stripe_secret_key", "")
+    monkeypatch.setattr(settings, "sendgrid_api_key", "")
     limiter.reset()
     STORE.reset()
 
@@ -38,6 +43,28 @@ def test_feature_config_endpoint_reflects_settings(monkeypatch: pytest.MonkeyPat
 
     assert response.status_code == 200
     assert response.json() == {"llm": False, "payments": True, "email": False}
+
+
+def test_integration_config_endpoint_reports_mock_and_real_modes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "google_client_id", "google-client")
+    monkeypatch.setattr(settings, "google_client_secret", "google-secret")
+    monkeypatch.setattr(settings, "openai_api_key", "")
+    monkeypatch.setattr(settings, "anthropic_api_key", "anthropic-key")
+    monkeypatch.setattr(settings, "stripe_secret_key", "stripe-key")
+    monkeypatch.setattr(settings, "sendgrid_api_key", "")
+    client = TestClient(create_app())
+
+    response = client.get("/api/v1/config/integrations")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "google_oauth": "real",
+        "llm": "real",
+        "payments": "real",
+        "email": "mock",
+    }
 
 
 def test_disabled_llm_route_returns_problem_details(monkeypatch: pytest.MonkeyPatch) -> None:

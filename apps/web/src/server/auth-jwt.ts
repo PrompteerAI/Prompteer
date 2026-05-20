@@ -53,36 +53,40 @@ export function decodeAuthJwt(params: JWTDecodeParams): JWT | null {
     return null;
   }
 
-  const [encodedHeader, encodedPayload, encodedSignature] =
-    params.token.split(".");
-  if (!encodedHeader || !encodedPayload || !encodedSignature) {
-    return null;
-  }
+  try {
+    const [encodedHeader, encodedPayload, encodedSignature] =
+      params.token.split(".");
+    if (!encodedHeader || !encodedPayload || !encodedSignature) {
+      return null;
+    }
 
-  const signingInput = `${encodedHeader}.${encodedPayload}`;
-  const verifier = createVerify("RSA-SHA256");
-  verifier.update(signingInput);
-  verifier.end();
-  const isValid = verifier.verify(
-    getAuthJwtKeyPair().publicKey,
-    encodedSignature,
-    "base64url",
-  );
-  if (!isValid) {
-    return null;
-  }
+    const signingInput = `${encodedHeader}.${encodedPayload}`;
+    const verifier = createVerify("RSA-SHA256");
+    verifier.update(signingInput);
+    verifier.end();
+    const isValid = verifier.verify(
+      getAuthJwtKeyPair().publicKey,
+      encodedSignature,
+      "base64url",
+    );
+    if (!isValid) {
+      return null;
+    }
 
-  const payload = JSON.parse(
-    Buffer.from(encodedPayload, "base64url").toString("utf8"),
-  ) as JWT;
-  const expiresAt = typeof payload.exp === "number" ? payload.exp : 0;
-  if (expiresAt <= Math.floor(Date.now() / 1000)) {
+    const payload = JSON.parse(
+      Buffer.from(encodedPayload, "base64url").toString("utf8"),
+    ) as JWT;
+    const expiresAt = typeof payload.exp === "number" ? payload.exp : 0;
+    if (expiresAt <= Math.floor(Date.now() / 1000)) {
+      return null;
+    }
+    if (payload.iss !== authJwtIssuer() || payload.aud !== authJwtAudience()) {
+      return null;
+    }
+    return payload;
+  } catch {
     return null;
   }
-  if (payload.iss !== authJwtIssuer() || payload.aud !== authJwtAudience()) {
-    return null;
-  }
-  return payload;
 }
 
 export function getAuthJwtPublicJwk(): JsonWebKey & {

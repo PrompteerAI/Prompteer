@@ -8,6 +8,7 @@ const apiCommand =
 
 export default defineConfig({
   testDir: "./e2e",
+  workers: process.env.CI ? 1 : undefined,
   use: {
     baseURL,
     trace: "on-first-retry",

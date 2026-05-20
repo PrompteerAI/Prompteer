@@ -17,6 +17,7 @@
     "title": "Prompt challenge workspace",
     "subtitle": "Sign in with seeded demo users, run a coding prompt challenge, and complete a local checkout without external credentials.",
     "logout": "Log out",
+    "profileSettings": "Profile settings",
     "login": {
       "title": "Demo login",
       "description": "Enter through mock Google OAuth with admin, paid, or free seed accounts."
@@ -114,6 +115,56 @@
         "unauthorized": "Sign in before running a prompt.",
         "failed": "The prompt run failed. Check that the API server and seed data are running."
       }
+    }
+  },
+  "profile": {
+    "eyebrow": "Settings",
+    "title": "Profile settings",
+    "description": "Review the active demo account, feature availability, and local mock integration state.",
+    "signedOutTitle": "Sign in to view profile settings",
+    "signedOutDescription": "Use the mock Google login flow to inspect seeded account settings and integration status.",
+    "signIn": "Sign in",
+    "logout": "Log out",
+    "account": {
+      "title": "Demo account",
+      "description": "The current Auth.js session is issued by the web app and accepted by FastAPI through RS256 JWT validation.",
+      "name": "Name",
+      "email": "Email",
+      "fallbackName": "Seeded demo user",
+      "fallbackEmail": "No email on session"
+    },
+    "features": {
+      "title": "Feature availability",
+      "description": "These switches are read from the API feature endpoint and disable cost-sensitive flows without redeploying.",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "llm": "LLM prompt runs",
+      "payments": "Billing checkout",
+      "email": "Email capture"
+    },
+    "integrations": {
+      "title": "Integration mode",
+      "description": "Blank credentials keep local development on deterministic mocks.",
+      "google": "Google OAuth",
+      "llm": "OpenAI / Anthropic",
+      "stripe": "Stripe",
+      "sendgrid": "SendGrid",
+      "mock": "Mock",
+      "real": "Real"
+    },
+    "security": {
+      "title": "Session security",
+      "description": "Auth tokens stay in HTTP-only Auth.js cookies. Browser API calls are proxied through Next.js and forwarded to FastAPI with short-lived bearer tokens.",
+      "jwks": "JWKS endpoint",
+      "audience": "API audience",
+      "issuer": "Issuer"
+    },
+    "shortcuts": {
+      "title": "Developer shortcuts",
+      "description": "Jump into the seeded demo flows without touching external credentials.",
+      "coding": "Open coding workspace",
+      "billing": "Open billing checkout",
+      "mailbox": "Open mock mailbox"
     }
   },
   "errors": {

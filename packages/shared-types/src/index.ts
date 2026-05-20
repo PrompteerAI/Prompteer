@@ -5,6 +5,7 @@ export type { components, operations, paths } from "./api";
 export type ChallengeTag = components["schemas"]["ChallengeTag"];
 
 export type FeatureFlags = components["schemas"]["FeatureFlagsRead"];
+export type IntegrationModes = components["schemas"]["IntegrationModesRead"];
 
 export interface ProblemDetails {
   type: string;
