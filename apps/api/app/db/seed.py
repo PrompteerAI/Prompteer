@@ -1,6 +1,7 @@
 from sqlmodel import Session, SQLModel, create_engine, select
 
 from app.core.config import settings
+from app.integrations.email.mock import MockSendGridClient
 from app.models.domain import (
     Challenge,
     ChallengeLevel,
@@ -223,7 +224,60 @@ def main() -> None:
     SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
         seed(session)
+    seed_mock_emails()
     print("Seeded Prompteer demo data.")
+
+
+def seed_mock_emails() -> None:
+    client = MockSendGridClient()
+    payloads = [
+        (
+            "seed-welcome-admin",
+            {
+                "personalizations": [{"to": [{"email": "admin@prompteer.dev"}]}],
+                "from": {"email": settings.sendgrid_from_email},
+                "subject": "Prompteer admin workspace is ready",
+                "content": [
+                    {
+                        "type": "text/plain",
+                        "value": "The local Prompteer admin account has been seeded.",
+                    }
+                ],
+            },
+        ),
+        (
+            "seed-subscription-paid",
+            {
+                "personalizations": [{"to": [{"email": "paid@prompteer.dev"}]}],
+                "from": {"email": settings.sendgrid_from_email},
+                "subject": "Mock subscription receipt",
+                "content": [
+                    {
+                        "type": "text/plain",
+                        "value": (
+                            "A mock paid subscription checkout has completed for this account."
+                        ),
+                    }
+                ],
+            },
+        ),
+        (
+            "seed-challenge-free",
+            {
+                "personalizations": [{"to": [{"email": "free@prompteer.dev"}]}],
+                "from": {"email": settings.sendgrid_from_email},
+                "subject": "Your first prompt challenge is waiting",
+                "content": [
+                    {
+                        "type": "text/html",
+                        "value": "<p>Try the seeded FizzBuzz prompt repair challenge.</p>",
+                    }
+                ],
+            },
+        ),
+    ]
+    for filename_prefix, payload in payloads:
+        client.capture_payload(payload, filename_prefix=filename_prefix, overwrite=False)
 
 
 if __name__ == "__main__":

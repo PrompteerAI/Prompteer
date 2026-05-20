@@ -54,7 +54,7 @@ Seed demo data:
 make seed
 ```
 
-The seed command is idempotent and creates demo users, prompt challenge categories, coding exercises, one public share, and one board post.
+The seed command is idempotent and creates demo users, prompt challenge categories, coding exercises, one public share, one board post, and captured mock emails for `/api/v1/dev/mailbox`.
 
 Mock Google OAuth demo accounts:
 
