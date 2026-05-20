@@ -227,7 +227,7 @@ def normalize_anthropic_request(payload: dict[str, Any]) -> dict[str, Any]:
 def openai_response_text(request: dict[str, Any]) -> tuple[str, str]:
     prompt = extract_openai_prompt(request)
     digest = stable_digest(request)[:12]
-    text = f"Mock Prompteer response {digest}: {summarize_prompt(prompt)}"
+    text = mock_response_text(prompt, digest)
     text, finish_reason = apply_openai_limits(text, request)
     return text, finish_reason
 
@@ -235,7 +235,7 @@ def openai_response_text(request: dict[str, Any]) -> tuple[str, str]:
 def anthropic_response_text(request: dict[str, Any]) -> tuple[str, str, str | None]:
     prompt = extract_anthropic_prompt(request)
     digest = stable_digest(request)[:12]
-    text = f"Mock Prompteer response {digest}: {summarize_prompt(prompt)}"
+    text = mock_response_text(prompt, digest)
     stop_sequence = None
     stop_reason = "end_turn"
     for candidate in as_string_list(request.get("stop_sequences")):
@@ -304,7 +304,18 @@ def summarize_prompt(prompt: str) -> str:
     normalized = " ".join(prompt.split())
     if not normalized:
         return "No prompt content was provided."
-    return normalized[:180]
+    if len(normalized) <= 180:
+        return normalized
+    head = normalized[:180].rsplit(" ", 1)[0].rstrip(" ,.;:")
+    return f"{head}..."
+
+
+def mock_response_text(prompt: str, digest: str) -> str:
+    return (
+        f"Mock Prompteer response {digest}: "
+        "Feedback: make the objective, constraints, and edge cases explicit. "
+        f"Stronger prompt: {summarize_prompt(prompt)}"
+    )
 
 
 def stable_digest(payload: dict[str, Any]) -> str:

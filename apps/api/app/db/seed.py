@@ -71,11 +71,61 @@ def seed_challenges(session: Session, users_by_email: dict[str, User]) -> None:
     admin = users_by_email["admin@prompteer.dev"]
     free_user = users_by_email["free@prompteer.dev"]
     challenge_specs = [
-        (1, ChallengeTag.ps, ChallengeLevel.easy, "FizzBuzz prompt repair"),
-        (2, ChallengeTag.img, ChallengeLevel.medium, "Product hero image prompt"),
-        (3, ChallengeTag.video, ChallengeLevel.hard, "Launch teaser video prompt"),
+        (
+            1,
+            ChallengeTag.ps,
+            ChallengeLevel.easy,
+            "FizzBuzz prompt repair",
+            (
+                "Write a prompt that makes an assistant explain the FizzBuzz rules, "
+                "handle divisibility by 3 and 5 correctly, and produce concise Python "
+                "with edge cases for small inputs."
+            ),
+        ),
+        (
+            2,
+            ChallengeTag.img,
+            ChallengeLevel.medium,
+            "Product hero image prompt",
+            (
+                "Create a product hero image prompt for a compact AI note-taking device. "
+                "The output should specify lighting, materials, background, camera angle, "
+                "and what must remain readable."
+            ),
+        ),
+        (
+            3,
+            ChallengeTag.video,
+            ChallengeLevel.hard,
+            "Launch teaser video prompt",
+            (
+                "Draft a short launch teaser prompt with scene beats, pacing, transitions, "
+                "and soundtrack direction for a developer productivity tool."
+            ),
+        ),
+        (
+            4,
+            ChallengeTag.ps,
+            ChallengeLevel.medium,
+            "Stable sorting explanation",
+            (
+                "Repair a coding prompt so the assistant explains stable sorting, chooses "
+                "an appropriate algorithm, and includes a Python example that preserves "
+                "original order for equal keys."
+            ),
+        ),
+        (
+            5,
+            ChallengeTag.ps,
+            ChallengeLevel.hard,
+            "Graph traversal guardrails",
+            (
+                "Design a prompt that asks for BFS and DFS tradeoffs, disconnected graph "
+                "handling, cycle safety, and complexity analysis before writing code."
+            ),
+        ),
     ]
-    for number, tag, level, title in challenge_specs:
+    for number, tag, level, title, content in challenge_specs:
         challenge = session.exec(
             select(Challenge).where(Challenge.challenge_number == number)
         ).one_or_none()
@@ -85,12 +135,20 @@ def seed_challenges(session: Session, users_by_email: dict[str, User]) -> None:
                 tag=tag,
                 level=level,
                 title=title,
-                content=f"Demo {tag.value} challenge for local development.",
+                content=content,
                 challenge_number=number,
             )
             session.add(challenge)
             session.flush()
-            add_type_specific_challenge(session, challenge)
+        else:
+            challenge.owner_id = admin.id
+            challenge.tag = tag
+            challenge.level = level
+            challenge.title = title
+            challenge.content = content
+            session.add(challenge)
+            session.flush()
+        ensure_type_specific_challenge(session, challenge)
 
     first_challenge = session.exec(select(Challenge).where(Challenge.challenge_number == 1)).one()
     share = session.exec(
@@ -121,28 +179,43 @@ def seed_challenges(session: Session, users_by_email: dict[str, User]) -> None:
         )
 
 
-def add_type_specific_challenge(session: Session, challenge: Challenge) -> None:
+def ensure_type_specific_challenge(session: Session, challenge: Challenge) -> None:
     if challenge.tag == ChallengeTag.ps:
-        session.add(PSChallenge(challenge_id=challenge.id))
-        session.add(PSTestcase(challenge_id=challenge.id, input="15", output="FizzBuzz"))
+        if session.get(PSChallenge, challenge.id) is None:
+            session.add(PSChallenge(challenge_id=challenge.id))
+        testcase = session.exec(
+            select(PSTestcase).where(PSTestcase.challenge_id == challenge.id)
+        ).first()
+        if testcase is None:
+            session.add(PSTestcase(challenge_id=challenge.id, input="15", output="FizzBuzz"))
     elif challenge.tag == ChallengeTag.img:
-        session.add(ImgChallenge(challenge_id=challenge.id))
-        session.add(
-            ImgReference(
-                challenge_id=challenge.id,
-                file_path="seed/references/product-hero.png",
-                file_type="image/png",
+        if session.get(ImgChallenge, challenge.id) is None:
+            session.add(ImgChallenge(challenge_id=challenge.id))
+        img_reference = session.exec(
+            select(ImgReference).where(ImgReference.challenge_id == challenge.id)
+        ).first()
+        if img_reference is None:
+            session.add(
+                ImgReference(
+                    challenge_id=challenge.id,
+                    file_path="seed/references/product-hero.png",
+                    file_type="image/png",
+                )
             )
-        )
     elif challenge.tag == ChallengeTag.video:
-        session.add(VideoChallenge(challenge_id=challenge.id))
-        session.add(
-            VideoReference(
-                challenge_id=challenge.id,
-                file_path="seed/references/launch-teaser.mp4",
-                file_type="video/mp4",
+        if session.get(VideoChallenge, challenge.id) is None:
+            session.add(VideoChallenge(challenge_id=challenge.id))
+        video_reference = session.exec(
+            select(VideoReference).where(VideoReference.challenge_id == challenge.id)
+        ).first()
+        if video_reference is None:
+            session.add(
+                VideoReference(
+                    challenge_id=challenge.id,
+                    file_path="seed/references/launch-teaser.mp4",
+                    file_type="video/mp4",
+                )
             )
-        )
 
 
 def main() -> None:

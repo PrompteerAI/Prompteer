@@ -26,7 +26,7 @@ The rebuild is in progress. See `docs/architecture.md` and `docs/adr/` for accep
 
 ## Current Verified Slice
 
-The current scaffold starts the FastAPI and Next.js development servers together and supports mock Google OAuth login through Auth.js:
+The current scaffold starts the FastAPI and Next.js development servers together, supports mock Google OAuth login through Auth.js, and includes a seeded coding challenge workspace that runs prompts through the deterministic local LLM mock:
 
 ```sh
 cp .env.example .env
@@ -54,7 +54,7 @@ Seed demo data:
 make seed
 ```
 
-The seed command is idempotent and creates demo users, challenge categories, one public share, and one board post.
+The seed command is idempotent and creates demo users, prompt challenge categories, coding exercises, one public share, and one board post.
 
 Mock Google OAuth demo accounts:
 
@@ -65,6 +65,8 @@ Mock Google OAuth demo accounts:
 ![Prompteer home screen](docs/screenshots/01-home.png)
 
 ![Prompteer login screen](docs/screenshots/02-login.png)
+
+![Prompteer coding challenge workspace](docs/screenshots/03-coding-challenge.png)
 
 ## Verification
 
@@ -82,3 +84,5 @@ pnpm --filter @prompteer/web build
 ```
 
 The login flow was also verified in headless Chromium against local FastAPI and Next.js servers: selecting `Admin demo` completes the mock Google OIDC authorization-code flow and redirects back to `/en`.
+
+The coding challenge workspace was verified in headless Chromium against a production Next.js build and local FastAPI API: `/en/challenges/coding` loads seeded PS challenges and `Run prompt` returns deterministic mock LLM feedback.
