@@ -41,6 +41,12 @@ describe("parseServerEnv", () => {
     expect(parsed.AUTH_MOCK_GOOGLE_DISCOVERY_URL).toBeUndefined();
   });
 
+  it("defaults the application version for log metadata", () => {
+    const parsed = parseServerEnv({});
+
+    expect(parsed.APP_VERSION).toBe("0.1.0");
+  });
+
   it("preserves escaped newlines in configured JWT private keys", () => {
     const parsed = parseServerEnv({
       AUTH_JWT_PRIVATE_KEY: "line-one\\nline-two",

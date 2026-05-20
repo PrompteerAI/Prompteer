@@ -169,7 +169,9 @@
   },
   "errors": {
     "title": "Something went wrong",
-    "retry": "Retry"
+    "retry": "Retry",
+    "report": "Report",
+    "reported": "Reported"
   },
   "notFound": {
     "title": "Page not found"

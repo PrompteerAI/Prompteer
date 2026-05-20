@@ -77,6 +77,7 @@ export const publicEnvSchema = z.object({
 
 export const serverEnvSchema = publicEnvSchema.extend({
   ENV: z.enum(["development", "test", "production"]).default("development"),
+  APP_VERSION: envString("0.1.0"),
   APP_URL: envUrl("http://localhost:3000"),
   API_INTERNAL_URL: envUrl("http://localhost:8000/api/v1"),
   AUTH_SECRET: envString("dev-auth-secret-change-in-production"),
@@ -108,6 +109,7 @@ export function parsePublicEnv(rawEnv: RawEnv): PublicEnv {
 export function parseServerEnv(rawEnv: RawEnv): ServerEnv {
   return serverEnvSchema.parse({
     ENV: rawEnv.ENV,
+    APP_VERSION: rawEnv.APP_VERSION,
     APP_URL: rawEnv.APP_URL,
     NEXT_PUBLIC_API_URL: rawEnv.NEXT_PUBLIC_API_URL,
     NEXT_PUBLIC_USE_MOCK_GOOGLE: rawEnv.NEXT_PUBLIC_USE_MOCK_GOOGLE,
