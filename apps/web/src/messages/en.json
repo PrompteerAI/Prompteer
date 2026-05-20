@@ -17,6 +17,9 @@
   },
   "login": {
     "title": "Sign in",
-    "mock": "Continue with mock Google"
+    "google": "Continue with Google",
+    "admin": "Admin demo",
+    "paid": "Paid demo",
+    "free": "Free demo"
   }
 }

@@ -25,6 +25,10 @@ class Settings(BaseSettings):
 
     google_client_id: str = Field(default="", alias="GOOGLE_CLIENT_ID")
     google_client_secret: str = Field(default="", alias="GOOGLE_CLIENT_SECRET")
+    auth_mock_google_issuer: str = Field(
+        default="http://localhost:8000",
+        alias="AUTH_MOCK_GOOGLE_ISSUER",
+    )
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
     anthropic_api_key: str = Field(default="", alias="ANTHROPIC_API_KEY")
     stripe_secret_key: str = Field(default="", alias="STRIPE_SECRET_KEY")
