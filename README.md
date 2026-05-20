@@ -54,7 +54,7 @@ Seed demo data:
 make seed
 ```
 
-The seed command is idempotent and creates demo users, prompt challenge categories, coding exercises, one public share, one board post, and captured mock emails for `/api/v1/dev/mailbox`.
+The seed command is idempotent and creates demo users, prompt challenge categories, coding exercises, public shares, board posts, and captured mock emails for `/api/v1/dev/mailbox`.
 
 Mock Google OAuth demo accounts:
 
@@ -69,6 +69,8 @@ Mock Google OAuth demo accounts:
 ![Prompteer coding challenge workspace](docs/screenshots/03-coding-challenge.png)
 
 ![Prompteer billing checkout](docs/screenshots/04-billing-checkout.png)
+
+![Prompteer review board](docs/screenshots/05-board.png)
 
 ## Verification
 
@@ -90,3 +92,5 @@ The login flow was also verified in headless Chromium against local FastAPI and 
 The coding challenge workspace was verified in headless Chromium against a production Next.js build and local FastAPI API: `/en/challenges/coding` loads seeded PS challenges and `Run prompt` returns deterministic mock LLM feedback.
 
 The billing checkout workspace was verified in headless Chromium against a production Next.js build and local FastAPI API: `/en/billing` creates a Stripe-shaped checkout session and completes it through the dev mock flow.
+
+The review board was verified in headless Chromium against a production Next.js build and seeded local FastAPI API: `/en/board` renders seeded questions and public prompt shares.

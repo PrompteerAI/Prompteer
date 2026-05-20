@@ -70,6 +70,7 @@ def seed_users(session: Session) -> dict[str, User]:
 
 def seed_challenges(session: Session, users_by_email: dict[str, User]) -> None:
     admin = users_by_email["admin@prompteer.dev"]
+    paid_user = users_by_email["paid@prompteer.dev"]
     free_user = users_by_email["free@prompteer.dev"]
     challenge_specs = [
         (
@@ -151,33 +152,100 @@ def seed_challenges(session: Session, users_by_email: dict[str, User]) -> None:
             session.flush()
         ensure_type_specific_challenge(session, challenge)
 
-    first_challenge = session.exec(select(Challenge).where(Challenge.challenge_number == 1)).one()
+    challenge_1 = session.exec(select(Challenge).where(Challenge.challenge_number == 1)).one()
+    challenge_4 = session.exec(select(Challenge).where(Challenge.challenge_number == 4)).one()
+    challenge_5 = session.exec(select(Challenge).where(Challenge.challenge_number == 5)).one()
+    ensure_share(
+        session,
+        user=free_user,
+        challenge=challenge_1,
+        prompt="Explain the FizzBuzz rules first, then produce concise Python.",
+    )
+    ensure_share(
+        session,
+        user=paid_user,
+        challenge=challenge_4,
+        prompt="Show why stable sorting matters before giving a compact Python example.",
+    )
+    ensure_share(
+        session,
+        user=admin,
+        challenge=challenge_5,
+        prompt="Compare BFS and DFS, then solve disconnected graph traversal safely.",
+    )
+    ensure_post(
+        session,
+        user=free_user,
+        challenge=challenge_1,
+        title="How should I structure PS prompts?",
+        content="I am comparing prompts that ask for reasoning before code.",
+        post_type=PostType.question,
+    )
+    ensure_post(
+        session,
+        user=paid_user,
+        challenge=challenge_4,
+        title="Stable sort prompts that avoid over-explaining",
+        content="The best runs asked for invariants, examples, and a short implementation.",
+        post_type=PostType.share,
+    )
+    ensure_post(
+        session,
+        user=admin,
+        challenge=challenge_5,
+        title="Graph traversal guardrails for prompt reviews",
+        content="Cycle safety and disconnected components should be explicit in the prompt.",
+        post_type=PostType.question,
+    )
+
+
+def ensure_share(session: Session, *, user: User, challenge: Challenge, prompt: str) -> None:
     share = session.exec(
-        select(Share).where(Share.user_id == free_user.id, Share.challenge_id == first_challenge.id)
+        select(Share).where(Share.user_id == user.id, Share.challenge_id == challenge.id)
     ).one_or_none()
     if share is None:
         session.add(
             Share(
-                user_id=free_user.id,
-                challenge_id=first_challenge.id,
-                prompt="Explain the FizzBuzz rules first, then produce concise Python.",
+                user_id=user.id,
+                challenge_id=challenge.id,
+                prompt=prompt,
                 is_public=True,
             )
         )
-    post = session.exec(
-        select(Post).where(Post.title == "How should I structure PS prompts?")
-    ).one_or_none()
+    else:
+        share.prompt = prompt
+        share.is_public = True
+        session.add(share)
+
+
+def ensure_post(
+    session: Session,
+    *,
+    user: User,
+    challenge: Challenge,
+    title: str,
+    content: str,
+    post_type: PostType,
+) -> None:
+    post = session.exec(select(Post).where(Post.title == title)).one_or_none()
     if post is None:
         session.add(
             Post(
-                user_id=free_user.id,
-                challenge_id=first_challenge.id,
-                type=PostType.question,
-                tag=ChallengeTag.ps,
-                title="How should I structure PS prompts?",
-                content="I am comparing prompts that ask for reasoning before code.",
+                user_id=user.id,
+                challenge_id=challenge.id,
+                type=post_type,
+                tag=challenge.tag,
+                title=title,
+                content=content,
             )
         )
+    else:
+        post.user_id = user.id
+        post.challenge_id = challenge.id
+        post.type = post_type
+        post.tag = challenge.tag
+        post.content = content
+        session.add(post)
 
 
 def ensure_type_specific_challenge(session: Session, challenge: Challenge) -> None:

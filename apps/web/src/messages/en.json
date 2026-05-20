@@ -19,6 +19,10 @@
       "title": "Coding workspace",
       "description": "Draft and run deterministic prompt feedback against seeded PS challenges."
     },
+    "board": {
+      "title": "Review board",
+      "description": "Scan seeded questions and public prompt shares from demo users."
+    },
     "billing": {
       "title": "Billing checkout",
       "description": "Create and complete a Stripe-shaped subscription checkout for the paid demo."

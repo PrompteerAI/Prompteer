@@ -15,5 +15,5 @@ def test_seed_is_idempotent() -> None:
 
         assert len(session.exec(select(User)).all()) == 3
         assert len(session.exec(select(Challenge)).all()) == 5
-        assert len(session.exec(select(Share)).all()) == 1
-        assert len(session.exec(select(Post)).all()) == 1
+        assert len(session.exec(select(Share)).all()) == 3
+        assert len(session.exec(select(Post)).all()) == 3

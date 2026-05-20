@@ -1,10 +1,16 @@
-import { ArrowRight, Code2, CreditCard, LogIn } from "lucide-react";
-import Link from "next/link";
+import {
+  ArrowRight,
+  Code2,
+  CreditCard,
+  LogIn,
+  MessageSquareText,
+} from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 const entrypoints = [
   { key: "login", icon: LogIn, href: "/en/login" },
   { key: "coding", icon: Code2, href: "/en/challenges/coding" },
+  { key: "board", icon: MessageSquareText, href: "/en/board" },
   { key: "billing", icon: CreditCard, href: "/en/billing" },
 ] as const;
 
@@ -25,11 +31,11 @@ export default async function HomePage(): Promise<React.ReactElement> {
             {t("subtitle")}
           </p>
         </div>
-        <div className="mt-10 grid gap-4 md:grid-cols-3">
+        <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {entrypoints.map((entrypoint) => {
             const Icon = entrypoint.icon;
             return (
-              <Link
+              <a
                 key={entrypoint.key}
                 href={entrypoint.href}
                 className="group rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition hover:border-emerald-500"
@@ -47,7 +53,7 @@ export default async function HomePage(): Promise<React.ReactElement> {
                 <p className="mt-3 text-sm leading-6 text-zinc-600">
                   {t(`${entrypoint.key}.description`)}
                 </p>
-              </Link>
+              </a>
             );
           })}
         </div>
