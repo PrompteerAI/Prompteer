@@ -1,5 +1,11 @@
 export type ChallengeTag = "ps" | "img" | "video";
 
+export interface FeatureFlags {
+  llm: boolean;
+  payments: boolean;
+  email: boolean;
+}
+
 export interface ProblemDetails {
   type: string;
   title: string;

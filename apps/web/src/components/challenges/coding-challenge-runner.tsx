@@ -28,10 +28,12 @@ interface ChallengeRunResponse {
 
 interface CodingChallengeRunnerProps {
   challenges: Challenge[];
+  llmEnabled: boolean;
 }
 
 export function CodingChallengeRunner({
   challenges,
+  llmEnabled,
 }: CodingChallengeRunnerProps): React.ReactElement {
   const [selectedChallengeId, setSelectedChallengeId] = useState(
     challenges[0]?.id ?? "",
@@ -54,6 +56,10 @@ export function CodingChallengeRunner({
     event: React.FormEvent<HTMLFormElement>,
   ): Promise<void> {
     event.preventDefault();
+    if (!llmEnabled) {
+      setError("Prompt runs are disabled for this environment.");
+      return;
+    }
     if (!selectedChallenge || prompt.trim().length < 10) {
       setError("Write a prompt with at least 10 characters.");
       return;
@@ -147,7 +153,7 @@ export function CodingChallengeRunner({
         />
         <button
           className="mt-4 inline-flex h-10 items-center gap-2 rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
-          disabled={isRunning || prompt.trim().length < 10}
+          disabled={!llmEnabled || isRunning || prompt.trim().length < 10}
           type="submit"
         >
           {isRunning ? (
@@ -157,6 +163,12 @@ export function CodingChallengeRunner({
           )}
           Run prompt
         </button>
+
+        {!llmEnabled ? (
+          <p className="mt-3 text-sm text-amber-700">
+            Prompt runs are disabled by the environment feature flags.
+          </p>
+        ) : null}
 
         {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
 

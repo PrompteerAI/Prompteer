@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str = Field(default="", alias="STRIPE_WEBHOOK_SECRET")
     sendgrid_api_key: str = Field(default="", alias="SENDGRID_API_KEY")
     sendgrid_from_email: str = Field(default="no-reply@prompteer.dev", alias="SENDGRID_FROM_EMAIL")
+    feature_llm_enabled: bool = Field(default=True, alias="FEATURE_LLM_ENABLED")
+    feature_payments_enabled: bool = Field(default=True, alias="FEATURE_PAYMENTS_ENABLED")
+    feature_email_enabled: bool = Field(default=True, alias="FEATURE_EMAIL_ENABLED")
 
     @property
     def is_production(self) -> bool:

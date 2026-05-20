@@ -32,6 +32,10 @@ The API returns RFC 9457 Problem Details for all errors. Frontend code normalize
 
 FastAPI uses `slowapi` for request rate limiting. Cost-sensitive routes have explicit tighter limits: LLM prompt runs and provider-compatible LLM mocks use `10/minute`, payment and checkout routes use `20/minute`, and SendGrid-compatible mail send uses `5/minute`.
 
+## Feature kill switches
+
+`FEATURE_LLM_ENABLED`, `FEATURE_PAYMENTS_ENABLED`, and `FEATURE_EMAIL_ENABLED` disable cost-sensitive capabilities without a redeploy. The API exposes the current state at `/api/v1/config/features`, returns RFC 9457 `503 feature_disabled` responses when disabled endpoints are called, and the frontend disables affected controls from that config.
+
 ## Time
 
 All server-side timestamps are UTC. API responses use ISO 8601 strings with explicit offsets.

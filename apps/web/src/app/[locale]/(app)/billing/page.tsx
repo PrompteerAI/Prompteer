@@ -1,8 +1,14 @@
 import { BillingCheckoutPanel } from "@/components/billing/billing-checkout-panel";
+import { apiGet } from "@/lib/api-client";
+import type { FeatureFlags } from "@prompteer/shared-types";
 
 export const dynamic = "force-dynamic";
 
-export default function BillingPage(): React.ReactElement {
+export default async function BillingPage(): Promise<React.ReactElement> {
+  const features = await apiGet<FeatureFlags>("/config/features", {
+    cache: "no-store",
+  });
+
   return (
     <main className="min-h-screen bg-zinc-50 px-6 py-8 text-zinc-950">
       <div className="mx-auto max-w-6xl">
@@ -16,7 +22,7 @@ export default function BillingPage(): React.ReactElement {
             it through the local Stripe flow.
           </p>
         </div>
-        <BillingCheckoutPanel />
+        <BillingCheckoutPanel paymentsEnabled={features.payments} />
       </div>
     </main>
   );

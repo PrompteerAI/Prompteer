@@ -20,7 +20,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 
-from app.core.feature_flags import dev_routes_enabled
+from app.core.feature_flags import dev_routes_enabled, require_feature_enabled
 from app.core.ratelimit import LLM_RATE_LIMIT, limiter
 
 OPENAI_BASE_CREATED_AT = 1_735_689_600
@@ -171,6 +171,7 @@ async def openai_chat_completions(
 ) -> dict[str, Any] | StreamingResponse:
     del request
     require_mock_routes()
+    require_feature_enabled("llm")
     client = MockLLMClient()
     try:
         if payload.get("stream") is True:
@@ -191,6 +192,7 @@ async def anthropic_messages(
 ) -> dict[str, Any] | StreamingResponse:
     del request
     require_mock_routes()
+    require_feature_enabled("llm")
     client = MockLLMClient()
     try:
         if payload.get("stream") is True:

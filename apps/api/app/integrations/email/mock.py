@@ -17,7 +17,7 @@ from pydantic import BaseModel, EmailStr, Field, ValidationError, field_validato
 from starlette import status
 from starlette.responses import JSONResponse, Response
 
-from app.core.feature_flags import dev_routes_enabled
+from app.core.feature_flags import dev_routes_enabled, require_feature_enabled
 from app.core.ratelimit import EMAIL_RATE_LIMIT, limiter
 
 router = APIRouter(tags=["mock-sendgrid"])
@@ -69,6 +69,7 @@ async def sendgrid_mail_send(request: Request, payload: dict[str, Any]) -> Respo
     del request
     if not require_mock_routes():
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"detail": "Not found"})
+    require_feature_enabled("email")
     client = MockSendGridClient()
     try:
         await client.send(payload)

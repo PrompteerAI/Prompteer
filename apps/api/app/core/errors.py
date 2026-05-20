@@ -9,6 +9,24 @@ from starlette import status
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 
+class ProblemException(Exception):
+    def __init__(
+        self,
+        *,
+        status_code: int,
+        title: str,
+        detail: str,
+        code: str,
+        errors: list[dict[str, Any]] | None = None,
+    ) -> None:
+        super().__init__(detail)
+        self.status_code = status_code
+        self.title = title
+        self.detail = detail
+        self.code = code
+        self.errors = errors
+
+
 def problem_response(
     *,
     request: Request,
@@ -33,6 +51,17 @@ def problem_response(
         status_code=status_code,
         content=body,
         media_type="application/problem+json",
+    )
+
+
+async def problem_exception_handler(request: Request, exc: ProblemException) -> JSONResponse:
+    return problem_response(
+        request=request,
+        status_code=exc.status_code,
+        title=exc.title,
+        detail=exc.detail,
+        code=exc.code,
+        errors=exc.errors,
     )
 
 

@@ -19,7 +19,13 @@ interface CheckoutSession {
 
 type CheckoutStep = "idle" | "created" | "complete";
 
-export function BillingCheckoutPanel(): React.ReactElement {
+interface BillingCheckoutPanelProps {
+  paymentsEnabled: boolean;
+}
+
+export function BillingCheckoutPanel({
+  paymentsEnabled,
+}: BillingCheckoutPanelProps): React.ReactElement {
   const [session, setSession] = useState<CheckoutSession | null>(null);
   const [step, setStep] = useState<CheckoutStep>("idle");
   const [isLoading, setIsLoading] = useState(false);
@@ -36,6 +42,10 @@ export function BillingCheckoutPanel(): React.ReactElement {
   }, [session]);
 
   async function createCheckout(): Promise<void> {
+    if (!paymentsEnabled) {
+      setError("Payments are disabled for this environment.");
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
@@ -55,6 +65,10 @@ export function BillingCheckoutPanel(): React.ReactElement {
 
   async function completeCheckout(): Promise<void> {
     if (!session) {
+      return;
+    }
+    if (!paymentsEnabled) {
+      setError("Payments are disabled for this environment.");
       return;
     }
     setIsLoading(true);
@@ -147,7 +161,7 @@ export function BillingCheckoutPanel(): React.ReactElement {
         <div className="mt-5 flex flex-wrap gap-3">
           <button
             className="inline-flex h-10 items-center gap-2 rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
-            disabled={isLoading}
+            disabled={!paymentsEnabled || isLoading}
             onClick={() => {
               void createCheckout();
             }}
@@ -162,7 +176,12 @@ export function BillingCheckoutPanel(): React.ReactElement {
           </button>
           <button
             className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:text-zinc-400"
-            disabled={!session || session.status === "complete" || isLoading}
+            disabled={
+              !paymentsEnabled ||
+              !session ||
+              session.status === "complete" ||
+              isLoading
+            }
             onClick={() => {
               void completeCheckout();
             }}
@@ -184,6 +203,12 @@ export function BillingCheckoutPanel(): React.ReactElement {
             Reset
           </button>
         </div>
+
+        {!paymentsEnabled ? (
+          <p className="mt-3 text-sm text-amber-700">
+            Checkout is disabled by the environment feature flags.
+          </p>
+        ) : null}
 
         {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
 

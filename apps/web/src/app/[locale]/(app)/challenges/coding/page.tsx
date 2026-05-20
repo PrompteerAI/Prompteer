@@ -3,13 +3,19 @@ import {
   type Challenge,
 } from "@/components/challenges/coding-challenge-runner";
 import { apiGet } from "@/lib/api-client";
+import type { FeatureFlags } from "@prompteer/shared-types";
 
 export const dynamic = "force-dynamic";
 
 export default async function CodingChallengesPage(): Promise<React.ReactElement> {
-  const challenges = await apiGet<Challenge[]>("/challenges?tag=ps", {
-    cache: "no-store",
-  });
+  const [challenges, features] = await Promise.all([
+    apiGet<Challenge[]>("/challenges?tag=ps", {
+      cache: "no-store",
+    }),
+    apiGet<FeatureFlags>("/config/features", {
+      cache: "no-store",
+    }),
+  ]);
 
   return (
     <main className="min-h-screen bg-zinc-50 px-6 py-8 text-zinc-950">
@@ -26,7 +32,10 @@ export default async function CodingChallengesPage(): Promise<React.ReactElement
             the local LLM mock.
           </p>
         </div>
-        <CodingChallengeRunner challenges={challenges} />
+        <CodingChallengeRunner
+          challenges={challenges}
+          llmEnabled={features.llm}
+        />
       </div>
     </main>
   );

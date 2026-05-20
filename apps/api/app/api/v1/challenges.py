@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlmodel import Session, col, select
 
+from app.core.feature_flags import require_feature_enabled
 from app.core.ratelimit import LLM_RATE_LIMIT, limiter
 from app.db.session import get_session
 from app.integrations.llm import get_llm_client
@@ -40,6 +41,7 @@ async def run_challenge_prompt(
     session: Annotated[Session, Depends(get_session)],
 ) -> ChallengeRunResponse:
     del request
+    require_feature_enabled("llm")
     challenge = load_challenge(session, challenge_id)
     llm_client = get_llm_client()
     response = await llm_client.chat_completion(
