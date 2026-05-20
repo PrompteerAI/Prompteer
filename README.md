@@ -104,3 +104,7 @@ The coding challenge workspace was verified in headless Chromium against a produ
 The billing checkout workspace was verified in headless Chromium against a production Next.js build and local FastAPI API: `/en/billing` creates a Stripe-shaped checkout session and completes it through the dev mock flow.
 
 The review board was verified in headless Chromium against a production Next.js build and seeded local FastAPI API: `/en/board` renders seeded questions and public prompt shares.
+
+The mock mailbox was verified in headless Chromium against local FastAPI and Next.js servers: `/dev/mailbox` lists seeded SendGrid captures and opens the raw `.eml` message view.
+
+![Prompteer mock mailbox](docs/screenshots/06-mailbox.png)
