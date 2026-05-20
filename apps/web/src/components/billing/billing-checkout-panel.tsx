@@ -1,7 +1,13 @@
 "use client";
 
 // Interactive checkout exercise for the local Stripe-compatible billing mock.
-import { CheckCircle2, CreditCard, Loader2, RotateCcw } from "lucide-react";
+import {
+  CheckCircle2,
+  CreditCard,
+  ExternalLink,
+  Loader2,
+  RotateCcw,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
@@ -26,6 +32,9 @@ export function BillingCheckoutPanel({
   const [step, setStep] = useState<CheckoutStep>("idle");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isMockSession = session?.provider === "mock";
+  const hostedCheckoutUrl =
+    session && !isMockSession && session.url ? session.url : null;
 
   const price = useMemo(() => {
     if (!session?.amount_total || !session.currency) {
@@ -145,7 +154,9 @@ export function BillingCheckoutPanel({
             </h2>
             <p className="mt-2 text-sm leading-6 text-zinc-600">
               {session
-                ? t("checkout.readyDescription")
+                ? isMockSession
+                  ? t("checkout.readyDescription")
+                  : t("checkout.hostedDescription")
                 : t("checkout.createDescription")}
             </p>
           </div>
@@ -172,6 +183,14 @@ export function BillingCheckoutPanel({
                 {session?.id ?? t("checkout.fallbackSession")}
               </dd>
             </div>
+            {hostedCheckoutUrl ? (
+              <div className="sm:col-span-2">
+                <dt className="text-zinc-500">{t("checkout.hostedUrl")}</dt>
+                <dd className="mt-1 break-all font-mono text-xs text-zinc-700">
+                  {hostedCheckoutUrl}
+                </dd>
+              </div>
+            ) : null}
           </dl>
         </div>
 
@@ -191,26 +210,38 @@ export function BillingCheckoutPanel({
             )}
             {t("checkout.start")}
           </button>
-          <button
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:text-zinc-400"
-            disabled={
-              !paymentsEnabled ||
-              !session ||
-              session.status === "complete" ||
-              isLoading
-            }
-            onClick={() => {
-              void completeCheckout();
-            }}
-            type="button"
-          >
-            {isLoading && step === "created" ? (
-              <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
-            ) : (
-              <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
-            )}
-            {t("checkout.complete")}
-          </button>
+          {hostedCheckoutUrl ? (
+            <a
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
+              href={hostedCheckoutUrl}
+              rel="noreferrer"
+              target="_blank"
+            >
+              <ExternalLink aria-hidden="true" className="h-4 w-4" />
+              {t("checkout.openHosted")}
+            </a>
+          ) : (
+            <button
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:text-zinc-400"
+              disabled={
+                !paymentsEnabled ||
+                !session ||
+                session.status === "complete" ||
+                isLoading
+              }
+              onClick={() => {
+                void completeCheckout();
+              }}
+              type="button"
+            >
+              {isLoading && step === "created" ? (
+                <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
+              )}
+              {t("checkout.complete")}
+            </button>
+          )}
           <button
             className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
             onClick={reset}

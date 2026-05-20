@@ -52,6 +52,37 @@ test("paid demo user can complete mock checkout", async ({ page }) => {
   await expect(page.getByText("checkout.session.completed")).toBeVisible();
 });
 
+test("real checkout sessions expose hosted Stripe URL", async ({ page }) => {
+  await loginAs(page, "paid@prompteer.dev");
+
+  await page.goto("/en/billing");
+  await page.route("**/api/backend/api/v1/billing/checkout", async (route) => {
+    await route.fulfill({
+      json: {
+        id: "cs_test_hosted",
+        mode: "subscription",
+        status: "open",
+        payment_status: "unpaid",
+        amount_total: 1200,
+        currency: "usd",
+        url: "https://checkout.stripe.com/c/pay/cs_test_hosted",
+        customer_email: "paid@prompteer.dev",
+        provider: "stripe",
+      },
+    });
+  });
+
+  await page.getByRole("button", { name: "Start checkout" }).click();
+
+  await expect(page.getByText("Hosted URL")).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Open Stripe Checkout" }),
+  ).toHaveAttribute("href", "https://checkout.stripe.com/c/pay/cs_test_hosted");
+  await expect(
+    page.getByRole("button", { name: "Complete mock checkout" }),
+  ).toHaveCount(0);
+});
+
 test("seeded user can view profile settings", async ({ page }) => {
   await loginAs(page);
 

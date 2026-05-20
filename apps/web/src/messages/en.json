@@ -45,7 +45,7 @@
   "billing": {
     "eyebrow": "Billing",
     "title": "Subscription checkout",
-    "description": "Start a Pro checkout session for the paid demo account and complete it through the local Stripe flow.",
+    "description": "Start a Pro checkout session for the paid demo account. Local mocks complete in-app; real Stripe sessions open hosted Checkout.",
     "plan": {
       "name": "Prompteer Pro",
       "price": "$12/mo",
@@ -59,6 +59,7 @@
     "checkout": {
       "title": "Checkout session",
       "readyDescription": "A local Stripe-compatible session is ready.",
+      "hostedDescription": "A hosted Stripe Checkout Session is ready. Open it to continue payment on Stripe.",
       "createDescription": "Create a session for the paid demo user.",
       "fallbackPaymentStatus": "unpaid",
       "amount": "Amount",
@@ -66,7 +67,9 @@
       "fallbackStatus": "not created",
       "session": "Session",
       "fallbackSession": "No checkout session yet",
+      "hostedUrl": "Hosted URL",
       "start": "Start checkout",
+      "openHosted": "Open Stripe Checkout",
       "complete": "Complete mock checkout",
       "reset": "Reset",
       "disabledNotice": "Checkout is disabled by the environment feature flags.",
