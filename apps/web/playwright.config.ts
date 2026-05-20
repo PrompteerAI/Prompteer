@@ -1,6 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const reuseExistingServer = !process.env.CI;
+const apiCommand =
+  "bash -lc 'cd ../api && mkdir -p ../../.verify/e2e && rm -f ../../.verify/e2e/api.sqlite && api_db=$(pwd)/../../.verify/e2e/api.sqlite && DATABASE_URL=sqlite:///${api_db} AUTO_SEED_ON_STARTUP=true uv run fastapi dev app/main.py --port 8000'";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -16,8 +18,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command:
-        "bash -lc 'cd ../api && AUTO_SEED_ON_STARTUP=false uv run fastapi dev app/main.py --port 8000'",
+      command: apiCommand,
       url: "http://127.0.0.1:8000/api/v1/health/live",
       reuseExistingServer,
       timeout: 120_000,
