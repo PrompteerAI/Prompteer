@@ -1,4 +1,4 @@
-# Version 1 runtime configuration endpoints.
+"""API v1 runtime configuration routes; no sibling config API version exists yet."""
 
 from fastapi import APIRouter
 

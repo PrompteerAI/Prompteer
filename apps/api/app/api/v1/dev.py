@@ -1,3 +1,5 @@
+"""API v1 development-only routes; no sibling dev API version exists yet."""
+
 from fastapi import APIRouter, HTTPException
 
 from app.core.feature_flags import dev_routes_enabled

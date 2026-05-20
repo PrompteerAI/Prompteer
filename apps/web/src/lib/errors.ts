@@ -1,3 +1,5 @@
+// Client-side API error normalization. Converts Problem Details and transport
+// failures into stable codes that UI components can switch on.
 import type { ProblemDetails } from "@prompteer/shared-types";
 
 import { ApiResponseError } from "./api-client";

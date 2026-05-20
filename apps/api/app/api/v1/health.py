@@ -1,3 +1,5 @@
+"""API v1 health probe routes; no sibling health API version exists yet."""
+
 from collections.abc import Awaitable
 from typing import cast
 

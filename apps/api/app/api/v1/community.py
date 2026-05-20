@@ -1,3 +1,5 @@
+"""API v1 community routes; no sibling community API version exists yet."""
+
 from datetime import date as LocalDate
 from typing import Annotated
 

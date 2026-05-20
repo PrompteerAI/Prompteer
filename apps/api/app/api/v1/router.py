@@ -1,3 +1,5 @@
+"""API v1 router assembly; no sibling API versions exist yet."""
+
 from fastapi import APIRouter
 
 from app.api.v1.billing import router as billing_router

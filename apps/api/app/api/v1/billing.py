@@ -1,3 +1,5 @@
+"""API v1 billing routes; no sibling billing API version exists yet."""
+
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Request, Response, status

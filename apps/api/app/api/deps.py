@@ -1,3 +1,5 @@
+"""Shared FastAPI dependency helpers for authenticated API v1 routes."""
+
 from typing import Annotated
 
 from fastapi import Header, HTTPException, Request, status
