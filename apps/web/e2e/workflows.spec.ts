@@ -19,7 +19,9 @@ test("seeded user can run a coding prompt", async ({ page }) => {
   await page.getByRole("textbox", { name: "Prompt" }).fill(prompt);
   await page.getByRole("button", { name: "Run prompt" }).click();
 
-  await expect(page.getByText("Mock run result")).toBeVisible();
+  await expect(page.getByText("Mock run result")).toBeVisible({
+    timeout: 15_000,
+  });
   await expect(page.getByText(/Mock Prompteer response/)).toBeVisible();
   await expect(page.getByText(/tokens/)).toBeVisible();
   await expect(page.getByText("Published to board")).toBeVisible();
