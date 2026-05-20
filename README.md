@@ -1,110 +1,168 @@
 # Prompteer
 
-Prompteer is a prompt challenge and sharing platform rebuilt as a production-ready monorepo.
+Prompt challenge workspace for practicing prompts, comparing deterministic mock outputs, and sharing reviewable challenge runs.
 
-The target local contract is:
+[![CI](https://img.shields.io/github/actions/workflow/status/hyuk/prompteer/ci.yaml?branch=main&label=ci)](https://github.com/hyuk/prompteer/actions/workflows/ci.yaml) [![Build](https://img.shields.io/github/actions/workflow/status/hyuk/prompteer/build.yaml?branch=main&label=build)](https://github.com/hyuk/prompteer/actions/workflows/build.yaml) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Node](https://img.shields.io/badge/node-22-5FA04E)](.nvmrc) [![Python](https://img.shields.io/badge/python-3.12-3776AB)](apps/api/.python-version) [![GHCR](https://img.shields.io/badge/GHCR-prompteer-2496ED)](https://github.com/hyuk/prompteer/pkgs/container/prompteer-web) [![Commit activity](https://img.shields.io/github/commit-activity/m/hyuk/prompteer)](https://github.com/hyuk/prompteer/commits/main)
+
+![Prompteer landing workspace](docs/screenshots/01-landing.png)
+
+## What Is Prompteer
+
+Prompteer is a clean monorepo rebuild of a prompt challenge and sharing prototype. It combines a Next.js app, FastAPI API, seeded demo data, and schema-faithful local mocks for Google OAuth, OpenAI, Anthropic, Stripe, and SendGrid so contributors can run the complete product without external credentials.
+
+## Quick Start
+
+No external API keys are required; blank provider credentials automatically select local mocks.
 
 ```sh
+git clone https://github.com/hyuk/prompteer.git && cd prompteer
 cp .env.example .env
 docker compose up -d
 pnpm dev
 ```
 
-With no external API keys, the app uses deterministic local mocks for Google OAuth, LLM providers, Stripe, and SendGrid.
+Open `http://localhost:3000`. The containerized app profile is also available with `docker compose --profile app up -d`, then `http://localhost`.
 
-## Workspace
+## Screenshots & Demo
 
-- `apps/web` - Next.js App Router frontend
-- `apps/api` - FastAPI backend
-- `packages/*` - shared TypeScript configuration and types
-- `infra/*` - nginx, Postgres, and Compose support files
-- `docs/*` - public architecture, ADRs, runbooks, screenshots, and integration notes
+| 1. Landing                           | 2. Mock Google login               | 3. Prompt editor                              |
+| ------------------------------------ | ---------------------------------- | --------------------------------------------- |
+| ![](docs/screenshots/01-landing.png) | ![](docs/screenshots/02-login.png) | ![](docs/screenshots/03-coding-challenge.png) |
 
-## Status
+| 4. Billing upgrade                            | 5. Review board                    | 6. Mock mailbox                      |
+| --------------------------------------------- | ---------------------------------- | ------------------------------------ |
+| ![](docs/screenshots/04-billing-checkout.png) | ![](docs/screenshots/05-board.png) | ![](docs/screenshots/06-mailbox.png) |
 
-The rebuild is in progress. See `docs/architecture.md` and `docs/adr/` for accepted design decisions.
+The verified local demo covers seed login, prompt execution through the LLM mock, Stripe-shaped checkout completion, review board reads, logout, and captured SendGrid email viewing.
 
-## Current Verified Slice
+## Architecture
 
-The current scaffold starts the FastAPI and Next.js development servers together, runs development migrations and seed data automatically, supports mock Google OAuth login through Auth.js, and includes a seeded coding challenge workspace that runs prompts through the deterministic local LLM mock:
+```mermaid
+flowchart LR
+  Browser["Browser"] --> Web["Next.js web\nAuth.js + next-intl"]
+  Web --> Proxy["Next API proxy\n/api/backend/*"]
+  Proxy --> API["FastAPI\n/api/v1"]
+  Web --> JWKS["Auth JWKS\n/api/auth/jwks"]
+  API --> JWKS
+  API --> Postgres["PostgreSQL 16"]
+  API --> Redis["Redis 7\nrate limits + Celery"]
+  API --> Worker["Celery worker"]
+  Worker --> Redis
+  Nginx["nginx single origin"] --> Web
+  Nginx --> API
+  API --> Google["Google OAuth\nreal or mock"]
+  API --> LLM["OpenAI / Anthropic\nreal or mock"]
+  API --> Stripe["Stripe\nreal or mock"]
+  API --> SendGrid["SendGrid\nreal or mock"]
+```
+
+Next.js owns authentication and signs RS256 session/API JWTs. Browser mutations go through the same-origin API proxy so Auth.js cookies stay HTTP-only while FastAPI still receives bearer credentials for per-user rate limits and LLM quotas. FastAPI stores domain data in PostgreSQL, uses Redis for shared rate-limit state and Celery, and emits RFC 9457 Problem Details for API errors. See [docs/architecture.md](docs/architecture.md) for deeper notes and ADR links.
+
+## Tech Stack
+
+Frontend:
+
+- [Next.js 15](https://nextjs.org/) App Router with [React 19](https://react.dev/) and strict [TypeScript](https://www.typescriptlang.org/)
+- [Tailwind CSS v4](https://tailwindcss.com/), [lucide-react](https://lucide.dev/), [next-intl](https://next-intl.dev/)
+- [Auth.js v5](https://authjs.dev/), [TanStack Query](https://tanstack.com/query), [React Hook Form](https://react-hook-form.com/), [Zod](https://zod.dev/)
+- [Vitest](https://vitest.dev/) and [Playwright](https://playwright.dev/) with headless Chromium coverage
+
+Backend:
+
+- [Python 3.12](https://www.python.org/) and [FastAPI](https://fastapi.tiangolo.com/)
+- [SQLModel](https://sqlmodel.tiangolo.com/), [Alembic](https://alembic.sqlalchemy.org/), [PostgreSQL 16](https://www.postgresql.org/)
+- [Celery](https://docs.celeryq.dev/), [Redis 7](https://redis.io/), [slowapi](https://slowapi.readthedocs.io/)
+- [structlog](https://www.structlog.org/), [asgi-correlation-id](https://github.com/snok/asgi-correlation-id), [Ruff](https://docs.astral.sh/ruff/), [pytest](https://docs.pytest.org/)
+
+Infrastructure:
+
+- [pnpm workspaces](https://pnpm.io/workspaces), [uv](https://docs.astral.sh/uv/), [Turborepo](https://turbo.build/repo)
+- [Docker Compose](https://docs.docker.com/compose/), [nginx](https://nginx.org/), [GitHub Actions](https://docs.github.com/actions)
+- Images are built for [GHCR](https://ghcr.io/) as `prompteer-web` and `prompteer-api`
+
+## Development
+
+Install dependencies:
 
 ```sh
-cp .env.example .env
-docker compose up -d
 pnpm install
 uv sync --project apps/api --dev
+```
+
+Run the full local development stack:
+
+```sh
+docker compose up -d
 pnpm dev
 ```
 
-Health checks:
-
-- Web: `http://localhost:3000/api/health`
-- API: `http://localhost:8000/api/v1/health/live`
-- API readiness: `http://localhost:8000/api/v1/health/ready`
-- API startup: `http://localhost:8000/api/v1/health/startup`
-
-The default Compose command starts only PostgreSQL and Redis so local `pnpm dev` can own ports 3000 and 8000. To run the containerized app topology with API, worker, web, and nginx:
+Run frontend and backend independently:
 
 ```sh
-docker compose --profile app up -d
+pnpm --filter @prompteer/web dev
+cd apps/api && uv run fastapi dev app/main.py --port 8000
 ```
 
-Seed demo data is created automatically when the API starts in development. You can re-run it manually because it is idempotent:
+Run tests:
+
+```sh
+pnpm test
+cd apps/api && uv run pytest
+pnpm --filter @prompteer/web test:e2e
+```
+
+Run lint, typecheck, and formatting:
+
+```sh
+pnpm lint
+pnpm typecheck
+pnpm format:check
+cd apps/api && uv run ruff check . && uv run mypy app tests
+```
+
+Add a database migration:
+
+```sh
+cd apps/api
+uv run alembic revision --autogenerate -m "describe change"
+uv run alembic upgrade head
+```
+
+Regenerate OpenAPI and shared TypeScript API types:
+
+```sh
+make types
+make types-check
+```
+
+Seed demo data and captured mock emails:
 
 ```sh
 make seed
 ```
 
-The seed flow creates demo users, prompt challenge categories, coding exercises, public shares, board posts, and captured mock emails for `/api/v1/dev/mailbox`.
+## External Integrations
 
-Regenerate the committed OpenAPI snapshot and TypeScript API types after backend schema changes:
+| Integration  | Real-mode env vars                                                                 | Local mock behavior                                                         | Schema notes                                                              |
+| ------------ | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Google OAuth | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`                                         | Local OIDC provider with seeded admin/paid/free users and JWKS              | [google-oauth.md](docs/integrations/google-oauth.md), verified 2026-05-20 |
+| OpenAI       | `OPENAI_API_KEY`                                                                   | Deterministic Chat Completions responses and SSE chunks                     | [openai.md](docs/integrations/openai.md), verified 2026-05-20             |
+| Anthropic    | `ANTHROPIC_API_KEY`                                                                | Deterministic Messages responses and Anthropic-shaped SSE events            | [anthropic.md](docs/integrations/anthropic.md), verified 2026-05-20       |
+| Stripe       | `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET` | Checkout Session create/retrieve/expire/complete with local webhook signing | [stripe.md](docs/integrations/stripe.md), verified 2026-05-20             |
+| SendGrid     | `SENDGRID_API_KEY`                                                                 | Mail Send validation, `.eml` capture, and `/dev/mailbox` viewer             | [sendgrid.md](docs/integrations/sendgrid.md), verified 2026-05-20         |
 
-```sh
-make types
-```
+## Deployment
 
-Mock Google OAuth demo accounts:
+Production runs behind nginx as one origin: `/` routes to the Next.js web app and `/api/` routes to FastAPI. GitHub Actions lint, typecheck, test, build, and publish images to GHCR. PostgreSQL backups, restores, and migration safety are documented in [docs/runbooks/backup-restore.md](docs/runbooks/backup-restore.md) and [docs/runbooks/migrations.md](docs/runbooks/migrations.md).
 
-- `admin@prompteer.dev`
-- `paid@prompteer.dev`
-- `free@prompteer.dev`
+## Contributing
 
-Dev shortcut: `/dev/login-as/admin%40prompteer.dev` issues a local Auth.js session for
-seeded accounts when `AUTH_ALLOW_SEED_LOGIN=true`.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening issues or pull requests. The project uses Conventional Commits, pre-commit hooks, focused tests, and ADRs for load-bearing design decisions.
 
-![Prompteer home screen](docs/screenshots/01-home.png)
+## License
 
-![Prompteer login screen](docs/screenshots/02-login.png)
+MIT - see [LICENSE](LICENSE).
 
-![Prompteer coding challenge workspace](docs/screenshots/03-coding-challenge.png)
+## Acknowledgments
 
-![Prompteer billing checkout](docs/screenshots/04-billing-checkout.png)
-
-![Prompteer review board](docs/screenshots/05-board.png)
-
-## Verification
-
-The scaffold currently passes:
-
-```sh
-pnpm lint
-pnpm typecheck
-pnpm test
-cd apps/api && uv run ruff check .
-cd apps/api && uv run ruff format --check .
-cd apps/api && uv run mypy app tests
-cd apps/api && uv run pytest
-pnpm --filter @prompteer/web build
-```
-
-The login flow was also verified in headless Chromium against local FastAPI and Next.js servers: selecting `Admin demo` completes the mock Google OIDC authorization-code flow and redirects back to `/en`.
-
-The coding challenge workspace was verified in headless Chromium against a production Next.js build and local FastAPI API: `/en/challenges/coding` loads seeded PS challenges and `Run prompt` returns deterministic mock LLM feedback.
-
-The billing checkout workspace was verified in headless Chromium against a production Next.js build and local FastAPI API: `/en/billing` creates a Stripe-shaped checkout session and completes it through the dev mock flow.
-
-The review board was verified in headless Chromium against a production Next.js build and seeded local FastAPI API: `/en/board` renders seeded questions and public prompt shares.
-
-The mock mailbox was verified in headless Chromium against local FastAPI and Next.js servers: `/dev/mailbox` lists seeded SendGrid captures and opens the raw `.eml` message view.
-
-![Prompteer mock mailbox](docs/screenshots/06-mailbox.png)
+This repository is a clean rewrite of an earlier Vite + React and FastAPI prototype originally built by a small student team.
