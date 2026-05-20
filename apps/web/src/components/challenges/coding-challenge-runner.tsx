@@ -1,7 +1,8 @@
 "use client";
 
 // Prompt runner UI for seeded coding challenges and deterministic LLM feedback.
-import { Loader2, Play, WandSparkles } from "lucide-react";
+import { CheckCircle2, Loader2, Play, WandSparkles } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
@@ -26,6 +27,7 @@ export function CodingChallengeRunner({
     challenges[0]?.id ?? "",
   );
   const [prompt, setPrompt] = useState(() => t("defaultPrompt"));
+  const [publishToBoard, setPublishToBoard] = useState(true);
   const [result, setResult] = useState<ChallengeRunResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
@@ -56,7 +58,7 @@ export function CodingChallengeRunner({
       const response = unwrapApiResponse(
         await api.POST("/api/v1/challenges/{challenge_id}/run", {
           params: { path: { challenge_id: selectedChallenge.id } },
-          body: { prompt },
+          body: { prompt, publish_to_board: publishToBoard },
         }),
       );
       setResult(response);
@@ -148,6 +150,22 @@ export function CodingChallengeRunner({
           onChange={(event) => setPrompt(event.target.value)}
           value={prompt}
         />
+        <label className="mt-4 flex items-start gap-3 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm text-zinc-700">
+          <input
+            checked={publishToBoard}
+            className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-emerald-700 focus:ring-emerald-600"
+            onChange={(event) => setPublishToBoard(event.target.checked)}
+            type="checkbox"
+          />
+          <span>
+            <span className="block font-medium text-zinc-900">
+              {t("publishLabel")}
+            </span>
+            <span className="mt-1 block leading-5">
+              {t("publishDescription")}
+            </span>
+          </span>
+        </label>
         <button
           className="mt-4 inline-flex h-10 items-center gap-2 rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
           disabled={!llmEnabled || isRunning || prompt.trim().length < 10}
@@ -188,6 +206,24 @@ export function CodingChallengeRunner({
               <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-zinc-700">
                 {result.output}
               </p>
+              {result.share ? (
+                <div className="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+                  <span className="inline-flex items-center gap-2 font-medium">
+                    <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
+                    {t("published")}
+                  </span>
+                  <Link
+                    className="font-medium underline underline-offset-4 hover:text-emerald-700"
+                    href="/en/board"
+                  >
+                    {t("viewBoard")}
+                  </Link>
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-zinc-500">
+                  {t("notPublished")}
+                </p>
+              )}
             </>
           ) : (
             <p className="text-sm leading-6 text-zinc-500">

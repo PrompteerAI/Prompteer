@@ -4,6 +4,8 @@ import { loginAs } from "./helpers";
 
 test("seeded user can run a coding prompt", async ({ page }) => {
   await loginAs(page);
+  const prompt =
+    "Explain FizzBuzz rules, then produce concise Python with E2E-created board proof.";
 
   await page.goto("/en/challenges/coding");
   await expect(
@@ -13,11 +15,17 @@ test("seeded user can run a coding prompt", async ({ page }) => {
     page.getByRole("heading", { name: "FizzBuzz prompt repair" }),
   ).toBeVisible();
 
+  await page.getByRole("textbox", { name: "Prompt" }).fill(prompt);
   await page.getByRole("button", { name: "Run prompt" }).click();
 
   await expect(page.getByText("Mock run result")).toBeVisible();
   await expect(page.getByText(/Mock Prompteer response/)).toBeVisible();
   await expect(page.getByText(/tokens/)).toBeVisible();
+  await expect(page.getByText("Published to board")).toBeVisible();
+
+  await page.getByRole("link", { name: "View board" }).click();
+  await expect(page).toHaveURL(/\/en\/board$/);
+  await expect(page.getByText(prompt)).toBeVisible();
 });
 
 test("paid demo user can complete mock checkout", async ({ page }) => {

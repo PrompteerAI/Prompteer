@@ -304,6 +304,11 @@ export interface components {
     ChallengeRunRequest: {
       /** Prompt */
       prompt: string;
+      /**
+       * Publish To Board
+       * @default true
+       */
+      publish_to_board: boolean;
     };
     /** ChallengeRunResponse */
     ChallengeRunResponse: {
@@ -318,10 +323,23 @@ export interface components {
       raw: {
         [key: string]: unknown;
       };
+      share: components["schemas"]["ChallengeRunShareRead"] | null;
       /** Usage */
       usage: {
         [key: string]: number;
       };
+    };
+    /** ChallengeRunShareRead */
+    ChallengeRunShareRead: {
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Id */
+      id: string;
+      /** Is Public */
+      is_public: boolean;
     };
     /** ChallengeSummaryRead */
     ChallengeSummaryRead: {

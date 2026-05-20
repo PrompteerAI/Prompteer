@@ -1,3 +1,5 @@
+"""API v1 challenge routes; no sibling challenge API version exists yet."""
+
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
@@ -7,10 +9,16 @@ from app.api.deps import get_current_principal
 from app.core.feature_flags import require_feature_enabled
 from app.core.ratelimit import GENERAL_RATE_LIMIT, LLM_RATE_LIMIT, limiter
 from app.core.security import Principal
+from app.core.time import ensure_utc
 from app.db.session import get_session
 from app.integrations.llm import get_llm_client
-from app.models.domain import Challenge, ChallengeTag
-from app.schemas.challenge import ChallengeRead, ChallengeRunRequest, ChallengeRunResponse
+from app.models.domain import Challenge, ChallengeTag, Share
+from app.schemas.challenge import (
+    ChallengeRead,
+    ChallengeRunRequest,
+    ChallengeRunResponse,
+    ChallengeRunShareRead,
+)
 from app.services.llm_quota import (
     assert_llm_quota_available,
     record_llm_usage,
@@ -86,6 +94,12 @@ async def run_challenge_prompt(
         }
     )
     record_llm_usage(session, user, llm_response["usage"])
+    share = create_prompt_share(
+        session,
+        user_id=user.id,
+        challenge_id=challenge.id,
+        run=run_request,
+    )
     message = llm_response["choices"][0]["message"]
     return ChallengeRunResponse(
         challenge=challenge_to_read(challenge),
@@ -94,6 +108,7 @@ async def run_challenge_prompt(
         output=str(message["content"]),
         usage=llm_response["usage"],
         raw=llm_response,
+        share=share_to_run_read(share) if share is not None else None,
     )
 
 
@@ -115,4 +130,33 @@ def challenge_to_read(challenge: Challenge) -> ChallengeRead:
         level=challenge.level,
         title=challenge.title,
         content=challenge.content,
+    )
+
+
+def create_prompt_share(
+    session: Session,
+    *,
+    user_id: str,
+    challenge_id: str,
+    run: ChallengeRunRequest,
+) -> Share | None:
+    if not run.publish_to_board:
+        return None
+    share = Share(
+        challenge_id=challenge_id,
+        user_id=user_id,
+        prompt=run.prompt,
+        is_public=True,
+    )
+    session.add(share)
+    session.commit()
+    session.refresh(share)
+    return share
+
+
+def share_to_run_read(share: Share) -> ChallengeRunShareRead:
+    return ChallengeRunShareRead(
+        id=share.id,
+        is_public=share.is_public,
+        created_at=ensure_utc(share.created_at),
     )

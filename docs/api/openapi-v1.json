@@ -110,6 +110,11 @@
             "minLength": 10,
             "title": "Prompt",
             "type": "string"
+          },
+          "publish_to_board": {
+            "default": true,
+            "title": "Publish To Board",
+            "type": "boolean"
           }
         },
         "required": ["prompt"],
@@ -138,6 +143,16 @@
             "title": "Raw",
             "type": "object"
           },
+          "share": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChallengeRunShareRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "usage": {
             "additionalProperties": {
               "type": "integer"
@@ -152,9 +167,30 @@
           "provider",
           "output",
           "usage",
-          "raw"
+          "raw",
+          "share"
         ],
         "title": "ChallengeRunResponse",
+        "type": "object"
+      },
+      "ChallengeRunShareRead": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_public": {
+            "title": "Is Public",
+            "type": "boolean"
+          }
+        },
+        "required": ["id", "is_public", "created_at"],
+        "title": "ChallengeRunShareRead",
         "type": "object"
       },
       "ChallengeSummaryRead": {
