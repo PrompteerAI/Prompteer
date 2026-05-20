@@ -20,6 +20,10 @@ The legacy product centered on prompt challenges:
 
 The rebuild keeps those domain concepts while replacing password auth with Auth.js Google OAuth, adding production-grade validation, observability, migrations, and deterministic mocks.
 
+## Authentication
+
+The Next.js app is the SSO surface. Auth.js signs JWT sessions with RS256 through custom encode/decode hooks and exposes the public key set at `/api/auth/jwks`. FastAPI validates `Authorization: Bearer <token>` credentials against that JWKS endpoint, issuer, and audience before constructing a `Principal`.
+
 ## Error model
 
 The API returns RFC 9457 Problem Details for all errors. Frontend code normalizes API, network, and parse errors through one typed helper.

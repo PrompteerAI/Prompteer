@@ -2,6 +2,8 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import type { OAuthConfig, Provider } from "next-auth/providers";
 
+import { decodeAuthJwt, encodeAuthJwt } from "@/server/auth-jwt";
+
 const MOCK_GOOGLE_CLIENT_ID = "mock-google-client";
 const MOCK_GOOGLE_CLIENT_SECRET = "mock-google-secret";
 
@@ -62,5 +64,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
   session: {
     strategy: "jwt",
+  },
+  jwt: {
+    encode: encodeAuthJwt,
+    decode: decodeAuthJwt,
   },
 });

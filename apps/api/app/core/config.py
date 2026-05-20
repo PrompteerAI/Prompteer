@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     redis_url: str = Field(default="redis://localhost:6379/0", alias="REDIS_URL")
     auth_allow_seed_login: bool = Field(default=True, alias="AUTH_ALLOW_SEED_LOGIN")
     enable_dev_routes: bool = Field(default=True, alias="ENABLE_DEV_ROUTES")
+    auth_jwks_url: str = Field(
+        default="http://localhost:3000/api/auth/jwks",
+        alias="AUTH_JWKS_URL",
+    )
+    auth_jwt_issuer: str = Field(default="http://localhost:3000", alias="AUTH_JWT_ISSUER")
+    auth_jwt_audience: str = Field(default="prompteer-api", alias="AUTH_JWT_AUDIENCE")
     log_json: bool = Field(default=False, alias="LOG_JSON")
     sentry_dsn: str = Field(default="", alias="SENTRY_DSN")
 
