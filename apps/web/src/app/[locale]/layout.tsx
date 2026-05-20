@@ -1,18 +1,22 @@
+// Locale root layout. It wires next-intl messages into every localized route.
 import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
-import { getMessages } from "next-intl/server";
+import { getMessages, getTranslations } from "next-intl/server";
 
 import "../globals.css";
-
-export const metadata: Metadata = {
-  title: "Prompteer",
-  description: "Prompt challenge and sharing platform",
-};
 
 type Props = {
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("metadata");
+  return {
+    title: t("title"),
+    description: t("description"),
+  };
+}
 
 export default async function LocaleLayout({
   children,

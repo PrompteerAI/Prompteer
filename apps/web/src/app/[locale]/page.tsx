@@ -1,3 +1,4 @@
+// Localized home workspace with entry points into the seeded demo flows.
 import {
   ArrowRight,
   Code2,
@@ -33,7 +34,7 @@ export default async function HomePage(): Promise<React.ReactElement> {
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div className="max-w-3xl">
             <p className="text-sm font-semibold uppercase text-emerald-700">
-              Prompteer
+              {t("brand")}
             </p>
             <h1 className="mt-4 text-5xl font-semibold leading-tight text-zinc-950">
               {t("title")}
@@ -55,7 +56,7 @@ export default async function HomePage(): Promise<React.ReactElement> {
                 type="submit"
               >
                 <LogOut aria-hidden="true" className="h-4 w-4" />
-                Log out
+                {t("logout")}
               </button>
             </form>
           ) : null}

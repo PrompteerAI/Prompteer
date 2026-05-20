@@ -1,3 +1,6 @@
+// Billing page for exercising the local Stripe-compatible checkout flow.
+import { getTranslations } from "next-intl/server";
+
 import { BillingCheckoutPanel } from "@/components/billing/billing-checkout-panel";
 import { apiGet } from "@/lib/api-client";
 import type { FeatureFlags } from "@prompteer/shared-types";
@@ -5,6 +8,7 @@ import type { FeatureFlags } from "@prompteer/shared-types";
 export const dynamic = "force-dynamic";
 
 export default async function BillingPage(): Promise<React.ReactElement> {
+  const t = await getTranslations("billing");
   const features = await apiGet<FeatureFlags>("/config/features", {
     cache: "no-store",
   });
@@ -14,12 +18,11 @@ export default async function BillingPage(): Promise<React.ReactElement> {
       <div className="mx-auto max-w-6xl">
         <div className="mb-6">
           <p className="text-sm font-semibold uppercase text-emerald-700">
-            Billing
+            {t("eyebrow")}
           </p>
-          <h1 className="mt-2 text-3xl font-semibold">Subscription checkout</h1>
+          <h1 className="mt-2 text-3xl font-semibold">{t("title")}</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
-            Start a Pro checkout session for the paid demo account and complete
-            it through the local Stripe flow.
+            {t("description")}
           </p>
         </div>
         <BillingCheckoutPanel paymentsEnabled={features.payments} />

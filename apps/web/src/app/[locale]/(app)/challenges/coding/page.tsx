@@ -1,3 +1,6 @@
+// Coding challenge page for running prompts against seeded problem-solving tasks.
+import { getTranslations } from "next-intl/server";
+
 import {
   CodingChallengeRunner,
   type Challenge,
@@ -8,6 +11,7 @@ import type { FeatureFlags } from "@prompteer/shared-types";
 export const dynamic = "force-dynamic";
 
 export default async function CodingChallengesPage(): Promise<React.ReactElement> {
+  const t = await getTranslations("coding");
   const [challenges, features] = await Promise.all([
     apiGet<Challenge[]>("/challenges?tag=ps", {
       cache: "no-store",
@@ -22,14 +26,11 @@ export default async function CodingChallengesPage(): Promise<React.ReactElement
       <div className="mx-auto max-w-6xl">
         <div className="mb-6">
           <p className="text-sm font-semibold uppercase text-emerald-700">
-            Coding
+            {t("eyebrow")}
           </p>
-          <h1 className="mt-2 text-3xl font-semibold">
-            Prompt repair workspace
-          </h1>
+          <h1 className="mt-2 text-3xl font-semibold">{t("title")}</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
-            Pick a seeded coding challenge, draft a prompt, and run it through
-            the local LLM mock.
+            {t("description")}
           </p>
         </div>
         <CodingChallengeRunner

@@ -1,6 +1,8 @@
 "use client";
 
+// Prompt runner UI for seeded coding challenges and deterministic LLM feedback.
 import { Loader2, Play, WandSparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
 import { apiPost } from "@/lib/api-client";
@@ -36,12 +38,11 @@ export function CodingChallengeRunner({
   challenges,
   llmEnabled,
 }: CodingChallengeRunnerProps): React.ReactElement {
+  const t = useTranslations("coding.runner");
   const [selectedChallengeId, setSelectedChallengeId] = useState(
     challenges[0]?.id ?? "",
   );
-  const [prompt, setPrompt] = useState(
-    "Explain the FizzBuzz rules first, then produce concise Python with clear edge cases.",
-  );
+  const [prompt, setPrompt] = useState(() => t("defaultPrompt"));
   const [result, setResult] = useState<ChallengeRunResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
@@ -58,11 +59,11 @@ export function CodingChallengeRunner({
   ): Promise<void> {
     event.preventDefault();
     if (!llmEnabled) {
-      setError("Prompt runs are disabled for this environment.");
+      setError(t("errors.disabled"));
       return;
     }
     if (!selectedChallenge || prompt.trim().length < 10) {
-      setError("Write a prompt with at least 10 characters.");
+      setError(t("errors.shortPrompt"));
       return;
     }
     setIsRunning(true);
@@ -76,17 +77,13 @@ export function CodingChallengeRunner({
     } catch (caughtError) {
       const normalizedError = await normalizeError(caughtError);
       if (normalizedError.code === "rate_limited") {
-        setError(
-          "Prompt runs are temporarily rate limited. Wait a moment, then try again.",
-        );
+        setError(t("errors.rateLimited"));
       } else if (normalizedError.code === "quota_exceeded") {
         setError(normalizedError.message);
       } else if (normalizedError.status === 401) {
-        setError("Sign in before running a prompt.");
+        setError(t("errors.unauthorized"));
       } else {
-        setError(
-          "The prompt run failed. Check that the API server and seed data are running.",
-        );
+        setError(t("errors.failed"));
       }
     } finally {
       setIsRunning(false);
@@ -97,11 +94,11 @@ export function CodingChallengeRunner({
     return (
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-semibold text-zinc-950">
-          Coding challenges
+          {t("emptyTitle")}
         </h1>
         <p className="mt-3 text-sm leading-6 text-zinc-600">
-          No coding challenges are available yet. Run <code>make seed</code> to
-          create demo data.
+          {t("emptyDescriptionBefore")} <code>make seed</code>{" "}
+          {t("emptyDescriptionAfter")}
         </p>
       </section>
     );
@@ -113,7 +110,9 @@ export function CodingChallengeRunner({
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium uppercase text-emerald-700">
-              Challenge #{selectedChallenge.challenge_number}
+              {t("challengeEyebrow", {
+                number: selectedChallenge.challenge_number,
+              })}
             </p>
             <h1 className="mt-2 text-2xl font-semibold text-zinc-950">
               {selectedChallenge.title}
@@ -128,7 +127,7 @@ export function CodingChallengeRunner({
           className="mt-6 block text-sm font-medium text-zinc-800"
           htmlFor="challenge"
         >
-          Challenge
+          {t("challengeLabel")}
         </label>
         <select
           className="mt-2 h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-950"
@@ -144,7 +143,7 @@ export function CodingChallengeRunner({
         </select>
 
         <p className="mt-6 text-sm leading-6 text-zinc-600">
-          {selectedChallenge.content ?? "No additional instructions."}
+          {selectedChallenge.content ?? t("noInstructions")}
         </p>
       </div>
 
@@ -155,7 +154,7 @@ export function CodingChallengeRunner({
         }}
       >
         <label className="text-sm font-medium text-zinc-800" htmlFor="prompt">
-          Prompt
+          {t("promptLabel")}
         </label>
         <textarea
           className="mt-2 min-h-44 w-full resize-y rounded-md border border-zinc-300 px-3 py-2 text-sm leading-6 text-zinc-950 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
@@ -173,13 +172,11 @@ export function CodingChallengeRunner({
           ) : (
             <Play aria-hidden="true" className="h-4 w-4" />
           )}
-          Run prompt
+          {t("run")}
         </button>
 
         {!llmEnabled ? (
-          <p className="mt-3 text-sm text-amber-700">
-            Prompt runs are disabled by the environment feature flags.
-          </p>
+          <p className="mt-3 text-sm text-amber-700">{t("disabledNotice")}</p>
         ) : null}
 
         {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
@@ -196,10 +193,10 @@ export function CodingChallengeRunner({
                     aria-hidden="true"
                     className="h-4 w-4 text-emerald-700"
                   />
-                  Mock run result
+                  {t("resultTitle")}
                 </div>
                 <span className="text-xs text-zinc-500">
-                  {result.usage.total_tokens} tokens
+                  {t("tokenCount", { count: result.usage.total_tokens })}
                 </span>
               </div>
               <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-zinc-700">
@@ -208,8 +205,7 @@ export function CodingChallengeRunner({
             </>
           ) : (
             <p className="text-sm leading-6 text-zinc-500">
-              Run a prompt to see deterministic feedback from the local LLM
-              mock.
+              {t("emptyResult")}
             </p>
           )}
         </div>

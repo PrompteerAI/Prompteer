@@ -1,4 +1,8 @@
 {
+  "metadata": {
+    "title": "Prompteer",
+    "description": "Prompt challenge and sharing platform"
+  },
   "app": {
     "name": "Prompteer",
     "tagline": "Practice prompts, compare outputs, and learn from shared challenge runs."
@@ -9,8 +13,10 @@
     "profile": "Profile"
   },
   "home": {
+    "brand": "Prompteer",
     "title": "Prompt challenge workspace",
     "subtitle": "Sign in with seeded demo users, run a coding prompt challenge, and complete a local checkout without external credentials.",
+    "logout": "Log out",
     "login": {
       "title": "Demo login",
       "description": "Enter through mock Google OAuth with admin, paid, or free seed accounts."
@@ -34,5 +40,87 @@
     "admin": "Admin demo",
     "paid": "Paid demo",
     "free": "Free demo"
+  },
+  "billing": {
+    "eyebrow": "Billing",
+    "title": "Subscription checkout",
+    "description": "Start a Pro checkout session for the paid demo account and complete it through the local Stripe flow.",
+    "plan": {
+      "name": "Prompteer Pro",
+      "price": "$12/mo",
+      "fallbackPrice": "$12.00",
+      "description": "Use the paid demo account with a Stripe-shaped checkout session, local webhook completion, and deterministic subscription state.",
+      "provider": "Provider",
+      "fallbackProvider": "mock",
+      "billingEmail": "Billing email",
+      "fallbackEmail": "paid@prompteer.dev"
+    },
+    "checkout": {
+      "title": "Checkout session",
+      "readyDescription": "A local Stripe-compatible session is ready.",
+      "createDescription": "Create a session for the paid demo user.",
+      "fallbackPaymentStatus": "unpaid",
+      "amount": "Amount",
+      "status": "Status",
+      "fallbackStatus": "not created",
+      "session": "Session",
+      "fallbackSession": "No checkout session yet",
+      "start": "Start checkout",
+      "complete": "Complete mock checkout",
+      "reset": "Reset",
+      "disabledNotice": "Checkout is disabled by the environment feature flags.",
+      "completed": "Subscription active for {email}. The mock session completed with a Stripe-compatible <event>checkout.session.completed</event> event."
+    },
+    "errors": {
+      "disabled": "Payments are disabled for this environment.",
+      "rateLimited": "Checkout is temporarily rate limited. Wait a moment, then try again.",
+      "startUnauthorized": "Sign in before starting checkout.",
+      "completeUnauthorized": "Sign in before completing checkout.",
+      "startFailed": "Checkout could not be started. Check that the API server is running.",
+      "completeFailed": "Mock checkout could not be completed."
+    }
+  },
+  "board": {
+    "eyebrow": "Board",
+    "title": "Shared prompt reviews",
+    "description": "Review seeded questions and public prompt shares from the demo challenge workspace.",
+    "questions": "Questions and notes",
+    "shares": "Public prompt shares",
+    "challengePrefix": "#{number}",
+    "challengeLabel": "Challenge #{number}"
+  },
+  "coding": {
+    "eyebrow": "Coding",
+    "title": "Prompt repair workspace",
+    "description": "Pick a seeded coding challenge, draft a prompt, and run it through the local LLM mock.",
+    "runner": {
+      "defaultPrompt": "Explain the FizzBuzz rules first, then produce concise Python with clear edge cases.",
+      "emptyTitle": "Coding challenges",
+      "emptyDescriptionBefore": "No coding challenges are available yet. Run",
+      "emptyDescriptionAfter": "to create demo data.",
+      "challengeEyebrow": "Challenge #{number}",
+      "challengeLabel": "Challenge",
+      "noInstructions": "No additional instructions.",
+      "promptLabel": "Prompt",
+      "run": "Run prompt",
+      "disabledNotice": "Prompt runs are disabled by the environment feature flags.",
+      "resultTitle": "Mock run result",
+      "tokenCount": "{count} tokens",
+      "emptyResult": "Run a prompt to see deterministic feedback from the local LLM mock.",
+      "errors": {
+        "disabled": "Prompt runs are disabled for this environment.",
+        "shortPrompt": "Write a prompt with at least 10 characters.",
+        "rateLimited": "Prompt runs are temporarily rate limited. Wait a moment, then try again.",
+        "unauthorized": "Sign in before running a prompt.",
+        "failed": "The prompt run failed. Check that the API server and seed data are running."
+      }
+    }
+  },
+  "errors": {
+    "title": "Something went wrong",
+    "retry": "Retry"
+  },
+  "notFound": {
+    "title": "Page not found"
   }
 }

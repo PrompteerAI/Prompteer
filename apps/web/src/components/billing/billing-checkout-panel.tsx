@@ -1,6 +1,8 @@
 "use client";
 
+// Interactive checkout exercise for the local Stripe-compatible billing mock.
 import { CheckCircle2, CreditCard, Loader2, RotateCcw } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
 import { apiPost } from "@/lib/api-client";
@@ -27,6 +29,8 @@ interface BillingCheckoutPanelProps {
 export function BillingCheckoutPanel({
   paymentsEnabled,
 }: BillingCheckoutPanelProps): React.ReactElement {
+  const locale = useLocale();
+  const t = useTranslations("billing");
   const [session, setSession] = useState<CheckoutSession | null>(null);
   const [step, setStep] = useState<CheckoutStep>("idle");
   const [isLoading, setIsLoading] = useState(false);
@@ -34,17 +38,17 @@ export function BillingCheckoutPanel({
 
   const price = useMemo(() => {
     if (!session?.amount_total || !session.currency) {
-      return "$12.00";
+      return t("plan.fallbackPrice");
     }
-    return new Intl.NumberFormat("en", {
+    return new Intl.NumberFormat(locale, {
       style: "currency",
       currency: session.currency.toUpperCase(),
     }).format(session.amount_total / 100);
-  }, [session]);
+  }, [locale, session, t]);
 
   async function createCheckout(): Promise<void> {
     if (!paymentsEnabled) {
-      setError("Payments are disabled for this environment.");
+      setError(t("errors.disabled"));
       return;
     }
     setIsLoading(true);
@@ -58,15 +62,11 @@ export function BillingCheckoutPanel({
     } catch (caughtError) {
       const normalizedError = await normalizeError(caughtError);
       if (normalizedError.code === "rate_limited") {
-        setError(
-          "Checkout is temporarily rate limited. Wait a moment, then try again.",
-        );
+        setError(t("errors.rateLimited"));
       } else if (normalizedError.status === 401) {
-        setError("Sign in before starting checkout.");
+        setError(t("errors.startUnauthorized"));
       } else {
-        setError(
-          "Checkout could not be started. Check that the API server is running.",
-        );
+        setError(t("errors.startFailed"));
       }
     } finally {
       setIsLoading(false);
@@ -78,7 +78,7 @@ export function BillingCheckoutPanel({
       return;
     }
     if (!paymentsEnabled) {
-      setError("Payments are disabled for this environment.");
+      setError(t("errors.disabled"));
       return;
     }
     setIsLoading(true);
@@ -93,13 +93,11 @@ export function BillingCheckoutPanel({
     } catch (caughtError) {
       const normalizedError = await normalizeError(caughtError);
       if (normalizedError.code === "rate_limited") {
-        setError(
-          "Checkout is temporarily rate limited. Wait a moment, then try again.",
-        );
+        setError(t("errors.rateLimited"));
       } else if (normalizedError.status === 401) {
-        setError("Sign in before completing checkout.");
+        setError(t("errors.completeUnauthorized"));
       } else {
-        setError("Mock checkout could not be completed.");
+        setError(t("errors.completeFailed"));
       }
     } finally {
       setIsLoading(false);
@@ -116,24 +114,25 @@ export function BillingCheckoutPanel({
     <section className="grid gap-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
       <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
         <p className="text-sm font-medium uppercase text-emerald-700">
-          Prompteer Pro
+          {t("plan.name")}
         </p>
-        <h1 className="mt-2 text-3xl font-semibold text-zinc-950">$12/mo</h1>
+        <h1 className="mt-2 text-3xl font-semibold text-zinc-950">
+          {t("plan.price")}
+        </h1>
         <p className="mt-4 text-sm leading-6 text-zinc-600">
-          Use the paid demo account with a Stripe-shaped checkout session, local
-          webhook completion, and deterministic subscription state.
+          {t("plan.description")}
         </p>
         <dl className="mt-6 grid gap-3 text-sm">
           <div className="flex items-center justify-between border-t border-zinc-200 pt-3">
-            <dt className="text-zinc-500">Provider</dt>
+            <dt className="text-zinc-500">{t("plan.provider")}</dt>
             <dd className="font-medium capitalize text-zinc-950">
-              {session?.provider ?? "mock"}
+              {session?.provider ?? t("plan.fallbackProvider")}
             </dd>
           </div>
           <div className="flex items-center justify-between border-t border-zinc-200 pt-3">
-            <dt className="text-zinc-500">Billing email</dt>
+            <dt className="text-zinc-500">{t("plan.billingEmail")}</dt>
             <dd className="font-medium text-zinc-950">
-              {session?.customer_email ?? "paid@prompteer.dev"}
+              {session?.customer_email ?? t("plan.fallbackEmail")}
             </dd>
           </div>
         </dl>
@@ -143,35 +142,35 @@ export function BillingCheckoutPanel({
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold text-zinc-950">
-              Checkout session
+              {t("checkout.title")}
             </h2>
             <p className="mt-2 text-sm leading-6 text-zinc-600">
               {session
-                ? "A local Stripe-compatible session is ready."
-                : "Create a session for the paid demo user."}
+                ? t("checkout.readyDescription")
+                : t("checkout.createDescription")}
             </p>
           </div>
           <span className="rounded-md border border-zinc-200 px-2.5 py-1 text-xs font-medium capitalize text-zinc-700">
-            {session?.payment_status ?? "unpaid"}
+            {session?.payment_status ?? t("checkout.fallbackPaymentStatus")}
           </span>
         </div>
 
         <div className="mt-6 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
             <div>
-              <dt className="text-zinc-500">Amount</dt>
+              <dt className="text-zinc-500">{t("checkout.amount")}</dt>
               <dd className="mt-1 font-medium text-zinc-950">{price}</dd>
             </div>
             <div>
-              <dt className="text-zinc-500">Status</dt>
+              <dt className="text-zinc-500">{t("checkout.status")}</dt>
               <dd className="mt-1 font-medium capitalize text-zinc-950">
-                {session?.status ?? "not created"}
+                {session?.status ?? t("checkout.fallbackStatus")}
               </dd>
             </div>
             <div className="sm:col-span-2">
-              <dt className="text-zinc-500">Session</dt>
+              <dt className="text-zinc-500">{t("checkout.session")}</dt>
               <dd className="mt-1 break-all font-mono text-xs text-zinc-700">
-                {session?.id ?? "No checkout session yet"}
+                {session?.id ?? t("checkout.fallbackSession")}
               </dd>
             </div>
           </dl>
@@ -191,7 +190,7 @@ export function BillingCheckoutPanel({
             ) : (
               <CreditCard aria-hidden="true" className="h-4 w-4" />
             )}
-            Start checkout
+            {t("checkout.start")}
           </button>
           <button
             className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:text-zinc-400"
@@ -211,7 +210,7 @@ export function BillingCheckoutPanel({
             ) : (
               <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
             )}
-            Complete mock checkout
+            {t("checkout.complete")}
           </button>
           <button
             className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
@@ -219,13 +218,13 @@ export function BillingCheckoutPanel({
             type="button"
           >
             <RotateCcw aria-hidden="true" className="h-4 w-4" />
-            Reset
+            {t("checkout.reset")}
           </button>
         </div>
 
         {!paymentsEnabled ? (
           <p className="mt-3 text-sm text-amber-700">
-            Checkout is disabled by the environment feature flags.
+            {t("checkout.disabledNotice")}
           </p>
         ) : null}
 
@@ -236,9 +235,10 @@ export function BillingCheckoutPanel({
             aria-live="polite"
             className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-900"
           >
-            Subscription active for {session?.customer_email}. The mock session
-            completed with a Stripe-compatible{" "}
-            <code>checkout.session.completed</code> event.
+            {t.rich("checkout.completed", {
+              email: session?.customer_email ?? t("plan.fallbackEmail"),
+              event: (chunks) => <code>{chunks}</code>,
+            })}
           </div>
         ) : null}
       </div>

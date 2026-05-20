@@ -1,4 +1,6 @@
+// Community board page for seeded questions and public prompt shares.
 import { MessageSquareText, Sparkles } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 import { apiGet } from "@/lib/api-client";
 
@@ -43,6 +45,7 @@ interface BoardShare {
 }
 
 export default async function BoardPage(): Promise<React.ReactElement> {
+  const t = await getTranslations("board");
   const feed = await apiGet<BoardFeed>("/community/board", {
     cache: "no-store",
   });
@@ -52,12 +55,11 @@ export default async function BoardPage(): Promise<React.ReactElement> {
       <div className="mx-auto max-w-6xl">
         <div className="mb-6">
           <p className="text-sm font-semibold uppercase text-emerald-700">
-            Board
+            {t("eyebrow")}
           </p>
-          <h1 className="mt-2 text-3xl font-semibold">Shared prompt reviews</h1>
+          <h1 className="mt-2 text-3xl font-semibold">{t("title")}</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
-            Review seeded questions and public prompt shares from the demo
-            challenge workspace.
+            {t("description")}
           </p>
         </div>
 
@@ -68,7 +70,7 @@ export default async function BoardPage(): Promise<React.ReactElement> {
                 aria-hidden="true"
                 className="h-4 w-4 text-emerald-700"
               />
-              Questions and notes
+              {t("questions")}
             </div>
             <div className="grid gap-3">
               {feed.posts.map((post) => (
@@ -92,7 +94,10 @@ export default async function BoardPage(): Promise<React.ReactElement> {
                   </p>
                   {post.challenge ? (
                     <p className="mt-4 text-xs font-medium uppercase text-emerald-700">
-                      #{post.challenge.challenge_number} {post.challenge.title}
+                      {t("challengePrefix", {
+                        number: post.challenge.challenge_number,
+                      })}{" "}
+                      {post.challenge.title}
                     </p>
                   ) : null}
                 </article>
@@ -106,7 +111,7 @@ export default async function BoardPage(): Promise<React.ReactElement> {
                 aria-hidden="true"
                 className="h-4 w-4 text-emerald-700"
               />
-              Public prompt shares
+              {t("shares")}
             </div>
             <div className="grid gap-3">
               {feed.shares.map((share) => (
@@ -129,7 +134,9 @@ export default async function BoardPage(): Promise<React.ReactElement> {
                     {share.prompt}
                   </p>
                   <p className="mt-4 text-xs font-medium uppercase text-emerald-700">
-                    Challenge #{share.challenge.challenge_number}
+                    {t("challengeLabel", {
+                      number: share.challenge.challenge_number,
+                    })}
                   </p>
                 </article>
               ))}
