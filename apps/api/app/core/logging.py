@@ -14,6 +14,7 @@ def add_request_id(
 ) -> structlog.typing.EventDict:
     event_dict["request_id"] = correlation_id.get()
     event_dict["service"] = "prompteer-api"
+    event_dict["version"] = settings.app_version
     event_dict["env"] = settings.env
     return event_dict
 

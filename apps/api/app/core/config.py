@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     )
 
     env: str = Field(default="development", alias="ENV")
+    app_version: str = Field(default="0.1.0", alias="APP_VERSION")
     app_url: str = Field(default="http://localhost:3000", alias="APP_URL")
     database_url: str = Field(
         default="postgresql+psycopg://prompteer:prompteer@localhost:5432/prompteer",
