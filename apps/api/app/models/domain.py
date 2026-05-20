@@ -1,3 +1,5 @@
+"""SQLModel domain tables for users, challenges, shares, posts, and usage."""
+
 from datetime import UTC, date, datetime
 from enum import StrEnum
 from typing import Any

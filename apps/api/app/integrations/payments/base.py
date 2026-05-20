@@ -1,3 +1,5 @@
+"""Protocol for checkout and webhook-capable payment clients."""
+
 from typing import Any, Protocol
 
 

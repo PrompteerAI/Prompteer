@@ -1,3 +1,5 @@
+"""Payment client factory selecting Stripe real mode or local mock checkout."""
+
 from app.core.config import settings
 from app.integrations.payments.base import PaymentsClient
 from app.integrations.payments.mock import MockStripeClient

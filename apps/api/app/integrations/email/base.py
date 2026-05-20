@@ -1,3 +1,5 @@
+"""Protocol for email delivery clients used by notification paths."""
+
 from typing import Any, Protocol
 
 

@@ -1,3 +1,5 @@
+"""LLM client factory selecting OpenAI, Anthropic, or deterministic mock mode."""
+
 from app.core.config import settings
 from app.integrations.llm.base import LLMClient
 from app.integrations.llm.mock import MockLLMClient

@@ -1,3 +1,5 @@
+"""FastAPI application assembly, middleware, routers, and exception handlers."""
+
 import re
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager

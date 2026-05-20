@@ -1,3 +1,5 @@
+"""Protocol for chat-completion clients used by prompt challenge runs."""
+
 from collections.abc import AsyncIterator
 from typing import Any, Protocol
 

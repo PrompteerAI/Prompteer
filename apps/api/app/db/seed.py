@@ -1,3 +1,5 @@
+"""Idempotent demo data and mock email seed routines for local development."""
+
 from sqlmodel import Session, SQLModel, create_engine, select
 
 from app.core.config import settings

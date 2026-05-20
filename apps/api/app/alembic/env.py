@@ -1,3 +1,5 @@
+"""Alembic environment for Prompteer database migrations."""
+
 from logging.config import fileConfig
 
 from alembic import context

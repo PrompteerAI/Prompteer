@@ -1,3 +1,5 @@
+"""Email client factory selecting SendGrid real mode or local mock capture."""
+
 from app.core.config import settings
 from app.integrations.email.base import EmailClient
 from app.integrations.email.mock import MockSendGridClient

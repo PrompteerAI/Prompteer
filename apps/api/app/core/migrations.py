@@ -1,3 +1,5 @@
+"""Alembic helpers used by startup health checks and development bootstrap."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

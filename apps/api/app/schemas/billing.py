@@ -1,3 +1,5 @@
+"""Pydantic response and request schemas for billing checkout routes."""
+
 from typing import Literal
 
 from pydantic import BaseModel, EmailStr

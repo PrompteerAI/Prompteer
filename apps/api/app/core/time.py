@@ -1,3 +1,5 @@
+"""Timezone helpers for storing UTC and querying user-local calendar windows."""
+
 from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 

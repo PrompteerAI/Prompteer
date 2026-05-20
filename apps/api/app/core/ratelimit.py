@@ -1,3 +1,5 @@
+"""SlowAPI limiter setup and keying policy for user-scoped request throttles."""
+
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from starlette.requests import Request

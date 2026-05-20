@@ -1,3 +1,5 @@
+"""Daily per-user LLM token quota accounting and enforcement."""
+
 from datetime import UTC, date, datetime
 from typing import Any
 

@@ -1,3 +1,5 @@
+"""Pydantic response schemas for community board posts and shared prompt runs."""
+
 from datetime import date, datetime
 
 from pydantic import BaseModel

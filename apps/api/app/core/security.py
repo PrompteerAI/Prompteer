@@ -1,3 +1,5 @@
+"""JWT principal validation against Auth.js-issued RS256 API tokens."""
+
 from dataclasses import dataclass
 from typing import Any
 

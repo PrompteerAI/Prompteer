@@ -1,3 +1,5 @@
+"""Database engine and session dependency for API routes and seed scripts."""
+
 from collections.abc import Generator
 
 from sqlmodel import Session, create_engine

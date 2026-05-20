@@ -1,3 +1,5 @@
+"""Structured logging configuration shared by app, uvicorn, and SQLAlchemy logs."""
+
 import logging
 import sys
 

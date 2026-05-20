@@ -1,3 +1,5 @@
+"""Development startup bootstrap for migrations, seed data, and mock mailbox files."""
+
 from __future__ import annotations
 
 import asyncio

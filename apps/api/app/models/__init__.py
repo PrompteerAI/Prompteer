@@ -1,3 +1,5 @@
+"""Public model exports used by Alembic, seed code, and API tests."""
+
 from app.models.domain import (
     Attachment,
     Challenge,

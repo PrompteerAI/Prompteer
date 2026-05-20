@@ -1,3 +1,5 @@
+"""Celery worker application configured for Redis-backed background jobs."""
+
 from celery import Celery  # type: ignore[import-untyped]
 
 from app.core.config import settings
