@@ -59,3 +59,10 @@ def test_readiness_probe_reports_dependency_failure(monkeypatch: MonkeyPatch) ->
         "status": "degraded",
         "checks": {"database": "ok", "redis": "fail", "integrations": "configured"},
     }
+
+
+def test_dev_mailbox_lists_messages() -> None:
+    client = TestClient(app)
+    response = client.get("/api/v1/dev/mailbox")
+    assert response.status_code == 200
+    assert "messages" in response.json()
