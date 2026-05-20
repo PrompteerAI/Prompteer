@@ -17,7 +17,7 @@ export default defineConfig({
   webServer: [
     {
       command:
-        "bash -lc 'cd ../api && uv run fastapi dev app/main.py --port 8000'",
+        "bash -lc 'cd ../api && AUTO_SEED_ON_STARTUP=false uv run fastapi dev app/main.py --port 8000'",
       url: "http://127.0.0.1:8000/api/v1/health/live",
       reuseExistingServer,
       timeout: 120_000,

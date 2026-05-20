@@ -69,6 +69,9 @@ Mock Google OAuth demo accounts:
 - `paid@prompteer.dev`
 - `free@prompteer.dev`
 
+Dev shortcut: `/dev/login-as/admin%40prompteer.dev` issues a local Auth.js session for
+seeded accounts when `AUTH_ALLOW_SEED_LOGIN=true`.
+
 ![Prompteer home screen](docs/screenshots/01-home.png)
 
 ![Prompteer login screen](docs/screenshots/02-login.png)
