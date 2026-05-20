@@ -37,6 +37,7 @@ services:
       APP_URL: http://localhost
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-prompteer}:${POSTGRES_PASSWORD:-prompteer}@postgres:5432/${POSTGRES_DB:-prompteer}
       REDIS_URL: redis://redis:6379/0
+      RATE_LIMIT_STORAGE_URL: redis://redis:6379/0
       AUTH_JWKS_URL: http://web:3000/api/auth/jwks
       AUTH_JWT_ISSUER: http://localhost
       AUTH_MOCK_GOOGLE_ISSUER: http://localhost

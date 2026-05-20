@@ -14,17 +14,17 @@ import app.models  # noqa: F401
 from app.api.deps import get_current_principal
 from app.api.v1 import challenges as challenge_routes
 from app.core.config import settings
-from app.core.ratelimit import limiter
 from app.core.security import Principal
 from app.db.seed import seed
 from app.db.session import get_session
 from app.main import create_app
 from app.models.domain import Challenge, Share
+from tests.support import reset_limiter_storage
 
 
 @pytest.fixture(autouse=True)
 def reset_rate_limiter() -> None:
-    limiter.reset()
+    reset_limiter_storage()
 
 
 def test_list_and_run_seeded_coding_challenge() -> None:

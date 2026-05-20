@@ -10,17 +10,18 @@ import respx
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
-from app.core.ratelimit import EMAIL_RATE_LIMIT, limiter
+from app.core.ratelimit import EMAIL_RATE_LIMIT
 from app.integrations.email import get_email_client
 from app.integrations.email import mock as email_mock
 from app.integrations.email.mock import MockSendGridClient
 from app.integrations.email.real import SendGridClient
 from app.main import create_app
+from tests.support import reset_limiter_storage
 
 
 @pytest.fixture(autouse=True)
 def reset_rate_limiter() -> None:
-    limiter.reset()
+    reset_limiter_storage()
 
 
 @pytest.mark.asyncio

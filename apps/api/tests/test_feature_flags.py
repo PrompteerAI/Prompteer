@@ -11,11 +11,11 @@ from sqlmodel import Session, SQLModel, create_engine
 import app.models  # noqa: F401
 from app.api.deps import get_current_principal
 from app.core.config import settings
-from app.core.ratelimit import limiter
 from app.core.security import Principal
 from app.db.session import get_session
 from app.integrations.payments.mock import STORE
 from app.main import create_app
+from tests.support import reset_limiter_storage
 
 
 @pytest.fixture(autouse=True)
@@ -31,7 +31,7 @@ def reset_feature_settings(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "anthropic_api_key", "")
     monkeypatch.setattr(settings, "stripe_secret_key", "")
     monkeypatch.setattr(settings, "sendgrid_api_key", "")
-    limiter.reset()
+    reset_limiter_storage()
     STORE.reset()
 
 

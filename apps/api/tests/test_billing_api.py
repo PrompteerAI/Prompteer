@@ -4,9 +4,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
-from app.core.ratelimit import limiter
 from app.integrations.payments.mock import STORE
 from app.main import create_app
+from tests.support import reset_limiter_storage
 
 
 @pytest.fixture(autouse=True)
@@ -14,7 +14,7 @@ def reset_store(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "env", "development")
     monkeypatch.setattr(settings, "enable_dev_routes", True)
     monkeypatch.setattr(settings, "stripe_secret_key", "")
-    limiter.reset()
+    reset_limiter_storage()
     STORE.reset()
 
 

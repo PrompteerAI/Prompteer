@@ -22,7 +22,10 @@ class Settings(BaseSettings):
     )
     redis_url: str = Field(default="redis://localhost:6379/0", alias="REDIS_URL")
     rate_limit_enabled: bool = Field(default=True, alias="RATE_LIMIT_ENABLED")
-    rate_limit_storage_url: str = Field(default="memory://", alias="RATE_LIMIT_STORAGE_URL")
+    rate_limit_storage_url: str = Field(
+        default="redis://localhost:6379/0",
+        alias="RATE_LIMIT_STORAGE_URL",
+    )
     rate_limit_strategy: str = Field(default="moving-window", alias="RATE_LIMIT_STRATEGY")
     rate_limit_key_prefix: str = Field(default="prompteer", alias="RATE_LIMIT_KEY_PREFIX")
     rate_limit_headers_enabled: bool = Field(default=True, alias="RATE_LIMIT_HEADERS_ENABLED")
