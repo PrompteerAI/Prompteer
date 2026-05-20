@@ -18,10 +18,9 @@ No external API keys are required; blank provider credentials automatically sele
 git clone https://github.com/hyuk/prompteer.git && cd prompteer
 cp .env.example .env
 docker compose up -d
-pnpm dev
 ```
 
-Open `http://localhost:3000` for the hot-reload dev app. The same Compose stack also serves the containerized app at `http://localhost`.
+Open `http://localhost`. The default Compose stack serves the app through nginx as one origin, with `/` routed to the web app and `/api/` routed to FastAPI.
 
 ## Screenshots & Demo
 
