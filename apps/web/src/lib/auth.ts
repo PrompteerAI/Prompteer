@@ -50,6 +50,13 @@ function mockGoogleIssuer(): string {
   ).replace(/\/+$/, "");
 }
 
+function mockGoogleWellKnown(issuer: string): string {
+  return (
+    process.env.AUTH_MOCK_GOOGLE_DISCOVERY_URL ||
+    `${issuer}/.well-known/openid-configuration`
+  ).replace(/\/+$/, "");
+}
+
 function mockGoogleProvider(): OAuthConfig<GoogleOidcProfile> {
   const issuer = mockGoogleIssuer();
 
@@ -58,7 +65,7 @@ function mockGoogleProvider(): OAuthConfig<GoogleOidcProfile> {
     name: "Google",
     type: "oidc",
     issuer,
-    wellKnown: `${issuer}/.well-known/openid-configuration`,
+    wellKnown: mockGoogleWellKnown(issuer),
     clientId: MOCK_GOOGLE_CLIENT_ID,
     clientSecret: MOCK_GOOGLE_CLIENT_SECRET,
     checks: ["pkce", "state", "nonce"],

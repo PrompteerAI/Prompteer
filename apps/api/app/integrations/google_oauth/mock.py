@@ -95,6 +95,10 @@ def issuer_url() -> str:
     return settings.auth_mock_google_issuer.rstrip("/")
 
 
+def server_base_url() -> str:
+    return (settings.auth_mock_google_server_base_url or issuer_url()).rstrip("/")
+
+
 def require_mock_enabled() -> None:
     if settings.google_client_id and settings.google_client_secret:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
@@ -238,12 +242,13 @@ def sign_id_token(*, user: MockGoogleUser, client_id: str, nonce: str | None) ->
 async def openid_configuration() -> dict[str, object]:
     require_mock_enabled()
     issuer = issuer_url()
+    server_base = server_base_url()
     return {
         "issuer": issuer,
         "authorization_endpoint": f"{issuer}/o/oauth2/v2/auth",
-        "token_endpoint": f"{issuer}/token",
-        "userinfo_endpoint": f"{issuer}/v3/userinfo",
-        "jwks_uri": f"{issuer}/oauth2/v3/certs",
+        "token_endpoint": f"{server_base}/token",
+        "userinfo_endpoint": f"{server_base}/v3/userinfo",
+        "jwks_uri": f"{server_base}/oauth2/v3/certs",
         "response_types_supported": ["code"],
         "subject_types_supported": ["public"],
         "id_token_signing_alg_values_supported": ["RS256"],

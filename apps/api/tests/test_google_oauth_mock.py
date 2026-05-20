@@ -24,6 +24,7 @@ def enable_mock_google(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "google_client_id", "")
     monkeypatch.setattr(settings, "google_client_secret", "")
     monkeypatch.setattr(settings, "auth_mock_google_issuer", "http://localhost:8000")
+    monkeypatch.setattr(settings, "auth_mock_google_server_base_url", "")
     AUTH_CODES.clear()
     ACCESS_TOKENS.clear()
 
@@ -47,6 +48,24 @@ def test_openid_discovery_and_jwks_shape() -> None:
     assert key["kty"] == "RSA"
     assert key["alg"] == "RS256"
     assert key["use"] == "sig"
+
+
+def test_openid_discovery_can_publish_internal_server_endpoints(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "auth_mock_google_issuer", "http://localhost")
+    monkeypatch.setattr(settings, "auth_mock_google_server_base_url", "http://api:8000")
+    client = TestClient(create_app())
+
+    discovery_response = client.get("/.well-known/openid-configuration")
+
+    assert discovery_response.status_code == 200
+    discovery = cast(dict[str, Any], discovery_response.json())
+    assert discovery["issuer"] == "http://localhost"
+    assert discovery["authorization_endpoint"] == "http://localhost/o/oauth2/v2/auth"
+    assert discovery["token_endpoint"] == "http://api:8000/token"
+    assert discovery["userinfo_endpoint"] == "http://api:8000/v3/userinfo"
+    assert discovery["jwks_uri"] == "http://api:8000/oauth2/v3/certs"
 
 
 def test_mock_google_authorization_code_flow() -> None:

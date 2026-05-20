@@ -53,6 +53,10 @@ class Settings(BaseSettings):
         default="http://localhost:8000",
         alias="AUTH_MOCK_GOOGLE_ISSUER",
     )
+    auth_mock_google_server_base_url: str = Field(
+        default="",
+        alias="AUTH_MOCK_GOOGLE_SERVER_BASE_URL",
+    )
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
     openai_base_url: str = Field(default="https://api.openai.com/v1", alias="OPENAI_BASE_URL")
     anthropic_api_key: str = Field(default="", alias="ANTHROPIC_API_KEY")

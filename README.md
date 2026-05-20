@@ -21,7 +21,7 @@ docker compose up -d
 pnpm dev
 ```
 
-Open `http://localhost:3000`. The containerized app profile is also available with `docker compose --profile app up -d`, then `http://localhost`.
+Open `http://localhost:3000` for the hot-reload dev app. The same Compose stack also serves the containerized app at `http://localhost`.
 
 ## Screenshots & Demo
 

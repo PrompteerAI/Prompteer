@@ -4,10 +4,11 @@ Prompteer is a monorepo with a Next.js web app, a FastAPI API, PostgreSQL, Redis
 
 ## Local topology
 
-- Browser talks to `http://localhost:3000` during frontend development.
-- Server-rendered web reads call the API at `http://localhost:8000/api/v1`.
+- `docker compose up -d` starts the full stack behind nginx at `http://localhost`.
+- The Compose web and API containers stay on the Docker network without publishing host ports 3000 or 8000.
+- `pnpm dev` starts hot-reload Next.js and FastAPI dev servers on `http://localhost:3000` and `http://localhost:8000` for native development.
+- Server-rendered web reads call the API through `API_INTERNAL_URL`.
 - Browser mutations call the same-origin Next.js `/api/backend/*` proxy, which attaches a short-lived Auth.js RS256 bearer token before forwarding to FastAPI.
-- Docker Compose runs PostgreSQL 16 and Redis 7 for local development.
 - External providers are selected by environment variables. Empty credentials select schema-faithful mocks.
 
 ## Product domain
@@ -24,6 +25,8 @@ The rebuild keeps those domain concepts while replacing password auth with Auth.
 ## Authentication
 
 The Next.js app is the SSO surface. Auth.js signs JWT sessions with RS256 through custom encode/decode hooks and exposes the public key set at `/api/auth/jwks`. FastAPI validates `Authorization: Bearer <token>` credentials against that JWKS endpoint, issuer, and audience before constructing a `Principal`. Browser-side mutations do not read Auth.js cookies directly; they use a same-origin Next.js API proxy that mints a five-minute API bearer from the active session.
+
+When Google credentials are blank, Auth.js uses the local mock OIDC provider. In native dev the mock issuer and endpoints are `http://localhost:8000`. In Compose the issuer is the public nginx origin `http://localhost`, while discovery publishes container-internal token, userinfo, and JWKS endpoints so server-to-server Auth.js calls do not leave the Docker network.
 
 ## Error model
 

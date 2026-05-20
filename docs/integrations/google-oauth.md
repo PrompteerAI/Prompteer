@@ -9,6 +9,8 @@ Sources:
 
 Prompteer uses Google OAuth through Auth.js. Empty `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` select the local mock OpenID Connect provider at `AUTH_MOCK_GOOGLE_ISSUER`.
 
+Native dev uses one base URL, usually `http://localhost:8000`, for the issuer and every endpoint. Compose uses nginx as the public issuer at `http://localhost` and sets `AUTH_MOCK_GOOGLE_SERVER_BASE_URL=http://api:8000` so discovery can publish internal token, userinfo, and JWKS endpoints for Auth.js server-to-server calls.
+
 ## Local mock
 
 The mock provider exposes Google's development-facing endpoint shape:
@@ -32,7 +34,7 @@ The token endpoint returns Google's standard fields for an authorization-code ex
 }
 ```
 
-The `id_token` is signed with a dev-only RS256 key generated at API startup. The public key is published through JWKS and the issuer is the exact `AUTH_MOCK_GOOGLE_ISSUER` value with trailing slashes removed.
+The `id_token` is signed with a dev-only RS256 key generated at API startup. The public key is published through JWKS and the issuer is the exact `AUTH_MOCK_GOOGLE_ISSUER` value with trailing slashes removed. If `AUTH_MOCK_GOOGLE_SERVER_BASE_URL` is set, only the discovery document's token, userinfo, and JWKS URLs use that internal base; the issuer and authorization endpoint stay public.
 
 `/v3/userinfo` returns schema-compatible profile claims:
 
