@@ -1,3 +1,5 @@
+"""Tests for Auth.js-issued API bearer token verification."""
+
 import base64
 from datetime import UTC, datetime, timedelta
 

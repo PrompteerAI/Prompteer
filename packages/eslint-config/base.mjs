@@ -1,3 +1,4 @@
+// Shared ESLint flat config for TypeScript packages.
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 

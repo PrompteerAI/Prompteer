@@ -1,3 +1,5 @@
+"""Tests for integration feature kill switches and development route gating."""
+
 from collections.abc import Generator
 
 import pytest

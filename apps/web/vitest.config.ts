@@ -1,3 +1,4 @@
+// Vitest configuration for web unit tests.
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({

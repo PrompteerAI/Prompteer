@@ -1,3 +1,5 @@
+"""Tests for billing checkout API routes and mock completion behavior."""
+
 import pytest
 from fastapi.testclient import TestClient
 

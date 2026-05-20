@@ -1,3 +1,5 @@
+"""Tests for OpenAI and Anthropic compatible LLM mocks and real clients."""
+
 import json
 from typing import Any
 

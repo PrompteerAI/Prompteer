@@ -1,3 +1,5 @@
+"""Tests for community board feed behavior and user-local date filtering."""
+
 from collections.abc import Generator
 from datetime import UTC, datetime
 

@@ -1,3 +1,5 @@
+"""Tests for the local Google-compatible OIDC mock and discovery metadata."""
+
 from typing import Any, cast
 from urllib.parse import parse_qs, urlparse
 

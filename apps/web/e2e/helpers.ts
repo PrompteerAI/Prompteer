@@ -1,3 +1,4 @@
+// Shared Playwright helpers for seeded login and route expectations.
 import type { Page } from "@playwright/test";
 
 export async function loginAs(

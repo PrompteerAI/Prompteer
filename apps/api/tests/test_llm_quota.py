@@ -1,3 +1,5 @@
+"""Tests for daily per-user LLM token quota accounting and enforcement."""
+
 from collections.abc import Generator
 
 import pytest

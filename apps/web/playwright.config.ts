@@ -1,3 +1,4 @@
+// Playwright configuration for local webServer and external Compose runs.
 import { defineConfig, devices } from "@playwright/test";
 
 const useExternalServer = process.env.PLAYWRIGHT_USE_EXTERNAL_SERVER === "true";

@@ -1,3 +1,4 @@
+// Public shared type exports generated from the FastAPI OpenAPI schema.
 import type { components } from "./api";
 
 export type { components, operations, paths } from "./api";

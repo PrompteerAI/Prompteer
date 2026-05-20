@@ -1,3 +1,5 @@
+"""Tests for development bootstrap migrations, seed data, and mock mailbox files."""
+
 from pathlib import Path
 
 import pytest

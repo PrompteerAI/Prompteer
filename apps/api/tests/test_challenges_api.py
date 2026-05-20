@@ -1,3 +1,5 @@
+"""Tests for challenge listing, prompt runs, sharing, quotas, and provider routing."""
+
 from collections.abc import Generator
 from typing import Any
 

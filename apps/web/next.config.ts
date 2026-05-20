@@ -1,3 +1,4 @@
+// Next.js configuration with next-intl and standalone output for containers.
 import createNextIntlPlugin from "next-intl/plugin";
 import { withSentryConfig } from "@sentry/nextjs";
 

@@ -1,3 +1,4 @@
+// End-to-end checks for the development mock mailbox screens.
 import { expect, test } from "@playwright/test";
 
 test("dev mailbox shows seeded captured emails", async ({ page }) => {

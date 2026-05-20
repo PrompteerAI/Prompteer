@@ -1,3 +1,5 @@
+"""Tests for structured logging fields and stdlib log bridging."""
+
 import json
 import logging
 

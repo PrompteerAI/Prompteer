@@ -1,3 +1,5 @@
+"""Tests for liveness, readiness, startup, and integration status endpoints."""
+
 from fastapi.testclient import TestClient
 from pytest import MonkeyPatch
 

@@ -1,3 +1,5 @@
+"""Tests for SQLModel metadata and timezone-aware domain defaults."""
+
 from sqlmodel import SQLModel
 
 import app.models  # noqa: F401

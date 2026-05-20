@@ -1,3 +1,5 @@
+"""Tests for SendGrid mock capture, mailbox routes, and real client payloads."""
+
 import asyncio
 import json
 from pathlib import Path

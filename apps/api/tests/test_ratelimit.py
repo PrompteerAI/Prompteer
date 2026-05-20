@@ -1,3 +1,5 @@
+"""Tests for rate-limit keying, headers, fallback behavior, and 429 responses."""
+
 import pytest
 from fastapi.testclient import TestClient
 from starlette.requests import Request

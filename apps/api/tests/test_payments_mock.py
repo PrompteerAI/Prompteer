@@ -1,3 +1,5 @@
+"""Tests for Stripe mock checkout sessions, webhooks, and real client payloads."""
+
 import json
 from urllib.parse import parse_qs
 

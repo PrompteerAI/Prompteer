@@ -1,3 +1,4 @@
+// Shared ESLint flat config for Next.js applications.
 import nextPlugin from "@next/eslint-plugin-next";
 
 import baseConfig from "./base.mjs";

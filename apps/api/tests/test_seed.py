@@ -1,3 +1,5 @@
+"""Tests for idempotent local demo seed data."""
+
 from sqlmodel import Session, SQLModel, create_engine, select
 
 import app.models  # noqa: F401

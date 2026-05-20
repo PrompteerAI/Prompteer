@@ -1,3 +1,4 @@
+// Playwright-based screenshot helper for manual UI verification.
 import { mkdir } from "node:fs/promises";
 import { chromium } from "playwright";
 

@@ -1,3 +1,4 @@
+// End-to-end checks for authenticated prompt, billing, board, and settings flows.
 import { expect, test } from "@playwright/test";
 
 import { loginAs } from "./helpers";

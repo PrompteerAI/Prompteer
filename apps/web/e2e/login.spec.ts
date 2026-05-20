@@ -1,3 +1,4 @@
+// End-to-end checks for seeded development login and logout.
 import { expect, test } from "@playwright/test";
 
 test("mock Google OAuth login completes through Auth.js", async ({ page }) => {

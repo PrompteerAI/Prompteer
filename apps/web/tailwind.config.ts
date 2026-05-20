@@ -1,3 +1,4 @@
+// Tailwind compatibility config for editor tooling and shared design tokens.
 import type { Config } from "tailwindcss";
 
 export default {
