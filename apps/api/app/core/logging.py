@@ -34,15 +34,18 @@ def configure_logging() -> None:
         add_request_id,
         structlog.stdlib.add_log_level,
         timestamper,
-        structlog.processors.format_exc_info,
     ]
+
+    processor_formatter_processors: list[structlog.types.Processor] = [
+        structlog.stdlib.ProcessorFormatter.remove_processors_meta,
+    ]
+    if settings.log_json or settings.is_production:
+        processor_formatter_processors.append(structlog.processors.dict_tracebacks)
+    processor_formatter_processors.append(renderer)
 
     formatter = structlog.stdlib.ProcessorFormatter(
         foreign_pre_chain=shared_processors,
-        processors=[
-            structlog.stdlib.ProcessorFormatter.remove_processors_meta,
-            renderer,
-        ],
+        processors=processor_formatter_processors,
     )
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(formatter)

@@ -56,7 +56,7 @@ backup-restore-check: ## Verify PostgreSQL backup and restore scripts against th
 	scripts/verify-backup-restore.sh
 
 e2e: ## Run Playwright end-to-end tests against local dev servers.
-	CI=1 pnpm --filter @prompteer/web test:e2e
+	env -u NO_COLOR CI=1 pnpm --filter @prompteer/web test:e2e
 
 verify-ui: ## Capture desktop/mobile screenshots against running dev servers.
 	node scripts/verify-ui.mjs
