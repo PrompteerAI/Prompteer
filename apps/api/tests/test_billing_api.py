@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
+from app.core.ratelimit import limiter
 from app.integrations.payments.mock import STORE
 from app.main import create_app
 
@@ -13,6 +14,7 @@ def reset_store(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "env", "development")
     monkeypatch.setattr(settings, "enable_dev_routes", True)
     monkeypatch.setattr(settings, "stripe_secret_key", "")
+    limiter.reset()
     STORE.reset()
 
 
@@ -42,3 +44,24 @@ def test_billing_checkout_create_retrieve_and_complete() -> None:
     assert completed["id"] == session["id"]
     assert completed["status"] == "complete"
     assert completed["payment_status"] == "paid"
+
+
+def test_billing_checkout_create_is_rate_limited() -> None:
+    client = TestClient(create_app())
+
+    for _ in range(5):
+        response = client.post(
+            "/api/v1/billing/checkout",
+            json={"customer_email": "paid@prompteer.dev"},
+        )
+        assert response.status_code == 200
+
+    limited = client.post(
+        "/api/v1/billing/checkout",
+        json={"customer_email": "paid@prompteer.dev"},
+    )
+
+    assert limited.status_code == 429
+    assert limited.headers["content-type"].startswith("application/problem+json")
+    assert "retry-after" in limited.headers
+    assert limited.json()["code"] == "rate_limited"
