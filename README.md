@@ -69,6 +69,7 @@ Frontend:
 - [Tailwind CSS v4](https://tailwindcss.com/), [lucide-react](https://lucide.dev/), [next-intl](https://next-intl.dev/)
 - [Auth.js v5](https://authjs.dev/), [TanStack Query](https://tanstack.com/query), [React Hook Form](https://react-hook-form.com/), [Zod](https://zod.dev/)
 - [openapi-fetch](https://openapi-ts.dev/openapi-fetch/) over generated OpenAPI types for schema-checked API calls
+- [Sentry for Next.js](https://docs.sentry.io/platforms/javascript/guides/nextjs/) is wired as an optional no-op-until-configured error capture path
 - [Vitest](https://vitest.dev/) and [Playwright](https://playwright.dev/) with headless Chromium coverage
 
 Backend:
@@ -76,7 +77,7 @@ Backend:
 - [Python 3.12](https://www.python.org/) and [FastAPI](https://fastapi.tiangolo.com/)
 - [SQLModel](https://sqlmodel.tiangolo.com/), [Alembic](https://alembic.sqlalchemy.org/), [PostgreSQL 16](https://www.postgresql.org/)
 - [Celery](https://docs.celeryq.dev/), [Redis 7](https://redis.io/), [slowapi](https://slowapi.readthedocs.io/)
-- [structlog](https://www.structlog.org/), [asgi-correlation-id](https://github.com/snok/asgi-correlation-id), [Ruff](https://docs.astral.sh/ruff/), [pytest](https://docs.pytest.org/)
+- [structlog](https://www.structlog.org/), [asgi-correlation-id](https://github.com/snok/asgi-correlation-id), [Sentry Python](https://docs.sentry.io/platforms/python/), [Ruff](https://docs.astral.sh/ruff/), [pytest](https://docs.pytest.org/)
 
 Infrastructure:
 

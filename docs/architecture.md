@@ -2,6 +2,29 @@
 
 Prompteer is a monorepo with a Next.js web app, a FastAPI API, PostgreSQL, Redis, Celery workers, and nginx as the single-origin reverse proxy.
 
+## Service diagram
+
+```mermaid
+flowchart LR
+  Browser["Browser"] --> Nginx["nginx\nsingle origin"]
+  Nginx --> Web["Next.js web\nAuth.js + next-intl"]
+  Nginx --> API["FastAPI API\n/api/v1"]
+  Web --> Proxy["Next API proxy\n/api/backend/*"]
+  Proxy --> API
+  Web --> JWKS["Auth.js JWKS\n/api/auth/jwks"]
+  API --> JWKS
+  API --> Postgres["PostgreSQL 16\nUTC domain data"]
+  API --> Redis["Redis 7\nrate limits + Celery broker"]
+  Worker["Celery worker"] --> Redis
+  Worker --> Postgres
+  API --> Google["Google OAuth\nreal or local mock"]
+  API --> LLM["OpenAI / Anthropic\nreal or deterministic mock"]
+  API --> Stripe["Stripe\nreal or checkout mock"]
+  API --> SendGrid["SendGrid\nreal or mailbox mock"]
+  Web --> SentryWeb["Sentry web SDK\noptional"]
+  API --> SentryAPI["Sentry FastAPI SDK\noptional"]
+```
+
 ## Local topology
 
 - `docker compose up -d` starts the full stack behind nginx at `http://localhost`.
