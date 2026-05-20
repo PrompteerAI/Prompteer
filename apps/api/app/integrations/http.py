@@ -38,6 +38,7 @@ SENSITIVE_LOG_KEYS = frozenset(
         "value",
     }
 )
+JITTER_RANDOM = random.SystemRandom()
 
 
 class OutboundLogger(Protocol):
@@ -271,7 +272,9 @@ async def _sleep_before_retry(attempt: int, retry_policy: RetryPolicy | None) ->
     if retry_policy is None:
         return
     base_delay = retry_policy.base_delay_seconds * (2 ** (attempt - 1))
-    jitter = random.uniform(0, retry_policy.jitter_seconds) if retry_policy.jitter_seconds else 0
+    jitter = 0.0
+    if retry_policy.jitter_seconds:
+        jitter = JITTER_RANDOM.uniform(0, retry_policy.jitter_seconds)
     await asyncio.sleep(base_delay + jitter)
 
 

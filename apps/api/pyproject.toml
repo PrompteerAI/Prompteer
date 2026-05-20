@@ -38,7 +38,12 @@ target-version = "py312"
 line-length = 100
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "DTZ", "SIM"]
+select = ["E", "F", "I", "UP", "B", "DTZ", "SIM", "RUF", "ASYNC", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "S105"]
+"app/integrations/google_oauth/mock.py" = ["S105"]
+"app/integrations/payments/mock.py" = ["S105"]
 
 [tool.pytest.ini_options]
 addopts = "--cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=80"

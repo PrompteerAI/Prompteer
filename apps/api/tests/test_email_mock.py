@@ -1,3 +1,4 @@
+import asyncio
 import json
 from pathlib import Path
 
@@ -37,7 +38,9 @@ async def test_mock_sendgrid_captures_eml(tmp_path: Path) -> None:
     assert result == {"status": "accepted", "captured": "1"}
     assert len(messages) == 1
     assert messages[0]["to"] == "free@prompteer.dev"
-    assert Path(messages[0]["path"]).read_text(encoding="utf-8").count("Welcome to Prompteer") == 1
+    message_path = Path(messages[0]["path"])
+    message_text = await asyncio.to_thread(message_path.read_text, encoding="utf-8")
+    assert message_text.count("Welcome to Prompteer") == 1
 
 
 def test_mock_sendgrid_http_route_and_mailbox_detail(

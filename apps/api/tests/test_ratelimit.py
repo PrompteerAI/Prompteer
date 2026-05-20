@@ -42,9 +42,9 @@ def test_rate_limit_key_falls_back_to_remote_ip() -> None:
 
 
 def test_limiter_is_configured_for_headers_and_fallback() -> None:
-    assert limiter._headers_enabled is True  # noqa: SLF001
-    assert limiter._in_memory_fallback_enabled is True  # noqa: SLF001
-    assert limiter._key_prefix == "prompteer"  # noqa: SLF001
+    assert limiter._headers_enabled is True
+    assert limiter._in_memory_fallback_enabled is True
+    assert limiter._key_prefix == "prompteer"
 
 
 def test_llm_rate_limit_returns_problem_details_with_retry_after() -> None:

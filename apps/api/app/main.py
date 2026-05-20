@@ -99,7 +99,7 @@ def create_app() -> FastAPI:
             detail=f"Rate limit exceeded: {exc.detail}",
             code="rate_limited",
         )
-        return limiter._inject_headers(response, request.state.view_rate_limit)  # noqa: SLF001
+        return limiter._inject_headers(response, request.state.view_rate_limit)
 
     @app.get("/")
     async def root() -> dict[str, str]:
