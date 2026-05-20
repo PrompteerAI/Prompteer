@@ -21,7 +21,31 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - run: pnpm install --frozen-lockfile
       - run: cp .env.example .env
-      - run: docker compose up -d
-      - run: uv sync --project apps/api --dev
+      - run: docker compose up -d --build --wait --wait-timeout 300
+      - run: docker compose ps
       - run: pnpm --filter @prompteer/web exec playwright install --with-deps chromium
-      - run: pnpm --filter @prompteer/web test:e2e
+      - name: Run Playwright against Compose
+        run: pnpm --filter @prompteer/web test:e2e
+        env:
+          PLAYWRIGHT_USE_EXTERNAL_SERVER: "true"
+          PLAYWRIGHT_BASE_URL: http://localhost
+      - name: Capture Compose logs
+        if: always()
+        run: |
+          mkdir -p .verify
+          docker compose ps > .verify/compose-ps.txt || true
+          docker compose logs --no-color > .verify/compose.log || true
+      - name: Upload E2E artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts
+          if-no-files-found: ignore
+          path: |
+            .verify/compose-ps.txt
+            .verify/compose.log
+            apps/web/playwright-report/
+            apps/web/test-results/
+      - name: Stop Compose
+        if: always()
+        run: docker compose down -v

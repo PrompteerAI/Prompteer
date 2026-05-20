@@ -5,8 +5,36 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
-  lint-typecheck-test:
+  commitlint:
+    name: commitlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Validate conventional commits
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            git log -1 --pretty=%B | pnpm exec commitlint
+          else
+            pnpm exec commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
+          fi
+
+  backend:
+    name: backend
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -26,27 +54,22 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
       - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
       - run: |
           sudo apt-get update
           sudo apt-get install --yes postgresql-client
-      - run: pnpm install --frozen-lockfile
       - run: uv sync --project apps/api --dev
-      - run: make types-check
+      - run: cd apps/api && uv run ruff check .
+      - run: cd apps/api && uv run ruff format --check .
+      - run: cd apps/api && uv run mypy app tests
+      - run: cd apps/api && uv run pytest
       - run: make backup-restore-check
         env:
           MAINTENANCE_DATABASE_URL: postgresql://prompteer:prompteer@localhost:5432/postgres
           SOURCE_DATABASE_URL: postgresql://prompteer:prompteer@localhost:5432/prompteer_backup_source
           RESTORE_DATABASE_URL: postgresql://prompteer:prompteer@localhost:5432/prompteer_backup_restore
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
-      - run: cd apps/api && uv run pytest
       - name: Backend coverage summary
         if: always()
         run: |
@@ -55,3 +78,65 @@ jobs:
             echo "### Backend coverage" >> "$GITHUB_STEP_SUMMARY"
             uv run coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
           fi
+
+  frontend:
+    name: frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: pnpm install --frozen-lockfile
+      - run: uv sync --project apps/api --dev
+      - run: make types-check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  integration:
+    name: integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: cp .env.example .env
+      - run: docker compose up -d --build --wait --wait-timeout 300
+      - run: docker compose ps
+      - run: pnpm --filter @prompteer/web exec playwright install --with-deps chromium
+      - name: Run Playwright against Compose
+        run: pnpm --filter @prompteer/web test:e2e
+        env:
+          PLAYWRIGHT_USE_EXTERNAL_SERVER: "true"
+          PLAYWRIGHT_BASE_URL: http://localhost
+      - name: Capture Compose logs
+        if: always()
+        run: |
+          mkdir -p .verify
+          docker compose ps > .verify/compose-ps.txt || true
+          docker compose logs --no-color > .verify/compose.log || true
+      - name: Upload integration artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-artifacts
+          if-no-files-found: ignore
+          path: |
+            .verify/compose-ps.txt
+            .verify/compose.log
+            apps/web/playwright-report/
+            apps/web/test-results/
+      - name: Stop Compose
+        if: always()
+        run: docker compose down -v
