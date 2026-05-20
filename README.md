@@ -57,6 +57,12 @@ make seed
 
 The seed flow creates demo users, prompt challenge categories, coding exercises, public shares, board posts, and captured mock emails for `/api/v1/dev/mailbox`.
 
+Regenerate the committed OpenAPI snapshot and TypeScript API types after backend schema changes:
+
+```sh
+make types
+```
+
 Mock Google OAuth demo accounts:
 
 - `admin@prompteer.dev`

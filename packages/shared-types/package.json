@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "tsc --noEmit",
+    "generate": "openapi-typescript ../../docs/api/openapi-v1.json -o src/api.ts",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests"
@@ -17,6 +18,7 @@
     "@prompteer/eslint-config": "workspace:*",
     "@prompteer/tsconfig": "workspace:*",
     "eslint": "^9.28.0",
+    "openapi-typescript": "^7.13.0",
     "typescript": "^5.8.3",
     "vitest": "^3.2.3"
   }

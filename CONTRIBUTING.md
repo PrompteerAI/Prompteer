@@ -21,3 +21,10 @@ uv run ruff format --check .
 uv run mypy app
 uv run pytest
 ```
+
+Regenerate and verify checked-in OpenAPI artifacts after backend route or schema changes:
+
+```sh
+make types
+make types-check
+```

@@ -1,10 +1,10 @@
-export type ChallengeTag = "ps" | "img" | "video";
+import type { components } from "./api";
 
-export interface FeatureFlags {
-  llm: boolean;
-  payments: boolean;
-  email: boolean;
-}
+export type { components, operations, paths } from "./api";
+
+export type ChallengeTag = components["schemas"]["ChallengeTag"];
+
+export type FeatureFlags = components["schemas"]["FeatureFlagsRead"];
 
 export interface ProblemDetails {
   type: string;

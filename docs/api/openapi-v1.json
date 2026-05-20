@@ -1,0 +1,932 @@
+{
+  "components": {
+    "schemas": {
+      "AuthorRead": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "plan": {
+            "title": "Plan",
+            "type": "string"
+          }
+        },
+        "required": ["id", "display_name", "email", "plan"],
+        "title": "AuthorRead",
+        "type": "object"
+      },
+      "BoardFeedRead": {
+        "properties": {
+          "posts": {
+            "items": {
+              "$ref": "#/components/schemas/PostRead"
+            },
+            "title": "Posts",
+            "type": "array"
+          },
+          "shares": {
+            "items": {
+              "$ref": "#/components/schemas/ShareRead"
+            },
+            "title": "Shares",
+            "type": "array"
+          }
+        },
+        "required": ["posts", "shares"],
+        "title": "BoardFeedRead",
+        "type": "object"
+      },
+      "ChallengeLevel": {
+        "enum": ["easy", "medium", "hard"],
+        "title": "ChallengeLevel",
+        "type": "string"
+      },
+      "ChallengeRead": {
+        "properties": {
+          "challenge_number": {
+            "title": "Challenge Number",
+            "type": "integer"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "level": {
+            "$ref": "#/components/schemas/ChallengeLevel"
+          },
+          "tag": {
+            "$ref": "#/components/schemas/ChallengeTag"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "challenge_number",
+          "tag",
+          "level",
+          "title",
+          "content"
+        ],
+        "title": "ChallengeRead",
+        "type": "object"
+      },
+      "ChallengeRunRequest": {
+        "properties": {
+          "prompt": {
+            "maxLength": 4000,
+            "minLength": 10,
+            "title": "Prompt",
+            "type": "string"
+          }
+        },
+        "required": ["prompt"],
+        "title": "ChallengeRunRequest",
+        "type": "object"
+      },
+      "ChallengeRunResponse": {
+        "properties": {
+          "challenge": {
+            "$ref": "#/components/schemas/ChallengeRead"
+          },
+          "output": {
+            "title": "Output",
+            "type": "string"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "raw": {
+            "additionalProperties": true,
+            "title": "Raw",
+            "type": "object"
+          },
+          "usage": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Usage",
+            "type": "object"
+          }
+        },
+        "required": [
+          "challenge",
+          "prompt",
+          "provider",
+          "output",
+          "usage",
+          "raw"
+        ],
+        "title": "ChallengeRunResponse",
+        "type": "object"
+      },
+      "ChallengeSummaryRead": {
+        "properties": {
+          "challenge_number": {
+            "title": "Challenge Number",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "level": {
+            "$ref": "#/components/schemas/ChallengeLevel"
+          },
+          "tag": {
+            "$ref": "#/components/schemas/ChallengeTag"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": ["id", "challenge_number", "tag", "level", "title"],
+        "title": "ChallengeSummaryRead",
+        "type": "object"
+      },
+      "ChallengeTag": {
+        "enum": ["ps", "img", "video"],
+        "title": "ChallengeTag",
+        "type": "string"
+      },
+      "CheckoutCreateRequest": {
+        "properties": {
+          "customer_email": {
+            "default": "paid@prompteer.dev",
+            "format": "email",
+            "title": "Customer Email",
+            "type": "string"
+          },
+          "plan": {
+            "const": "pro_monthly",
+            "default": "pro_monthly",
+            "title": "Plan",
+            "type": "string"
+          }
+        },
+        "title": "CheckoutCreateRequest",
+        "type": "object"
+      },
+      "CheckoutSessionRead": {
+        "properties": {
+          "amount_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount Total"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "customer_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Email"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "mode": {
+            "title": "Mode",
+            "type": "string"
+          },
+          "payment_status": {
+            "title": "Payment Status",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "required": [
+          "id",
+          "mode",
+          "status",
+          "payment_status",
+          "amount_total",
+          "currency",
+          "url",
+          "customer_email",
+          "provider"
+        ],
+        "title": "CheckoutSessionRead",
+        "type": "object"
+      },
+      "FeatureFlagsRead": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "boolean"
+          },
+          "llm": {
+            "title": "Llm",
+            "type": "boolean"
+          },
+          "payments": {
+            "title": "Payments",
+            "type": "boolean"
+          }
+        },
+        "required": ["llm", "payments", "email"],
+        "title": "FeatureFlagsRead",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "PostRead": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/AuthorRead"
+          },
+          "challenge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChallengeSummaryRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "tag": {
+            "$ref": "#/components/schemas/ChallengeTag"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/PostType"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "tag",
+          "title",
+          "content",
+          "author",
+          "challenge",
+          "created_at"
+        ],
+        "title": "PostRead",
+        "type": "object"
+      },
+      "PostType": {
+        "enum": ["question", "share"],
+        "title": "PostType",
+        "type": "string"
+      },
+      "ShareRead": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/AuthorRead"
+          },
+          "challenge": {
+            "$ref": "#/components/schemas/ChallengeSummaryRead"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_public": {
+            "title": "Is Public",
+            "type": "boolean"
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt"
+          }
+        },
+        "required": [
+          "id",
+          "prompt",
+          "is_public",
+          "author",
+          "challenge",
+          "created_at"
+        ],
+        "title": "ShareRead",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": ["loc", "msg", "type"],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Prompteer API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/billing/checkout": {
+      "post": {
+        "operationId": "create_checkout_api_v1_billing_checkout_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSessionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Checkout",
+        "tags": ["billing"]
+      }
+    },
+    "/api/v1/billing/checkout/{session_id}": {
+      "get": {
+        "operationId": "retrieve_checkout_api_v1_billing_checkout__session_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "minLength": 8,
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSessionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Retrieve Checkout",
+        "tags": ["billing"]
+      }
+    },
+    "/api/v1/billing/checkout/{session_id}/complete": {
+      "post": {
+        "operationId": "complete_mock_checkout_api_v1_billing_checkout__session_id__complete_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "minLength": 8,
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSessionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Complete Mock Checkout",
+        "tags": ["billing"]
+      }
+    },
+    "/api/v1/challenges": {
+      "get": {
+        "operationId": "list_challenges_api_v1_challenges_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tag",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ChallengeTag"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tag"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ChallengeRead"
+                  },
+                  "title": "Response List Challenges Api V1 Challenges Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Challenges",
+        "tags": ["challenges"]
+      }
+    },
+    "/api/v1/challenges/{challenge_id}": {
+      "get": {
+        "operationId": "get_challenge_api_v1_challenges__challenge_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "challenge_id",
+            "required": true,
+            "schema": {
+              "title": "Challenge Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChallengeRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Challenge",
+        "tags": ["challenges"]
+      }
+    },
+    "/api/v1/challenges/{challenge_id}/run": {
+      "post": {
+        "operationId": "run_challenge_prompt_api_v1_challenges__challenge_id__run_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "challenge_id",
+            "required": true,
+            "schema": {
+              "title": "Challenge Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChallengeRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChallengeRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run Challenge Prompt",
+        "tags": ["challenges"]
+      }
+    },
+    "/api/v1/community/board": {
+      "get": {
+        "operationId": "read_board_feed_api_v1_community_board_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoardFeedRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Board Feed",
+        "tags": ["community"]
+      }
+    },
+    "/api/v1/config/features": {
+      "get": {
+        "operationId": "get_features_api_v1_config_features_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureFlagsRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Features",
+        "tags": ["config"]
+      }
+    },
+    "/api/v1/dev/mailbox": {
+      "get": {
+        "operationId": "mailbox_api_v1_dev_mailbox_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Mailbox Api V1 Dev Mailbox Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Mailbox",
+        "tags": ["dev"]
+      }
+    },
+    "/api/v1/dev/mailbox/{message_id}": {
+      "get": {
+        "operationId": "mailbox_message_api_v1_dev_mailbox__message_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "title": "Message Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Mailbox Message Api V1 Dev Mailbox  Message Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mailbox Message",
+        "tags": ["dev"]
+      }
+    },
+    "/api/v1/health/live": {
+      "get": {
+        "operationId": "live_api_v1_health_live_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Live Api V1 Health Live Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Live",
+        "tags": ["health"]
+      }
+    },
+    "/api/v1/health/ready": {
+      "get": {
+        "operationId": "ready_api_v1_health_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Ready",
+        "tags": ["health"]
+      }
+    },
+    "/api/v1/health/startup": {
+      "get": {
+        "operationId": "startup_api_v1_health_startup_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Startup",
+        "tags": ["health"]
+      }
+    },
+    "/api/v1/integrations": {
+      "get": {
+        "operationId": "integrations_api_v1_integrations_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Integrations Api V1 Integrations Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Integrations"
+      }
+    }
+  }
+}
