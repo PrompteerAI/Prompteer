@@ -38,4 +38,4 @@ GET /api/v1/dev/mailbox
 GET /api/v1/dev/mailbox/{message_id}
 ```
 
-These routes are available only when dev routes are enabled and the app is not running in production. `make seed` writes deterministic captured emails for the demo accounts so the mailbox has readable local data after first setup.
+These routes are available only when dev routes are enabled and the app is not running in production. Development startup and `make seed` both write deterministic captured emails for the demo accounts so the mailbox has readable local data after first setup.

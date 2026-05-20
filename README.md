@@ -26,7 +26,7 @@ The rebuild is in progress. See `docs/architecture.md` and `docs/adr/` for accep
 
 ## Current Verified Slice
 
-The current scaffold starts the FastAPI and Next.js development servers together, supports mock Google OAuth login through Auth.js, and includes a seeded coding challenge workspace that runs prompts through the deterministic local LLM mock:
+The current scaffold starts the FastAPI and Next.js development servers together, runs development migrations and seed data automatically, supports mock Google OAuth login through Auth.js, and includes a seeded coding challenge workspace that runs prompts through the deterministic local LLM mock:
 
 ```sh
 cp .env.example .env
@@ -48,13 +48,13 @@ The default Compose command starts only PostgreSQL and Redis so local `pnpm dev`
 docker compose --profile app up -d
 ```
 
-Seed demo data:
+Seed demo data is created automatically when the API starts in development. You can re-run it manually because it is idempotent:
 
 ```sh
 make seed
 ```
 
-The seed command is idempotent and creates demo users, prompt challenge categories, coding exercises, public shares, board posts, and captured mock emails for `/api/v1/dev/mailbox`.
+The seed flow creates demo users, prompt challenge categories, coding exercises, public shares, board posts, and captured mock emails for `/api/v1/dev/mailbox`.
 
 Mock Google OAuth demo accounts:
 

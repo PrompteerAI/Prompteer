@@ -1,3 +1,7 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+import structlog
 from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -8,6 +12,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 
 from app.api.v1.router import api_router
+from app.core.bootstrap import bootstrap_development_state, integration_modes
 from app.core.config import settings
 from app.core.errors import http_exception_handler, validation_exception_handler
 from app.core.logging import configure_logging
@@ -17,6 +22,15 @@ from app.integrations.email.mock import router as mock_sendgrid_router
 from app.integrations.google_oauth.mock import router as mock_google_oauth_router
 from app.integrations.llm.mock import router as mock_llm_router
 from app.integrations.payments.mock import router as mock_stripe_router
+
+logger = structlog.get_logger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    await bootstrap_development_state()
+    logger.info("integrations_selected", **integration_modes())
+    yield
 
 
 async def starlette_http_exception_handler(request: Request, exc: Exception) -> Response:
@@ -35,7 +49,7 @@ def create_app() -> FastAPI:
     configure_logging()
     init_observability()
 
-    app = FastAPI(title="Prompteer API", version="0.1.0")
+    app = FastAPI(title="Prompteer API", version="0.1.0", lifespan=lifespan)
     app.state.limiter = limiter
 
     app.add_middleware(CorrelationIdMiddleware)
@@ -61,14 +75,7 @@ def create_app() -> FastAPI:
 
     @app.get("/api/v1/integrations")
     async def integrations() -> dict[str, str]:
-        return {
-            "llm": "real" if settings.openai_api_key or settings.anthropic_api_key else "mock",
-            "google_oauth": "real"
-            if settings.google_client_id and settings.google_client_secret
-            else "mock",
-            "stripe": "real" if settings.stripe_secret_key else "mock",
-            "email": "real" if settings.sendgrid_api_key else "mock",
-        }
+        return integration_modes()
 
     app.include_router(api_router)
     app.include_router(mock_google_oauth_router)

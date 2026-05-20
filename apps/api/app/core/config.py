@@ -18,6 +18,9 @@ class Settings(BaseSettings):
         alias="DATABASE_URL",
     )
     redis_url: str = Field(default="redis://localhost:6379/0", alias="REDIS_URL")
+    auto_seed_on_startup: bool = Field(default=True, alias="AUTO_SEED_ON_STARTUP")
+    dev_bootstrap_retries: int = Field(default=30, alias="DEV_BOOTSTRAP_RETRIES")
+    dev_bootstrap_retry_seconds: float = Field(default=1.0, alias="DEV_BOOTSTRAP_RETRY_SECONDS")
     auth_allow_seed_login: bool = Field(default=True, alias="AUTH_ALLOW_SEED_LOGIN")
     enable_dev_routes: bool = Field(default=True, alias="ENABLE_DEV_ROUTES")
     auth_jwks_url: str = Field(
