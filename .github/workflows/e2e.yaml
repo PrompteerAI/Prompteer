@@ -23,6 +23,11 @@ jobs:
       - run: cp .env.example .env
       - run: docker compose up -d --build --wait --wait-timeout 300
       - run: docker compose ps
+      - name: Verify Compose health endpoints
+        run: |
+          curl --fail --silent --show-error http://localhost/api/v1/health/live
+          curl --fail --silent --show-error http://localhost/api/v1/health/ready
+          curl --fail --location --silent --show-error http://localhost/
       - run: pnpm --filter @prompteer/web exec playwright install --with-deps chromium
       - name: Run Playwright against Compose
         run: pnpm --filter @prompteer/web test:e2e

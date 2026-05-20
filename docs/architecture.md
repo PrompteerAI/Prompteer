@@ -61,6 +61,14 @@ FastAPI emits structured logs with `service`, `version`, `env`, and propagated `
 
 Next.js uses `@sentry/nextjs` instrumentation for server, edge, router, and client error capture. Browser and web-server capture is enabled only when `NEXT_PUBLIC_SENTRY_DSN` is set. Source map uploads require `SENTRY_ORG`, `SENTRY_PROJECT`, and `SENTRY_AUTH_TOKEN`; empty values skip uploads.
 
+## Health probes
+
+FastAPI exposes `/api/v1/health/live` for process liveness, `/api/v1/health/ready`
+for PostgreSQL and Redis readiness, and `/api/v1/health/startup` for Alembic head
+matching. Compose uses the readiness probe for the API and nginx health checks so
+dependency loss turns the local stack unhealthy instead of only proving the
+process is still alive.
+
 ## API types
 
 `make types` exports the versioned FastAPI schema to `docs/api/openapi-v1.json` and regenerates `packages/shared-types/src/api.ts` with `openapi-typescript`. CI runs `make types-check` so route/schema drift fails before merge.
