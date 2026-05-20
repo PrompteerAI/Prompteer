@@ -31,6 +31,7 @@ pnpm dev
 Run these before opening a pull request:
 
 ```sh
+make env-check
 pnpm lint
 pnpm typecheck
 pnpm test
@@ -42,7 +43,9 @@ cd apps/api && uv run pytest
 make types-check
 ```
 
-Run Playwright when frontend behavior changes:
+`make verify` runs the full local suite, including the `.env.example` contract
+check and Playwright. Run Playwright directly when you only need to re-check
+frontend behavior:
 
 ```sh
 pnpm --filter @prompteer/web test:e2e

@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap dev lint typecheck test format build verify types types-check backup-restore-check e2e api-dev api-lint api-test seed reset reset-db logs
+.PHONY: help bootstrap dev lint typecheck test format build verify env-check types types-check backup-restore-check e2e api-dev api-lint api-test seed reset reset-db logs
 
 help: ## Show available Makefile targets.
 	@awk 'BEGIN {FS = ":.*##"; printf "Available targets:\n"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -33,12 +33,16 @@ build: ## Build frontend packages.
 
 verify: ## Run the core local verification suite.
 	pnpm format:check
+	$(MAKE) env-check
 	$(MAKE) lint
 	$(MAKE) typecheck
 	$(MAKE) test
 	$(MAKE) types-check
 	$(MAKE) build
 	$(MAKE) e2e
+
+env-check: ## Verify every referenced environment variable is documented.
+	node scripts/check-env-example.mjs
 
 types: ## Generate OpenAPI and TypeScript API types.
 	cd apps/api && uv run python scripts/export_openapi.py
