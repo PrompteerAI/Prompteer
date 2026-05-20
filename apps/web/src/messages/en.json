@@ -10,10 +10,19 @@
   },
   "home": {
     "title": "Prompt challenge workspace",
-    "subtitle": "Choose a coding, image, or video challenge, draft a prompt, run it through a mock provider locally, and inspect shareable results.",
-    "coding": "Coding",
-    "image": "Image",
-    "video": "Video"
+    "subtitle": "Sign in with seeded demo users, run a coding prompt challenge, and complete a local checkout without external credentials.",
+    "login": {
+      "title": "Demo login",
+      "description": "Enter through mock Google OAuth with admin, paid, or free seed accounts."
+    },
+    "coding": {
+      "title": "Coding workspace",
+      "description": "Draft and run deterministic prompt feedback against seeded PS challenges."
+    },
+    "billing": {
+      "title": "Billing checkout",
+      "description": "Create and complete a Stripe-shaped subscription checkout for the paid demo."
+    }
   },
   "login": {
     "title": "Sign in",
