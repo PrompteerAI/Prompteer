@@ -65,9 +65,9 @@ Next.js uses `@sentry/nextjs` instrumentation for server, edge, router, and clie
 
 FastAPI exposes `/api/v1/health/live` for process liveness, `/api/v1/health/ready`
 for PostgreSQL and Redis readiness, and `/api/v1/health/startup` for Alembic head
-matching. Compose uses the readiness probe for the API and nginx health checks so
-dependency loss turns the local stack unhealthy instead of only proving the
-process is still alive.
+matching. Compose requires both readiness and startup probes to pass for the API
+and nginx health checks so dependency loss or migration drift turns the local
+stack unhealthy instead of only proving the process is still alive.
 
 ## API types
 
