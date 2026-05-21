@@ -4,12 +4,9 @@
 
 ## Verification
 
-- [ ] `pnpm lint`
-- [ ] `pnpm typecheck`
-- [ ] `pnpm test`
-- [ ] `pnpm build`
-- [ ] `cd apps/api && uv run pytest`
-- [ ] `make types-check`
+- [ ] `make verify`
+- [ ] `make migration-check` if migrations changed
+- [ ] `make backup-restore-check` if backup/restore behavior changed
 
 ## Checklist
 

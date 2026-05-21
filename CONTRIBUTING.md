@@ -10,14 +10,17 @@ Start with the README Quick Start, then install both toolchains:
 pnpm install
 uv sync --project apps/api --dev
 cp .env.example .env
-docker compose up -d
 ```
 
 Run the app:
 
 ```sh
-pnpm dev
+make dev
 ```
+
+`make dev` starts the local PostgreSQL and Redis Compose dependencies before it
+launches the hot-reload web and API servers. Use `make dev-legacy` when you also
+want the legacy-preview frontend on `WEB_LEGACY_PORT`.
 
 ## Branches And Commits
 
@@ -31,25 +34,23 @@ pnpm dev
 Run these before opening a pull request:
 
 ```sh
-make env-check
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm build
-cd apps/api && uv run ruff check .
-cd apps/api && uv run ruff format --check .
-cd apps/api && uv run mypy app tests
-cd apps/api && uv run pytest
-make types-check
+make verify
 ```
 
 `make verify` runs the full local suite, including the `.env.example` contract
-check and Playwright. Run Playwright directly when you only need to re-check
-frontend behavior:
+check, linting, type checks, tests, builds, generated API type checks, Docker
+Compose health, and Playwright. Run narrower checks when you only need to
+re-check one layer:
 
 ```sh
 pnpm --filter @prompteer/web test:e2e
+make migration-check
+make backup-restore-check
 ```
+
+Run `make migration-check` when schema migrations change. Run
+`make backup-restore-check` when database backup, restore, or runbook behavior
+changes.
 
 ## Tests
 

@@ -3,6 +3,7 @@ name: Build Images
 on:
   push:
     branches: [main]
+    tags: ["v*"]
 
 jobs:
   build:
@@ -14,8 +15,27 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Set image tags
         run: |
-          echo "SHORT_SHA=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
-          echo "LOWER_OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
+          short_sha="${GITHUB_SHA::7}"
+          lower_owner="${GITHUB_REPOSITORY_OWNER,,}"
+          web_image="ghcr.io/${lower_owner}/prompteer-web"
+          api_image="ghcr.io/${lower_owner}/prompteer-api"
+
+          {
+            echo "WEB_IMAGE_TAGS<<EOF"
+            echo "${web_image}:latest"
+            echo "${web_image}:sha-${short_sha}"
+            if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+              echo "${web_image}:${GITHUB_REF_NAME}"
+            fi
+            echo "EOF"
+            echo "API_IMAGE_TAGS<<EOF"
+            echo "${api_image}:latest"
+            echo "${api_image}:sha-${short_sha}"
+            if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+              echo "${api_image}:${GITHUB_REF_NAME}"
+            fi
+            echo "EOF"
+          } >> "$GITHUB_ENV"
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
       - name: Log in to GHCR
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
@@ -29,9 +49,7 @@ jobs:
           context: .
           file: apps/web/Dockerfile
           push: true
-          tags: |
-            ghcr.io/${{ env.LOWER_OWNER }}/prompteer-web:latest
-            ghcr.io/${{ env.LOWER_OWNER }}/prompteer-web:sha-${{ env.SHORT_SHA }}
+          tags: ${{ env.WEB_IMAGE_TAGS }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Build api image
@@ -40,8 +58,6 @@ jobs:
           context: .
           file: apps/api/Dockerfile
           push: true
-          tags: |
-            ghcr.io/${{ env.LOWER_OWNER }}/prompteer-api:latest
-            ghcr.io/${{ env.LOWER_OWNER }}/prompteer-api:sha-${{ env.SHORT_SHA }}
+          tags: ${{ env.API_IMAGE_TAGS }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

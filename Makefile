@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap dev dev-legacy lint typecheck test audit format build verify env-check types types-check migration-check backup-restore-check compose-deps compose-health e2e verify-ui verify-ui-legacy tree api-dev api-lint api-test seed reset reset-db logs
+.PHONY: help bootstrap dev dev-legacy lint typecheck test audit format build verify env-check types types-check migration-check backup-restore-check compose-deps compose-dev-deps compose-health e2e verify-ui verify-ui-legacy tree api-dev api-lint api-test seed reset reset-db logs
 
 help: ## Show available Makefile targets.
 	@awk 'BEGIN {FS = ":.*##"; printf "Available targets:\n"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -8,10 +8,10 @@ help: ## Show available Makefile targets.
 bootstrap: ## Install deps, start Compose, migrate, and seed local data.
 	scripts/bootstrap.sh
 
-dev: ## Start the local API and web dev servers.
+dev: compose-dev-deps ## Start Docker deps, then local API and web dev servers.
 	pnpm dev
 
-dev-legacy: ## Start API, primary web, and legacy-preview dev servers.
+dev-legacy: compose-dev-deps ## Start Docker deps, API, primary web, and legacy-preview dev servers.
 	pnpm dev:legacy
 
 lint: ## Run JavaScript and Python lint checks.
@@ -69,12 +69,16 @@ backup-restore-check: ## Verify PostgreSQL backup and restore scripts against th
 compose-deps: ## Start Docker Compose dependencies required by local tests.
 	scripts/compose-up.sh --force-recreate redis
 
+compose-dev-deps: ## Start PostgreSQL and Redis for local dev servers.
+	scripts/compose-up.sh postgres redis
+
 compose-health: ## Assert every Docker Compose service is running and healthy.
 	scripts/check-compose-health.sh
 
 e2e: ## Run Playwright end-to-end tests against Docker Compose.
 	scripts/compose-up.sh --build
 	$(MAKE) compose-health
+	pnpm --filter @prompteer/web exec playwright install chromium
 	bash -lc 'source scripts/lib/load-env.sh; load_env_file ".env"; apply_compose_verification_env; env -u NO_COLOR CI=1 PLAYWRIGHT_BASE_URL="$$PLAYWRIGHT_BASE_URL" pnpm --filter @prompteer/web test:e2e'
 
 verify-ui: ## Capture desktop/mobile screenshots against Docker Compose.
