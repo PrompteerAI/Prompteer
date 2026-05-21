@@ -1,12 +1,16 @@
 """JWT principal validation against Auth.js-issued RS256 API tokens."""
 
 from dataclasses import dataclass
+from time import monotonic
 from typing import Any
 
 import httpx
 import jwt
 
 from app.core.config import settings
+
+JWKS_CACHE_SECONDS = 300.0
+NO_MATCHING_KID_ERROR = "No JWKS key matched the JWT kid."
 
 
 @dataclass(frozen=True)
@@ -20,14 +24,57 @@ class AuthTokenError(ValueError):
     pass
 
 
+@dataclass(frozen=True)
+class JwksCacheEntry:
+    url: str
+    expires_at: float
+    jwks: dict[str, Any]
+
+
+_jwks_cache: JwksCacheEntry | None = None
+
+
 async def verify_bearer_token(token: str) -> Principal:
-    jwks = await fetch_jwks(settings.auth_jwks_url)
+    try:
+        return verify_jwt_with_jwks(
+            token,
+            await get_cached_jwks(settings.auth_jwks_url),
+            issuer=settings.auth_jwt_issuer.rstrip("/"),
+            audience=settings.auth_jwt_audience,
+        )
+    except AuthTokenError as exc:
+        if str(exc) != NO_MATCHING_KID_ERROR:
+            raise
     return verify_jwt_with_jwks(
         token,
-        jwks,
+        await get_cached_jwks(settings.auth_jwks_url, force_refresh=True),
         issuer=settings.auth_jwt_issuer.rstrip("/"),
         audience=settings.auth_jwt_audience,
     )
+
+
+async def get_cached_jwks(jwks_url: str, *, force_refresh: bool = False) -> dict[str, Any]:
+    global _jwks_cache
+    if (
+        not force_refresh
+        and _jwks_cache is not None
+        and _jwks_cache.url == jwks_url
+        and _jwks_cache.expires_at > monotonic()
+    ):
+        return _jwks_cache.jwks
+
+    jwks = await fetch_jwks(jwks_url)
+    _jwks_cache = JwksCacheEntry(
+        url=jwks_url,
+        expires_at=monotonic() + JWKS_CACHE_SECONDS,
+        jwks=jwks,
+    )
+    return jwks
+
+
+def clear_jwks_cache() -> None:
+    global _jwks_cache
+    _jwks_cache = None
 
 
 async def fetch_jwks(jwks_url: str) -> dict[str, Any]:
@@ -83,4 +130,4 @@ def find_jwk(jwks: dict[str, Any], kid: Any) -> dict[str, Any]:
     for key in keys:
         if isinstance(key, dict) and key.get("kid") == kid:
             return key
-    raise AuthTokenError("No JWKS key matched the JWT kid.")
+    raise AuthTokenError(NO_MATCHING_KID_ERROR)

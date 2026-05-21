@@ -2,6 +2,7 @@
 
 import base64
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import jwt
 import pytest
@@ -11,7 +12,18 @@ from fastapi import HTTPException
 from starlette.requests import Request
 
 from app.api.deps import get_current_principal
-from app.core.security import AuthTokenError, verify_jwt_with_jwks
+from app.core import security
+from app.core.security import (
+    AuthTokenError,
+    clear_jwks_cache,
+    verify_bearer_token,
+    verify_jwt_with_jwks,
+)
+
+
+@pytest.fixture(autouse=True)
+def reset_jwks_cache() -> None:
+    clear_jwks_cache()
 
 
 def test_verify_jwt_with_jwks_returns_principal() -> None:
@@ -53,11 +65,65 @@ async def test_get_current_principal_requires_bearer_token() -> None:
     assert exc_info.value.headers == {"WWW-Authenticate": "Bearer"}
 
 
+@pytest.mark.asyncio
+async def test_verify_bearer_token_caches_jwks(monkeypatch: pytest.MonkeyPatch) -> None:
+    private_key: RSAPrivateKey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    calls: list[str] = []
+
+    async def fake_fetch_jwks(jwks_url: str) -> dict[str, Any]:
+        calls.append(jwks_url)
+        return {"keys": [public_jwk(private_key.public_key())]}
+
+    monkeypatch.setattr(security, "fetch_jwks", fake_fetch_jwks)
+    token = sign_test_token(private_key)
+
+    first = await verify_bearer_token(token)
+    second = await verify_bearer_token(token)
+
+    assert first.subject == "mock-google-oauth2|admin"
+    assert second.subject == "mock-google-oauth2|admin"
+    assert calls == ["http://localhost:3000/api/auth/jwks"]
+
+
+@pytest.mark.asyncio
+async def test_verify_bearer_token_refetches_jwks_on_unknown_kid(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    first_private_key: RSAPrivateKey = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048,
+    )
+    second_private_key: RSAPrivateKey = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048,
+    )
+    keysets = [
+        {"keys": [public_jwk(first_private_key.public_key(), kid="old-key")]},
+        {"keys": [public_jwk(second_private_key.public_key(), kid="new-key")]},
+    ]
+    calls: list[str] = []
+
+    async def fake_fetch_jwks(jwks_url: str) -> dict[str, Any]:
+        calls.append(jwks_url)
+        return keysets.pop(0)
+
+    monkeypatch.setattr(security, "fetch_jwks", fake_fetch_jwks)
+    await verify_bearer_token(sign_test_token(first_private_key, kid="old-key"))
+
+    principal = await verify_bearer_token(sign_test_token(second_private_key, kid="new-key"))
+
+    assert principal.subject == "mock-google-oauth2|admin"
+    assert calls == [
+        "http://localhost:3000/api/auth/jwks",
+        "http://localhost:3000/api/auth/jwks",
+    ]
+
+
 def request_for_auth() -> Request:
     return Request({"type": "http", "method": "GET", "path": "/", "headers": []})
 
 
-def sign_test_token(private_key: RSAPrivateKey) -> str:
+def sign_test_token(private_key: RSAPrivateKey, *, kid: str = "test-key") -> str:
     now = datetime.now(tz=UTC)
     return jwt.encode(
         {
@@ -71,17 +137,17 @@ def sign_test_token(private_key: RSAPrivateKey) -> str:
         },
         private_key,
         algorithm="RS256",
-        headers={"kid": "test-key"},
+        headers={"kid": kid},
     )
 
 
-def public_jwk(public_key: RSAPublicKey) -> dict[str, str]:
+def public_jwk(public_key: RSAPublicKey, *, kid: str = "test-key") -> dict[str, str]:
     numbers = public_key.public_numbers()
     return {
         "kty": "RSA",
         "use": "sig",
         "alg": "RS256",
-        "kid": "test-key",
+        "kid": kid,
         "n": base64url_uint(numbers.n),
         "e": base64url_uint(numbers.e),
     }

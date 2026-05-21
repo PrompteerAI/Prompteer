@@ -49,6 +49,8 @@ The rebuild keeps those domain concepts while replacing password auth with Auth.
 
 The Next.js app is the SSO surface. Auth.js signs JWT sessions with RS256 through custom encode/decode hooks and exposes the public key set at `/api/auth/jwks`. FastAPI validates `Authorization: Bearer <token>` credentials against that JWKS endpoint, issuer, and audience before constructing a `Principal`. Browser-side mutations do not read Auth.js cookies directly; they use a same-origin Next.js API proxy that mints a five-minute API bearer from the active session.
 
+FastAPI caches the Auth.js JWKS for five minutes to avoid a web-app round trip on every authenticated API request. If a bearer token references an unknown `kid`, the API refreshes the JWKS once immediately so normal key rotation does not wait for cache expiry.
+
 When Google credentials are blank, Auth.js uses the local mock OIDC provider. In native dev the mock issuer and endpoints are `http://localhost:8000`. In Compose the issuer is the public nginx origin `http://localhost`, while discovery publishes container-internal token, userinfo, and JWKS endpoints so server-to-server Auth.js calls do not leave the Docker network.
 
 ## Error model
