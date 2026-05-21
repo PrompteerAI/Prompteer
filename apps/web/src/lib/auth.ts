@@ -149,5 +149,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return token;
     },
+    session({ session, token }) {
+      if (session.user && typeof token.sub === "string") {
+        session.user.id = token.sub;
+      }
+      return session;
+    },
   },
 });

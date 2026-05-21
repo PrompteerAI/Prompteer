@@ -5,7 +5,7 @@ import { type NextRequest } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { getServerEnv } from "@/lib/env";
-import { encodeAuthJwt } from "@/server/auth-jwt";
+import { apiTokenForSession } from "@/server/api-token";
 
 type RouteContext = {
   params: Promise<{ path: string[] }>;
@@ -99,19 +99,6 @@ function upstreamHeaders(request: NextRequest, session: Session): Headers {
   headers.set("accept", accept ?? "application/json");
   headers.set("authorization", `Bearer ${apiTokenForSession(session)}`);
   return headers;
-}
-
-function apiTokenForSession(session: Session): string {
-  return encodeAuthJwt({
-    token: {
-      sub: session.user?.email ?? "unknown",
-      email: session.user?.email ?? undefined,
-      name: session.user?.name ?? undefined,
-    },
-    maxAge: 5 * 60,
-    salt: "api-proxy",
-    secret: getServerEnv().AUTH_SECRET,
-  });
 }
 
 function problemResponse(input: {
