@@ -23,6 +23,7 @@ def test_domain_tables_are_registered() -> None:
         "ps_shares",
         "ps_testcases",
         "shares",
+        "stripe_checkout_sessions",
         "stripe_webhook_events",
         "user_likes_comments",
         "user_likes_posts",

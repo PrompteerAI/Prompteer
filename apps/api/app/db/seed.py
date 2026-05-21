@@ -24,6 +24,7 @@ from app.models.domain import (
     VideoChallenge,
     VideoReference,
 )
+from app.services.billing import record_checkout_session
 
 DEMO_USERS = {
     "admin@prompteer.dev": {
@@ -52,7 +53,7 @@ DEMO_USERS = {
 
 def seed(session: Session) -> None:
     users_by_email = seed_users(session)
-    seed_mock_checkouts(users_by_email)
+    seed_mock_checkouts(session, users_by_email)
     seed_challenges(session, users_by_email)
     session.commit()
 
@@ -89,11 +90,11 @@ def ensure_profile(session: Session, *, user: User, email: str, display_name: st
     session.add(profile)
 
 
-def seed_mock_checkouts(users_by_email: dict[str, User]) -> None:
+def seed_mock_checkouts(session: Session, users_by_email: dict[str, User]) -> None:
     for email, data in DEMO_USERS.items():
         if data["plan"] != "paid":
             continue
-        seed_completed_checkout_session(
+        result = seed_completed_checkout_session(
             {
                 "mode": "subscription",
                 "success_url": f"{settings.app_url}/en/billing/success",
@@ -117,6 +118,13 @@ def seed_mock_checkouts(users_by_email: dict[str, User]) -> None:
                 ],
             },
             seed_key=email,
+        )
+        record_checkout_session(
+            session,
+            result["session"],
+            user=users_by_email[email],
+            provider="mock",
+            plan="pro",
         )
 
 

@@ -336,6 +336,10 @@ def complete_checkout_session_in_store(
     return {"session": session, "event": event}
 
 
+def complete_checkout_session_payload(session: dict[str, Any]) -> dict[str, Any]:
+    return complete_checkout_session_in_store(session, store=MockStripeStore())
+
+
 def checkout_amount(payload: dict[str, Any]) -> tuple[int | None, str | None]:
     line_items = payload.get("line_items")
     if not isinstance(line_items, list) or not line_items:

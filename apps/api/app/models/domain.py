@@ -86,6 +86,38 @@ class StripeWebhookEvent(SQLModel, table=True):
     )
 
 
+class StripeCheckoutSession(SQLModel, table=True):
+    __tablename__ = "stripe_checkout_sessions"
+
+    provider_session_id: str = Field(primary_key=True, max_length=255)
+    provider: str = Field(default="stripe", max_length=30)
+    user_id: str = Field(foreign_key="users.id", index=True)
+    plan: str = Field(default="pro", max_length=30)
+    mode: str = Field(max_length=30)
+    status: str = Field(index=True, max_length=30)
+    payment_status: str = Field(index=True, max_length=30)
+    amount_total: int | None = Field(default=None)
+    currency: str | None = Field(default=None, max_length=10)
+    customer_email: str | None = Field(default=None, max_length=320)
+    client_reference_id: str | None = Field(default=None, max_length=255)
+    session_metadata: dict[str, Any] = Field(
+        default_factory=dict,
+        sa_column=Column(JSON, nullable=False),
+    )
+    checkout_payload: dict[str, Any] = Field(
+        default_factory=dict,
+        sa_column=Column(JSON, nullable=False),
+    )
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+    )
+    updated_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+    )
+
+
 class Profile(SQLModel, table=True):
     __tablename__ = "profiles"
 

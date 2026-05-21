@@ -105,7 +105,10 @@ async def fetch_jwks(jwks_url: str) -> dict[str, Any]:
             async with httpx.AsyncClient(timeout=JWKS_FETCH_TIMEOUT_SECONDS) as client:
                 response = await client.get(jwks_url)
                 response.raise_for_status()
-                body = response.json()
+                try:
+                    body = response.json()
+                except ValueError as exc:
+                    raise AuthTokenError("JWKS endpoint returned invalid JSON.") from exc
         except httpx.TransportError as exc:
             if attempt < JWKS_FETCH_ATTEMPTS:
                 await asyncio.sleep(0.2 * attempt)

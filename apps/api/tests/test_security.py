@@ -230,6 +230,33 @@ async def test_fetch_jwks_wraps_transport_failures(
         await security.fetch_jwks("http://localhost:3000/api/auth/jwks")
 
 
+@pytest.mark.asyncio
+async def test_fetch_jwks_wraps_malformed_json(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class InvalidJsonAsyncClient:
+        def __init__(self, *, timeout: float) -> None:
+            assert timeout == security.JWKS_FETCH_TIMEOUT_SECONDS
+
+        async def __aenter__(self) -> "InvalidJsonAsyncClient":
+            return self
+
+        async def __aexit__(self, *_args: object) -> None:
+            return None
+
+        async def get(self, url: str) -> httpx.Response:
+            return httpx.Response(
+                200,
+                content=b"not-json",
+                request=httpx.Request("GET", url),
+            )
+
+    monkeypatch.setattr(httpx, "AsyncClient", InvalidJsonAsyncClient)
+
+    with pytest.raises(AuthTokenError, match="JWKS endpoint returned invalid JSON"):
+        await security.fetch_jwks("http://localhost:3000/api/auth/jwks")
+
+
 def request_for_auth() -> Request:
     return Request({"type": "http", "method": "GET", "path": "/", "headers": []})
 

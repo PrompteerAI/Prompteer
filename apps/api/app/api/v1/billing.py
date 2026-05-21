@@ -15,7 +15,11 @@ from app.core.security import Principal
 from app.db.session import get_session
 from app.integrations.email import get_email_client
 from app.integrations.payments import get_payments_client
-from app.integrations.payments.mock import MockStripeClient, MockStripeError
+from app.integrations.payments.mock import (
+    MockStripeClient,
+    MockStripeError,
+    complete_checkout_session_payload,
+)
 from app.integrations.payments.webhooks import StripeWebhookSignatureError, construct_stripe_event
 from app.models.domain import User
 from app.schemas.billing import (
@@ -24,7 +28,13 @@ from app.schemas.billing import (
     CheckoutSessionRead,
     StripeWebhookRead,
 )
-from app.services.billing import StripeWebhookResult, apply_stripe_webhook_event
+from app.services.billing import (
+    StripeWebhookResult,
+    apply_stripe_webhook_event,
+    get_recorded_checkout_session_payload,
+    record_checkout_session,
+    update_checkout_session_record,
+)
 from app.services.llm_quota import normalized_email, resolve_user_for_principal
 
 router = APIRouter(prefix="/billing", tags=["billing"])
@@ -61,6 +71,13 @@ async def create_checkout(
     user = resolve_user_for_principal(db_session, principal)
     client = get_payments_client()
     session = await client.create_checkout_session(checkout_payload(checkout_request, user=user))
+    record_checkout_session(
+        db_session,
+        session,
+        user=user,
+        provider=client.provider,
+        plan=checkout_request.plan,
+    )
     return checkout_session_to_read(session, provider=client.provider)
 
 
@@ -77,10 +94,13 @@ async def retrieve_checkout(
     require_feature_enabled("payments")
     user = resolve_user_for_principal(db_session, principal)
     client = get_payments_client()
-    try:
-        session = await client.retrieve_checkout_session(session_id)
-    except MockStripeError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    if isinstance(client, MockStripeClient):
+        session = get_recorded_checkout_or_404(db_session, session_id)
+    else:
+        try:
+            session = await client.retrieve_checkout_session(session_id)
+        except MockStripeError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     require_checkout_owner(session, user)
     return checkout_session_to_read(session, provider=client.provider)
 
@@ -100,12 +120,12 @@ async def complete_mock_checkout(
     if not dev_routes_enabled() or settings.stripe_secret_key:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     try:
-        mock_client = MockStripeClient()
-        session = await mock_client.retrieve_checkout_session(session_id)
+        session = get_recorded_checkout_or_404(db_session, session_id)
         require_checkout_owner(session, user)
-        result = await mock_client.complete_checkout_session(session_id)
+        result = complete_checkout_session_payload(session)
     except MockStripeError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    update_checkout_session_record(db_session, result["session"])
     checkout_session = result["session"]
     webhook_result = process_mock_checkout_webhook(db_session, result["event"])
     await send_checkout_receipt_email(checkout_session, webhook_result=webhook_result)
@@ -131,7 +151,11 @@ async def stripe_webhook(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Stripe webhook payload must be UTF-8 encoded.",
         ) from exc
-    result = handle_stripe_webhook_payload(db_session, payload, stripe_signature)
+    event = construct_stripe_webhook_event(payload, stripe_signature)
+    result = apply_stripe_webhook_event(db_session, event)
+    checkout_session = checkout_session_from_stripe_event(event)
+    if checkout_session is not None:
+        await send_checkout_receipt_email(checkout_session, webhook_result=result)
     return stripe_webhook_to_read(result)
 
 
@@ -149,15 +173,34 @@ def handle_stripe_webhook_payload(
     payload: str,
     stripe_signature: str,
 ) -> StripeWebhookResult:
+    event = construct_stripe_webhook_event(payload, stripe_signature)
+    return apply_stripe_webhook_event(db_session, event)
+
+
+def construct_stripe_webhook_event(payload: str, stripe_signature: str) -> dict[str, Any]:
     try:
-        event = construct_stripe_event(payload, stripe_signature)
+        return construct_stripe_event(payload, stripe_signature)
     except StripeWebhookSignatureError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-    return apply_stripe_webhook_event(db_session, event)
+
+
+def checkout_session_from_stripe_event(event: dict[str, Any]) -> dict[str, Any] | None:
+    data = event.get("data")
+    checkout_session = data.get("object") if isinstance(data, dict) else None
+    return checkout_session if isinstance(checkout_session, dict) else None
 
 
 def stripe_event_payload(event: dict[str, object]) -> str:
     return json.dumps(event, separators=(",", ":"), sort_keys=True)
+
+
+def get_recorded_checkout_or_404(db_session: Session, session_id: str) -> dict[str, Any]:
+    session = get_recorded_checkout_session_payload(db_session, session_id)
+    if session is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="No such checkout.session."
+        )
+    return session
 
 
 async def send_checkout_receipt_email(

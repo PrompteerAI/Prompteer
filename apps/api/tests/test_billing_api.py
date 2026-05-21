@@ -25,7 +25,7 @@ from app.integrations.payments.webhooks import (
     sign_stripe_webhook_payload,
 )
 from app.main import create_app
-from app.models.domain import StripeWebhookEvent, User
+from app.models.domain import StripeCheckoutSession, StripeWebhookEvent, User
 from tests.support import reset_limiter_storage
 
 
@@ -55,6 +55,11 @@ def test_billing_checkout_create_retrieve_and_complete() -> None:
     assert session["provider"] == "mock"
     assert session["status"] == "open"
     assert session["payment_status"] == "unpaid"
+    with Session(app.state.test_engine) as assertion_session:
+        checkout_record = assertion_session.get(StripeCheckoutSession, session["id"])
+    assert checkout_record is not None
+    assert checkout_record.user_id == "00000000-0000-4000-8000-000000000002"
+    assert checkout_record.amount_total == 1200
 
     retrieve_response = client.get(f"/api/v1/billing/checkout/{session['id']}")
     assert retrieve_response.status_code == 200
@@ -225,6 +230,45 @@ def test_stripe_webhook_updates_user_plan() -> None:
     assert paid_user.plan == "paid"
 
 
+def test_stripe_webhook_captures_receipt_email(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    mailbox_dir = tmp_path / "mailbox"
+    monkeypatch.setattr(settings, "mock_mailbox_dir", str(mailbox_dir))
+    monkeypatch.setattr(email_mock, "default_mailbox_dir", lambda: mailbox_dir)
+    app = create_billing_test_app(initial_paid_plan="free")
+    client = TestClient(app)
+
+    create_response = client.post(
+        "/api/v1/billing/checkout",
+        json={"customer_email": "paid@prompteer.dev"},
+    )
+    assert create_response.status_code == 200
+    session_id = create_response.json()["id"]
+    completion = asyncio.run(MockStripeClient().complete_checkout_session(session_id))
+    payload = json.dumps(completion["event"], separators=(",", ":"), sort_keys=True)
+    signature = MockStripeClient().sign_webhook_payload(payload)
+
+    webhook_response = client.post(
+        "/api/v1/billing/webhooks/stripe",
+        content=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Stripe-Signature": signature,
+        },
+    )
+
+    assert webhook_response.status_code == 200
+    receipts = [
+        path.read_text(encoding="utf-8")
+        for path in sorted(mailbox_dir.glob("*paid@prompteer.dev.eml"))
+    ]
+    receipt_text = next(text for text in receipts if "Subject: Prompteer Pro receipt" in text)
+    assert session_id in receipt_text
+    assert webhook_response.json()["event_id"] in receipt_text
+
+
 def test_stripe_webhook_delivery_is_idempotent() -> None:
     app = create_billing_test_app(initial_paid_plan="free")
     client = TestClient(app)
@@ -336,18 +380,17 @@ def test_stripe_webhook_rejects_non_utf8_payload() -> None:
 def test_stripe_webhook_matches_customer_email_case_insensitively() -> None:
     app = create_billing_test_app(initial_paid_plan="free")
     client = TestClient(app)
-    event = {
-        "id": "evt_case_insensitive",
-        "object": "event",
-        "type": "checkout.session.completed",
-        "data": {
-            "object": {
-                "customer_email": "PAID@PROMPTEER.DEV",
-                "client_reference_id": "00000000-0000-4000-8000-000000000002",
-                "metadata": {"user_id": "00000000-0000-4000-8000-000000000002"},
-            }
-        },
-    }
+    create_response = client.post(
+        "/api/v1/billing/checkout",
+        json={"customer_email": "paid@prompteer.dev"},
+    )
+    assert create_response.status_code == 200
+    completion = asyncio.run(
+        MockStripeClient().complete_checkout_session(create_response.json()["id"])
+    )
+    event = completion["event"]
+    event["id"] = "evt_case_insensitive"
+    event["data"]["object"]["customer_email"] = "PAID@PROMPTEER.DEV"
     payload = json.dumps(event, separators=(",", ":"), sort_keys=True)
     signature = MockStripeClient().sign_webhook_payload(payload)
 
@@ -369,6 +412,50 @@ def test_stripe_webhook_matches_customer_email_case_insensitively() -> None:
             select(User).where(User.email == "paid@prompteer.dev")
         ).one()
     assert paid_user.plan == "paid"
+
+
+def test_stripe_webhook_rejects_unknown_local_checkout_session() -> None:
+    app = create_billing_test_app(initial_paid_plan="free")
+    client = TestClient(app)
+    event = {
+        "id": "evt_unknown_local_checkout",
+        "object": "event",
+        "type": "checkout.session.completed",
+        "data": {
+            "object": {
+                "id": "cs_test_not_created_by_app",
+                "mode": "subscription",
+                "status": "complete",
+                "payment_status": "paid",
+                "amount_total": 1200,
+                "currency": "usd",
+                "customer_email": "paid@prompteer.dev",
+                "client_reference_id": "00000000-0000-4000-8000-000000000002",
+                "metadata": {"user_id": "00000000-0000-4000-8000-000000000002"},
+            }
+        },
+    }
+    payload = json.dumps(event, separators=(",", ":"), sort_keys=True)
+    signature = MockStripeClient().sign_webhook_payload(payload)
+
+    response = client.post(
+        "/api/v1/billing/webhooks/stripe",
+        content=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Stripe-Signature": signature,
+        },
+    )
+
+    assert response.status_code == 200
+    webhook = response.json()
+    assert webhook["processed"] is False
+    assert webhook["customer_email"] == "paid@prompteer.dev"
+    with Session(app.state.test_engine) as assertion_session:
+        paid_user = assertion_session.exec(
+            select(User).where(User.email == "paid@prompteer.dev")
+        ).one()
+    assert paid_user.plan == "free"
 
 
 def test_stripe_webhook_rejects_email_only_checkout_session() -> None:
