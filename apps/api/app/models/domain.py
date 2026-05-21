@@ -5,7 +5,7 @@ from enum import StrEnum
 from typing import Any, cast
 from uuid import uuid4
 
-from sqlalchemy import JSON, Column, DateTime
+from sqlalchemy import JSON, Column, DateTime, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 UTCDateTime = cast(type[Any], DateTime(timezone=True))
@@ -192,6 +192,7 @@ class VideoReference(SQLModel, table=True):
 
 class Share(TimestampMixin, table=True):
     __tablename__ = "shares"
+    __table_args__ = (UniqueConstraint("user_id", "challenge_id", name="uq_shares_user_challenge"),)
 
     id: str = Field(default_factory=lambda: str(uuid4()), primary_key=True)
     challenge_id: str = Field(foreign_key="challenges.id", index=True)

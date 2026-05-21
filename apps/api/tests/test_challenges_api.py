@@ -21,7 +21,8 @@ from app.db.seed import seed
 from app.db.session import get_session
 from app.integrations.llm.base import LLMProviderError
 from app.main import create_app
-from app.models.domain import Challenge, Share
+from app.models.domain import Challenge, LLMUsageDay, Share, User
+from app.services.llm_quota import current_usage_date
 from tests.support import reset_limiter_storage
 
 
@@ -69,6 +70,7 @@ def test_list_and_run_seeded_coding_challenge() -> None:
     assert result["provider"] == "mock"
     assert "Mock Prompteer response" in result["output"]
     assert result["usage"]["total_tokens"] >= result["usage"]["completion_tokens"]
+    assert "raw" not in result
     assert result["share"]["is_public"] is True
 
     with Session(engine) as assertion_session:
@@ -171,6 +173,29 @@ def test_challenge_run_can_skip_public_share_creation() -> None:
     with Session(engine) as assertion_session:
         after_count = len(assertion_session.exec(select(Share)).all())
     assert after_count == before_count
+
+
+def test_challenge_run_rolls_back_usage_when_share_creation_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, engine, challenge_id = create_seeded_challenge_client()
+
+    def fail_share_creation(*args: object, **kwargs: object) -> Share:
+        raise RuntimeError("share storage unavailable")
+
+    monkeypatch.setattr(challenge_routes, "create_prompt_share", fail_share_creation)
+
+    with pytest.raises(RuntimeError, match="share storage unavailable"):
+        client.post(
+            f"/api/v1/challenges/{challenge_id}/run",
+            json={"prompt": "Explain FizzBuzz clearly and keep the answer compact."},
+        )
+
+    with Session(engine) as assertion_session:
+        user = assertion_session.exec(select(User).where(User.email == "admin@prompteer.dev")).one()
+        usage = assertion_session.get(LLMUsageDay, (user.id, current_usage_date()))
+
+    assert usage is None
 
 
 def test_challenge_run_updates_existing_public_share_for_user_challenge() -> None:

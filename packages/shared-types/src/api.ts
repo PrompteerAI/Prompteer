@@ -407,10 +407,6 @@ export interface components {
       prompt: string;
       /** Provider */
       provider: string;
-      /** Raw */
-      raw: {
-        [key: string]: unknown;
-      };
       share: components["schemas"]["ChallengeRunShareRead"] | null;
       /** Usage */
       usage: {

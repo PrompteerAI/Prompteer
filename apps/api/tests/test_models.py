@@ -1,6 +1,6 @@
 """Tests for SQLModel metadata and timezone-aware domain defaults."""
 
-from sqlalchemy import DateTime
+from sqlalchemy import DateTime, UniqueConstraint
 from sqlmodel import SQLModel
 
 # Import model modules so SQLModel metadata is populated before assertions.
@@ -67,3 +67,16 @@ def test_domain_timestamp_columns_are_timezone_aware() -> None:
             column_type = table.columns[column_name].type
             assert isinstance(column_type, DateTime)
             assert column_type.timezone is True
+
+
+def test_share_model_enforces_one_share_per_user_challenge() -> None:
+    table = SQLModel.metadata.tables["shares"]
+    unique_constraints = [
+        constraint for constraint in table.constraints if isinstance(constraint, UniqueConstraint)
+    ]
+
+    assert any(
+        constraint.name == "uq_shares_user_challenge"
+        and {column.name for column in constraint.columns} == {"user_id", "challenge_id"}
+        for constraint in unique_constraints
+    )

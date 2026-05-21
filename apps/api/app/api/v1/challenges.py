@@ -2,9 +2,11 @@
 
 from collections import defaultdict
 from collections.abc import Iterable
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from sqlalchemy.dialects.postgresql import insert as postgresql_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlmodel import Session, col, select
 
 from app.api.deps import get_current_principal
@@ -126,13 +128,21 @@ async def run_challenge_prompt(
             detail=exc.detail,
             code="llm_provider_error",
         ) from exc
-    record_llm_usage(session, user, llm_result["usage"])
-    share = create_prompt_share(
-        session,
-        user_id=user.id,
-        challenge_id=challenge.id,
-        run=run_request,
-    )
+    try:
+        record_llm_usage(session, user, llm_result["usage"], commit=False)
+        share = create_prompt_share(
+            session,
+            user_id=user.id,
+            challenge_id=challenge.id,
+            run=run_request,
+        )
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+
+    if share is not None:
+        session.refresh(share)
     references = load_challenge_references(session, [challenge]).get(challenge.id, [])
     return ChallengeRunResponse(
         challenge=challenge_to_read(
@@ -143,7 +153,6 @@ async def run_challenge_prompt(
         provider=llm_client.provider,
         output=llm_result["output"],
         usage=llm_result["usage"],
-        raw=llm_result["raw"],
         share=share_to_run_read(share) if share is not None else None,
     )
 
@@ -167,7 +176,6 @@ async def run_feedback_prompt(
         return {
             "output": extract_anthropic_text(response),
             "usage": normalize_anthropic_usage(response.get("usage")),
-            "raw": response,
         }
 
     response = await llm_client.chat_completion(
@@ -183,7 +191,6 @@ async def run_feedback_prompt(
     return {
         "output": extract_openai_text(response),
         "usage": normalize_openai_usage(response.get("usage")),
-        "raw": response,
     }
 
 
@@ -368,25 +375,91 @@ def create_prompt_share(
 ) -> Share | None:
     if not run.publish_to_board:
         return None
+    share = upsert_prompt_share(
+        session,
+        user_id=user_id,
+        challenge_id=challenge_id,
+        prompt=run.prompt,
+    )
+    session.flush()
+    return share
+
+
+def upsert_prompt_share(
+    session: Session,
+    *,
+    user_id: str,
+    challenge_id: str,
+    prompt: str,
+) -> Share:
+    dialect_name = session.get_bind().dialect.name
+    if dialect_name in {"postgresql", "sqlite"}:
+        return dialect_upsert_prompt_share(
+            session,
+            dialect_name=dialect_name,
+            user_id=user_id,
+            challenge_id=challenge_id,
+            prompt=prompt,
+        )
+
     share = session.exec(
         select(Share)
         .where(Share.user_id == user_id, Share.challenge_id == challenge_id)
+        .with_for_update()
         .order_by(col(Share.updated_at).desc(), col(Share.created_at).desc())
     ).first()
     if share is None:
         share = Share(
             challenge_id=challenge_id,
             user_id=user_id,
-            prompt=run.prompt,
+            prompt=prompt,
             is_public=True,
         )
     else:
-        share.prompt = run.prompt
+        share.prompt = prompt
         share.is_public = True
         share.updated_at = utc_now()
     session.add(share)
-    session.commit()
-    session.refresh(share)
+    session.flush()
+    return share
+
+
+def dialect_upsert_prompt_share(
+    session: Session,
+    *,
+    dialect_name: str,
+    user_id: str,
+    challenge_id: str,
+    prompt: str,
+) -> Share:
+    table: Any = cast(Any, Share).__table__
+    now = utc_now()
+    insert_values = {
+        "challenge_id": challenge_id,
+        "user_id": user_id,
+        "prompt": prompt,
+        "is_public": True,
+        "created_at": now,
+        "updated_at": now,
+    }
+    if dialect_name == "postgresql":
+        statement: Any = postgresql_insert(table).values(**insert_values)
+    else:
+        statement = sqlite_insert(table).values(**insert_values)
+    statement = statement.on_conflict_do_update(
+        index_elements=[table.c.user_id, table.c.challenge_id],
+        set_={
+            "prompt": prompt,
+            "is_public": True,
+            "updated_at": now,
+        },
+    ).returning(table.c.id)
+    row = session.execute(statement).first()
+    if row is None:
+        raise RuntimeError("Prompt share upsert did not return a row.")
+    share = session.get(Share, row[0])
+    if share is None:
+        raise RuntimeError("Prompt share row disappeared after upsert.")
     return share
 
 

@@ -56,5 +56,4 @@ class ChallengeRunResponse(BaseModel):
     provider: str
     output: str
     usage: dict[str, int]
-    raw: dict[str, object]
     share: ChallengeRunShareRead | None

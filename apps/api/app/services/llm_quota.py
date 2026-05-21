@@ -62,7 +62,13 @@ def assert_llm_quota_available(
         raise quota_exceeded(user=user, cap=cap, used=max(used_tokens, projected_tokens))
 
 
-def record_llm_usage(session: Session, user: User, usage: dict[str, Any]) -> LLMUsageDay:
+def record_llm_usage(
+    session: Session,
+    user: User,
+    usage: dict[str, Any],
+    *,
+    commit: bool = True,
+) -> LLMUsageDay:
     usage_day = current_usage_date()
     prompt_tokens = non_negative_int(usage.get("prompt_tokens"))
     completion_tokens = non_negative_int(usage.get("completion_tokens"))
@@ -86,7 +92,10 @@ def record_llm_usage(session: Session, user: User, usage: dict[str, Any]) -> LLM
         session.rollback()
         raise quota_exceeded(user=user, cap=cap or 0, used=used)
 
-    session.commit()
+    if commit:
+        session.commit()
+    else:
+        session.flush()
     refreshed = session.get(LLMUsageDay, (user.id, usage_day))
     if refreshed is None:
         raise RuntimeError("LLM usage row disappeared after quota update.")
