@@ -118,6 +118,7 @@
       "emptyResult": "Run a prompt to see deterministic feedback from the local LLM mock.",
       "errors": {
         "disabled": "Prompt runs are disabled for this environment.",
+        "noChallenge": "Choose a challenge before running a prompt.",
         "shortPrompt": "Write a prompt with at least 10 characters.",
         "rateLimited": "Prompt runs are temporarily rate limited. Wait a moment, then try again.",
         "unauthorized": "Sign in before running a prompt.",

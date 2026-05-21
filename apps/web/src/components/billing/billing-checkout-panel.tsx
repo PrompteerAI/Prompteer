@@ -1,6 +1,7 @@
 "use client";
 
 // Interactive checkout exercise for the local Stripe-compatible billing mock.
+import { useMutation } from "@tanstack/react-query";
 import {
   CheckCircle2,
   CreditCard,
@@ -30,11 +31,20 @@ export function BillingCheckoutPanel({
   const t = useTranslations("billing");
   const [session, setSession] = useState<CheckoutSession | null>(null);
   const [step, setStep] = useState<CheckoutStep>("idle");
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isMockSession = session?.provider === "mock";
   const hostedCheckoutUrl =
     session && !isMockSession && session.url ? session.url : null;
+  const createCheckoutMutation = useMutation({
+    mutationKey: ["billing", "checkout", "create"],
+    mutationFn: createCheckoutSession,
+  });
+  const completeCheckoutMutation = useMutation({
+    mutationKey: ["billing", "checkout", "complete", session?.id],
+    mutationFn: completeCheckoutSession,
+  });
+  const isLoading =
+    createCheckoutMutation.isPending || completeCheckoutMutation.isPending;
 
   const price = useMemo(() => {
     if (!session?.amount_total || !session.currency) {
@@ -51,18 +61,9 @@ export function BillingCheckoutPanel({
       setError(t("errors.disabled"));
       return;
     }
-    setIsLoading(true);
     setError(null);
     try {
-      const api = createPrompteerApiClient();
-      const response = unwrapApiResponse(
-        await api.POST("/api/v1/billing/checkout", {
-          body: {
-            customer_email: "paid@prompteer.dev",
-            plan: "pro_monthly",
-          },
-        }),
-      );
+      const response = await createCheckoutMutation.mutateAsync();
       setSession(response);
       setStep("created");
     } catch (caughtError) {
@@ -74,8 +75,6 @@ export function BillingCheckoutPanel({
       } else {
         setError(t("errors.startFailed"));
       }
-    } finally {
-      setIsLoading(false);
     }
   }
 
@@ -87,15 +86,9 @@ export function BillingCheckoutPanel({
       setError(t("errors.disabled"));
       return;
     }
-    setIsLoading(true);
     setError(null);
     try {
-      const api = createPrompteerApiClient();
-      const response = unwrapApiResponse(
-        await api.POST("/api/v1/billing/checkout/{session_id}/complete", {
-          params: { path: { session_id: session.id } },
-        }),
-      );
+      const response = await completeCheckoutMutation.mutateAsync(session.id);
       setSession(response);
       setStep("complete");
     } catch (caughtError) {
@@ -107,8 +100,6 @@ export function BillingCheckoutPanel({
       } else {
         setError(t("errors.completeFailed"));
       }
-    } finally {
-      setIsLoading(false);
     }
   }
 
@@ -273,5 +264,28 @@ export function BillingCheckoutPanel({
         ) : null}
       </div>
     </section>
+  );
+}
+
+async function createCheckoutSession(): Promise<CheckoutSession> {
+  const api = createPrompteerApiClient();
+  return unwrapApiResponse(
+    await api.POST("/api/v1/billing/checkout", {
+      body: {
+        customer_email: "paid@prompteer.dev",
+        plan: "pro_monthly",
+      },
+    }),
+  );
+}
+
+async function completeCheckoutSession(
+  sessionId: string,
+): Promise<CheckoutSession> {
+  const api = createPrompteerApiClient();
+  return unwrapApiResponse(
+    await api.POST("/api/v1/billing/checkout/{session_id}/complete", {
+      params: { path: { session_id: sessionId } },
+    }),
   );
 }

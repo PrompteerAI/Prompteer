@@ -2,8 +2,9 @@
 
 // Localized route-level error boundary for recoverable rendering failures.
 import * as Sentry from "@sentry/nextjs";
+import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 import { publicEnv } from "@/lib/env";
 
@@ -15,37 +16,16 @@ export default function ErrorPage({
   reset: () => void;
 }): React.ReactElement {
   const t = useTranslations("errors");
-  const [reportState, setReportState] = useState<"idle" | "sending" | "sent">(
-    "idle",
-  );
+  const reportMutation = useMutation({
+    mutationKey: ["client-error-report", error.digest ?? error.message],
+    mutationFn: () => reportError(error),
+  });
 
   useEffect(() => {
     if (publicEnv.NEXT_PUBLIC_SENTRY_DSN) {
       Sentry.captureException(error);
     }
   }, [error]);
-
-  async function reportError(): Promise<void> {
-    if (reportState !== "idle") {
-      return;
-    }
-    setReportState("sending");
-    try {
-      const response = await fetch("/api/errors", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          message: error.message,
-          digest: error.digest,
-          path: window.location.pathname,
-          userAgent: window.navigator.userAgent,
-        }),
-      });
-      setReportState(response.ok ? "sent" : "idle");
-    } catch {
-      setReportState("idle");
-    }
-  }
 
   return (
     <main className="grid min-h-screen place-items-center bg-zinc-50 px-6">
@@ -61,15 +41,31 @@ export default function ErrorPage({
           </button>
           <button
             className="rounded-md border border-zinc-300 px-4 py-2 text-sm text-zinc-900 disabled:cursor-not-allowed disabled:text-zinc-500"
-            disabled={reportState !== "idle"}
+            disabled={reportMutation.isPending || reportMutation.isSuccess}
             onClick={() => {
-              void reportError();
+              reportMutation.mutate();
             }}
           >
-            {reportState === "sent" ? t("reported") : t("report")}
+            {reportMutation.isSuccess ? t("reported") : t("report")}
           </button>
         </div>
       </div>
     </main>
   );
+}
+
+async function reportError(error: Error & { digest?: string }): Promise<void> {
+  const response = await fetch("/api/errors", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      message: error.message,
+      digest: error.digest,
+      path: window.location.pathname,
+      userAgent: window.navigator.userAgent,
+    }),
+  });
+  if (!response.ok) {
+    throw new Error("Error report failed.");
+  }
 }

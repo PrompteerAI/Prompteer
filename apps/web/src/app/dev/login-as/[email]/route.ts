@@ -1,4 +1,5 @@
 // Development-only seeded-user login route for Playwright and local demos.
+import { defaultLocalePath } from "@/i18n/paths";
 import { getSeedUser, seedLoginEnabled, signIn } from "@/lib/auth";
 
 interface DevLoginAsRouteContext {
@@ -19,7 +20,7 @@ export async function GET(
 
   await signIn("seed", {
     email: decodedEmail,
-    redirectTo: "/en",
+    redirectTo: defaultLocalePath("/"),
   });
 
   return new Response(null, { status: 204 });

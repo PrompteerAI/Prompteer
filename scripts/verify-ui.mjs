@@ -35,7 +35,7 @@ function routeUrl(path) {
 
 async function ensureSeedLogin(page) {
   await page.goto(routeUrl("/dev/login-as/admin%40prompteer.dev"), {
-    waitUntil: "networkidle",
+    waitUntil: "domcontentloaded",
   });
   if (!page.url().endsWith("/en")) {
     throw new Error(
@@ -71,13 +71,17 @@ for (const viewport of viewports) {
       authenticated = true;
     }
 
-    await page.goto(routeUrl(route.path), { waitUntil: "networkidle" });
+    await page.goto(routeUrl(route.path), { waitUntil: "domcontentloaded" });
     if (route.auth && page.url().includes("/login")) {
       failures.push(
         `[${viewport.name}] ${route.path} redirected to login after seed auth.`,
       );
     }
     await page.locator("body").waitFor({ state: "visible" });
+    await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {
+      // Some server-rendered pages keep background fetches open; visible body is
+      // the screenshot readiness gate, while network idle is only a stabilizer.
+    });
     await page.screenshot({
       path: new URL(`${route.name}-${viewport.name}.png`, outDir).pathname,
       fullPage: true,

@@ -1,5 +1,6 @@
 // Server-side renderer for the dev-only mock mailbox HTML pages. It reads
 // captured emails through the FastAPI dev mailbox endpoints.
+import { defaultLocalePath } from "@/i18n/paths";
 import { getServerEnv } from "@/lib/env";
 
 interface MailboxMessage {
@@ -52,7 +53,7 @@ export function mailboxIndexHtml(messages: MailboxMessage[]): string {
           <p>Prompteer</p>
           <h1>Mock mailbox</h1>
         </div>
-        <a class="button" href="/en">Open app</a>
+        <a class="button" href="${defaultLocalePath("/")}">Open app</a>
       </header>
       <section class="panel">
         <table>
@@ -108,7 +109,7 @@ export function mailboxErrorHtml(status: number, detail: string): string {
           <p>Prompteer</p>
           <h1>Mailbox unavailable</h1>
         </div>
-        <a class="button" href="/en">Open app</a>
+        <a class="button" href="${defaultLocalePath("/")}">Open app</a>
       </header>
       <section class="panel error">
         <strong>${status}</strong>

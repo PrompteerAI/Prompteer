@@ -1,11 +1,15 @@
 "use client";
 
 // Prompt runner UI for seeded coding challenges and deterministic LLM feedback.
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import { CheckCircle2, Loader2, Play, WandSparkles } from "lucide-react";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
+import { Link } from "@/i18n/navigation";
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
 import { normalizeError } from "@/lib/errors";
 import type { components } from "@prompteer/shared-types";
@@ -18,19 +22,48 @@ interface CodingChallengeRunnerProps {
   llmEnabled: boolean;
 }
 
+type PromptFormValues = {
+  challengeId: string;
+  prompt: string;
+  publishToBoard: boolean;
+};
+
 export function CodingChallengeRunner({
   challenges,
   llmEnabled,
 }: CodingChallengeRunnerProps): React.ReactElement {
   const t = useTranslations("coding.runner");
-  const [selectedChallengeId, setSelectedChallengeId] = useState(
-    challenges[0]?.id ?? "",
+  const promptFormSchema = useMemo(
+    () =>
+      z.object({
+        challengeId: z.string().min(1, t("errors.noChallenge")),
+        prompt: z.string().trim().min(10, t("errors.shortPrompt")),
+        publishToBoard: z.boolean(),
+      }),
+    [t],
   );
-  const [prompt, setPrompt] = useState(() => t("defaultPrompt"));
-  const [publishToBoard, setPublishToBoard] = useState(true);
-  const [result, setResult] = useState<ChallengeRunResponse | null>(null);
+  const {
+    formState: { errors, isValid },
+    handleSubmit,
+    register,
+    watch,
+  } = useForm<PromptFormValues>({
+    defaultValues: {
+      challengeId: challenges[0]?.id ?? "",
+      prompt: t("defaultPrompt"),
+      publishToBoard: true,
+    },
+    mode: "onChange",
+    resolver: zodResolver(promptFormSchema),
+  });
   const [error, setError] = useState<string | null>(null);
-  const [isRunning, setIsRunning] = useState(false);
+  const runPromptMutation = useMutation({
+    mutationKey: ["challenges", "run"],
+    mutationFn: runChallengePrompt,
+  });
+  const selectedChallengeId = watch("challengeId");
+  const result = runPromptMutation.data ?? null;
+  const isRunning = runPromptMutation.isPending;
 
   const selectedChallenge = useMemo(
     () =>
@@ -39,29 +72,18 @@ export function CodingChallengeRunner({
     [challenges, selectedChallengeId],
   );
 
-  async function runPrompt(
-    event: React.FormEvent<HTMLFormElement>,
-  ): Promise<void> {
-    event.preventDefault();
+  async function runPrompt(values: PromptFormValues): Promise<void> {
     if (!llmEnabled) {
       setError(t("errors.disabled"));
       return;
     }
-    if (!selectedChallenge || prompt.trim().length < 10) {
-      setError(t("errors.shortPrompt"));
+    if (!selectedChallenge) {
+      setError(t("errors.noChallenge"));
       return;
     }
-    setIsRunning(true);
     setError(null);
     try {
-      const api = createPrompteerApiClient();
-      const response = unwrapApiResponse(
-        await api.POST("/api/v1/challenges/{challenge_id}/run", {
-          params: { path: { challenge_id: selectedChallenge.id } },
-          body: { prompt, publish_to_board: publishToBoard },
-        }),
-      );
-      setResult(response);
+      await runPromptMutation.mutateAsync(values);
     } catch (caughtError) {
       const normalizedError = await normalizeError(caughtError);
       if (normalizedError.code === "rate_limited") {
@@ -73,8 +95,6 @@ export function CodingChallengeRunner({
       } else {
         setError(t("errors.failed"));
       }
-    } finally {
-      setIsRunning(false);
     }
   }
 
@@ -120,8 +140,7 @@ export function CodingChallengeRunner({
         <select
           className="mt-2 h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-950"
           id="challenge"
-          onChange={(event) => setSelectedChallengeId(event.target.value)}
-          value={selectedChallenge.id}
+          {...register("challengeId")}
         >
           {challenges.map((challenge) => (
             <option key={challenge.id} value={challenge.id}>
@@ -137,9 +156,7 @@ export function CodingChallengeRunner({
 
       <form
         className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm"
-        onSubmit={(event) => {
-          void runPrompt(event);
-        }}
+        onSubmit={(event) => void handleSubmit(runPrompt)(event)}
       >
         <label className="text-sm font-medium text-zinc-800" htmlFor="prompt">
           {t("promptLabel")}
@@ -147,15 +164,16 @@ export function CodingChallengeRunner({
         <textarea
           className="mt-2 min-h-44 w-full resize-y rounded-md border border-zinc-300 px-3 py-2 text-sm leading-6 text-zinc-950 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
           id="prompt"
-          onChange={(event) => setPrompt(event.target.value)}
-          value={prompt}
+          {...register("prompt")}
         />
+        {errors.prompt ? (
+          <p className="mt-2 text-sm text-red-600">{errors.prompt.message}</p>
+        ) : null}
         <label className="mt-4 flex items-start gap-3 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm text-zinc-700">
           <input
-            checked={publishToBoard}
             className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-emerald-700 focus:ring-emerald-600"
-            onChange={(event) => setPublishToBoard(event.target.checked)}
             type="checkbox"
+            {...register("publishToBoard")}
           />
           <span>
             <span className="block font-medium text-zinc-900">
@@ -168,7 +186,7 @@ export function CodingChallengeRunner({
         </label>
         <button
           className="mt-4 inline-flex h-10 items-center gap-2 rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
-          disabled={!llmEnabled || isRunning || prompt.trim().length < 10}
+          disabled={!llmEnabled || isRunning || !isValid}
           type="submit"
         >
           {isRunning ? (
@@ -214,7 +232,7 @@ export function CodingChallengeRunner({
                   </span>
                   <Link
                     className="font-medium underline underline-offset-4 hover:text-emerald-700"
-                    href="/en/board"
+                    href="/board"
                   >
                     {t("viewBoard")}
                   </Link>
@@ -233,5 +251,20 @@ export function CodingChallengeRunner({
         </div>
       </form>
     </section>
+  );
+}
+
+async function runChallengePrompt(
+  values: PromptFormValues,
+): Promise<ChallengeRunResponse> {
+  const api = createPrompteerApiClient();
+  return unwrapApiResponse(
+    await api.POST("/api/v1/challenges/{challenge_id}/run", {
+      params: { path: { challenge_id: values.challengeId } },
+      body: {
+        prompt: values.prompt,
+        publish_to_board: values.publishToBoard,
+      },
+    }),
   );
 }

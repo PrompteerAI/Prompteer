@@ -8,25 +8,33 @@ import {
   MessageSquareText,
   UserRound,
 } from "lucide-react";
-import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import { Link } from "@/i18n/navigation";
+import { localizedPath } from "@/i18n/paths";
 import { auth, signOut } from "@/lib/auth";
 
 const entrypoints = [
-  { key: "login", icon: LogIn, href: "/en/login" },
-  { key: "coding", icon: Code2, href: "/en/challenges/coding" },
-  { key: "board", icon: MessageSquareText, href: "/en/board" },
-  { key: "billing", icon: CreditCard, href: "/en/billing" },
+  { key: "login", icon: LogIn, href: "/login" },
+  { key: "coding", icon: Code2, href: "/challenges/coding" },
+  { key: "board", icon: MessageSquareText, href: "/board" },
+  { key: "billing", icon: CreditCard, href: "/billing" },
 ] as const;
 
-async function signOutAction(): Promise<void> {
-  "use server";
+type Props = {
+  params: Promise<{ locale: string }>;
+};
 
-  await signOut({ redirectTo: "/en/login" });
-}
+export default async function HomePage({
+  params,
+}: Props): Promise<React.ReactElement> {
+  const { locale } = await params;
+  async function signOutAction(): Promise<void> {
+    "use server";
 
-export default async function HomePage(): Promise<React.ReactElement> {
+    await signOut({ redirectTo: localizedPath("/login", locale) });
+  }
+
   const t = await getTranslations("home");
   const session = await auth();
 
@@ -52,7 +60,7 @@ export default async function HomePage(): Promise<React.ReactElement> {
               </span>
               <Link
                 className="inline-flex h-9 items-center gap-2 rounded-md border border-zinc-300 px-3 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
-                href="/en/profile"
+                href="/profile"
               >
                 <UserRound aria-hidden="true" className="h-4 w-4" />
                 {t("profileSettings")}
@@ -73,7 +81,7 @@ export default async function HomePage(): Promise<React.ReactElement> {
           {entrypoints.map((entrypoint) => {
             const Icon = entrypoint.icon;
             return (
-              <a
+              <Link
                 key={entrypoint.key}
                 href={entrypoint.href}
                 className="group rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition hover:border-emerald-500"
@@ -91,7 +99,7 @@ export default async function HomePage(): Promise<React.ReactElement> {
                 <p className="mt-3 text-sm leading-6 text-zinc-600">
                   {t(`${entrypoint.key}.description`)}
                 </p>
-              </a>
+              </Link>
             );
           })}
         </div>

@@ -11,22 +11,31 @@ import {
   UserRound,
   XCircle,
 } from "lucide-react";
-import Link from "next/link";
+import NextLink from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import { Link } from "@/i18n/navigation";
+import { localizedPath } from "@/i18n/paths";
 import { auth, signOut } from "@/lib/auth";
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
 import { getServerEnv } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
-async function signOutAction(): Promise<void> {
-  "use server";
+type Props = {
+  params: Promise<{ locale: string }>;
+};
 
-  await signOut({ redirectTo: "/en/login" });
-}
+export default async function ProfilePage({
+  params,
+}: Props): Promise<React.ReactElement> {
+  const { locale } = await params;
+  async function signOutAction(): Promise<void> {
+    "use server";
 
-export default async function ProfilePage(): Promise<React.ReactElement> {
+    await signOut({ redirectTo: localizedPath("/login", locale) });
+  }
+
   const t = await getTranslations("profile");
   const session = await auth();
 
@@ -47,7 +56,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             </p>
             <Link
               className="mt-5 inline-flex h-10 items-center gap-2 rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800"
-              href="/en/login"
+              href="/login"
             >
               <ExternalLink aria-hidden="true" className="h-4 w-4" />
               {t("signIn")}
@@ -262,14 +271,20 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             </div>
             <div className="mt-6 grid gap-2">
               <ShortcutLink
-                href="/en/challenges/coding"
+                href="/challenges/coding"
                 label={t("shortcuts.coding")}
               />
-              <ShortcutLink href="/en/billing" label={t("shortcuts.billing")} />
-              <ShortcutLink
+              <ShortcutLink href="/billing" label={t("shortcuts.billing")} />
+              <NextLink
+                className="inline-flex h-10 items-center justify-between gap-3 rounded-md border border-zinc-300 px-3 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
                 href="/dev/mailbox"
-                label={t("shortcuts.mailbox")}
-              />
+              >
+                <span>{t("shortcuts.mailbox")}</span>
+                <ExternalLink
+                  aria-hidden="true"
+                  className="h-4 w-4 text-emerald-700"
+                />
+              </NextLink>
             </div>
           </section>
         </div>
@@ -278,7 +293,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
   );
 }
 
-type ShortcutHref = "/en/challenges/coding" | "/en/billing" | "/dev/mailbox";
+type ShortcutHref = "/challenges/coding" | "/billing";
 
 function ShortcutLink({
   href,
