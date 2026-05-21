@@ -17,13 +17,13 @@ class Settings(BaseSettings):
     app_version: str = Field(default="0.1.0", alias="APP_VERSION")
     app_url: str = Field(default="http://localhost:3000", alias="APP_URL")
     database_url: str = Field(
-        default="postgresql+psycopg://prompteer:prompteer@localhost:5432/prompteer",
+        default="postgresql+psycopg://prompteer:prompteer@localhost:55432/prompteer",
         alias="DATABASE_URL",
     )
-    redis_url: str = Field(default="redis://localhost:6379/0", alias="REDIS_URL")
+    redis_url: str = Field(default="redis://localhost:56379/0", alias="REDIS_URL")
     rate_limit_enabled: bool = Field(default=True, alias="RATE_LIMIT_ENABLED")
     rate_limit_storage_url: str = Field(
-        default="redis://localhost:6379/0",
+        default="redis://localhost:56379/0",
         alias="RATE_LIMIT_STORAGE_URL",
     )
     rate_limit_strategy: str = Field(default="moving-window", alias="RATE_LIMIT_STRATEGY")

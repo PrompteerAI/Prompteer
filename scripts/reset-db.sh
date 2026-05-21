@@ -11,3 +11,10 @@ apply_local_port_env
 
 docker compose down -v
 scripts/compose-up.sh postgres redis
+
+(
+  cd apps/api
+  uv run python -m app.db.seed
+)
+
+printf 'Reset local PostgreSQL/Redis and reseeded demo data.\n'

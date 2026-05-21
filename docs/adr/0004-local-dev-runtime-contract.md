@@ -13,7 +13,7 @@ The rebuild contract says a contributor should be able to copy `.env.example`, s
 
 `docker compose up -d` starts local infrastructure dependencies such as PostgreSQL and Redis. `pnpm dev` starts both application processes: FastAPI on `API_PORT` and Next.js on `WEB_PORT`, defaulting to ports 8000 and 3000.
 
-The root script uses a small shell wrapper instead of adding another JavaScript process manager dependency.
+The root script uses a small shell wrapper instead of adding another JavaScript process manager dependency. On a fresh clone it installs missing pnpm workspace dependencies and syncs the uv project before launching the two dev servers.
 
 ## Consequences
 

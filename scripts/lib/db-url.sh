@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DEFAULT_DATABASE_URL="postgresql+psycopg://prompteer:prompteer@localhost:5432/prompteer"
+DEFAULT_DATABASE_URL="postgresql+psycopg://prompteer:prompteer@localhost:55432/prompteer"
 
 to_pg_url() {
   local url="${1:-$DEFAULT_DATABASE_URL}"

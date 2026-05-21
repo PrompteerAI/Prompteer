@@ -87,7 +87,7 @@ api-lint: ## Run Ruff against the API.
 api-test: ## Run API tests.
 	scripts/api-test.sh
 
-seed: ## Seed idempotent local demo data.
+seed: ## Run migrations and seed idempotent local demo data.
 	cd apps/api && uv run python -m app.db.seed
 
 reset: ## Reset local Docker database and Redis containers.

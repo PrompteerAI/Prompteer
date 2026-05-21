@@ -14,6 +14,8 @@ Prompteer is a clean monorepo rebuild of a prompt challenge and sharing prototyp
 
 No external API keys are required; blank provider credentials automatically select local mocks.
 
+Containerized demo:
+
 ```sh
 git clone https://github.com/PrompteerAI/Prompteer.git && cd Prompteer
 cp .env.example .env
@@ -21,6 +23,17 @@ docker compose up -d
 ```
 
 Open `http://localhost`. The default Compose stack serves the app through nginx as one origin, with `/` routed to the web app and `/api/` routed to FastAPI. If `HTTP_PORT` is changed in `.env`, open `http://localhost:<HTTP_PORT>`.
+
+Hot-reload development from a fresh clone:
+
+```sh
+git clone https://github.com/PrompteerAI/Prompteer.git && cd Prompteer
+cp .env.example .env
+docker compose up -d
+pnpm dev
+```
+
+`pnpm dev` self-installs missing pnpm/uv project dependencies on first run, then starts Next.js on `WEB_PORT` and FastAPI on `API_PORT`.
 
 ## Screenshots & Demo
 
@@ -150,8 +163,9 @@ make api-dev
 
 Hot-reload ports are configured in `.env` with `WEB_PORT=3000` and
 `API_PORT=8000`. Compose host ports are configured with `HTTP_PORT=80`,
-`POSTGRES_PORT=5432`, and `REDIS_PORT=6379`. Compose injects `HTTP_PORT` into
-the containerized public origin used by Auth.js, API JWT issuer checks, and mock
+`POSTGRES_PORT=55432`, and `REDIS_PORT=56379`; `COMPOSE_BIND_HOST=127.0.0.1`
+keeps published ports local-only by default. Compose injects `HTTP_PORT` into the
+containerized public origin used by Auth.js, API JWT issuer checks, and mock
 OAuth. The dev scripts derive `APP_URL`, `AUTH_URL`, JWKS, and mock Google
 issuer URLs from the hot-reload ports so a local port change stays consistent.
 
@@ -199,10 +213,16 @@ make types
 make types-check
 ```
 
-Seed demo data and captured mock emails:
+Migrate and seed demo data plus captured mock emails:
 
 ```sh
 make seed
+```
+
+Reset the local Docker database and Redis volumes, then recreate the demo state:
+
+```sh
+make reset
 ```
 
 ## External Integrations

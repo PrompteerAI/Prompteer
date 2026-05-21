@@ -1,8 +1,11 @@
 """Idempotent demo data and mock email seed routines for local development."""
 
-from sqlmodel import Session, SQLModel, create_engine, select
+from alembic import command
+from sqlmodel import Session, select
 
 from app.core.config import settings
+from app.core.migrations import alembic_config
+from app.db.session import engine
 from app.integrations.email.mock import MockSendGridClient
 from app.integrations.payments.mock import seed_completed_checkout_session
 from app.models.domain import (
@@ -336,8 +339,7 @@ def ensure_type_specific_challenge(session: Session, challenge: Challenge) -> No
 
 
 def main() -> None:
-    engine = create_engine(settings.database_url, pool_pre_ping=True)
-    SQLModel.metadata.create_all(engine)
+    command.upgrade(alembic_config(), "head")
     with Session(engine) as session:
         seed(session)
     seed_mock_emails()

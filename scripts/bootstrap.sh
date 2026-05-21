@@ -33,7 +33,6 @@ scripts/compose-up.sh --build
 
 (
   cd apps/api
-  uv run alembic upgrade head
   uv run python -m app.db.seed
 )
 

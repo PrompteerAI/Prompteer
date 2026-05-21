@@ -11,7 +11,13 @@ source "$script_dir/lib/load-env.sh"
 load_env_file "$repo_root/.env"
 apply_local_port_env
 
-database_url="$(to_pg_url "${RESTORE_DATABASE_URL:-${DATABASE_URL:-$DEFAULT_DATABASE_URL}}")"
+if [[ -z "${RESTORE_DATABASE_URL:-}" ]]; then
+  printf 'Refusing to restore without RESTORE_DATABASE_URL.\n' >&2
+  printf 'Set RESTORE_DATABASE_URL to the exact target database URL, preferably a throwaway restore database first.\n' >&2
+  exit 2
+fi
+
+database_url="$(to_pg_url "$RESTORE_DATABASE_URL")"
 
 pg_restore \
   --clean \

@@ -5,8 +5,14 @@ Prompteer uses PostgreSQL custom-format dumps (`pg_dump --format=custom`) so res
 ```sh
 scripts/backup-db.sh ./backups/prompteer.dump
 pg_restore --list ./backups/prompteer.dump
-scripts/restore-db.sh ./backups/prompteer.dump
+RESTORE_DATABASE_URL=postgresql://user:pass@localhost:55432/prompteer_restore \
+  scripts/restore-db.sh ./backups/prompteer.dump
 ```
+
+`scripts/restore-db.sh` refuses to run without an explicit
+`RESTORE_DATABASE_URL` because it uses `pg_restore --clean --if-exists`.
+Restore into a throwaway database first, inspect the result, and only then point
+the variable at a shared or production-like target.
 
 ## Local Restore Drill
 
@@ -21,9 +27,9 @@ The verifier creates isolated source and restore databases, runs Alembic migrati
 Set these variables when the default local credentials do not apply:
 
 ```sh
-MAINTENANCE_DATABASE_URL=postgresql://user:pass@localhost:5432/postgres \
-SOURCE_DATABASE_URL=postgresql://user:pass@localhost:5432/prompteer_backup_source \
-RESTORE_DATABASE_URL=postgresql://user:pass@localhost:5432/prompteer_backup_restore \
+MAINTENANCE_DATABASE_URL=postgresql://user:pass@localhost:55432/postgres \
+SOURCE_DATABASE_URL=postgresql://user:pass@localhost:55432/prompteer_backup_source \
+RESTORE_DATABASE_URL=postgresql://user:pass@localhost:55432/prompteer_backup_restore \
 make backup-restore-check
 ```
 

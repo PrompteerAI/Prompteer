@@ -15,4 +15,4 @@ if [[ -z "${GOOGLE_CLIENT_ID:-}" || -z "${GOOGLE_CLIENT_SECRET:-}" ]]; then
 fi
 
 cd apps/web
-exec next dev --port "$WEB_PORT"
+exec pnpm exec next dev --port "$WEB_PORT"

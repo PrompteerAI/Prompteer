@@ -70,7 +70,6 @@ create_database "$restore_database" >/dev/null
 printf 'Migrating and seeding source database...\n'
 (
   cd "$repo_root/apps/api"
-  DATABASE_URL="$(to_sqlalchemy_url "$source_url")" uv run alembic upgrade head >/dev/null
   DATABASE_URL="$(to_sqlalchemy_url "$source_url")" uv run python -m app.db.seed >/dev/null
 )
 
