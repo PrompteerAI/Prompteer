@@ -58,6 +58,16 @@ pnpm dev
 
 The verified local demo covers seed login, prompt execution through the LLM mock, Stripe-shaped checkout completion, review board reads, profile settings, logout, and captured SendGrid email viewing.
 
+Legacy-design preview:
+
+| Legacy home                                                 | Legacy coding category                                                    | Legacy board                                          |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------- |
+| ![Legacy preview home](docs/screenshots/09-legacy-home.png) | ![Legacy coding category](docs/screenshots/10-legacy-coding-category.png) | ![Legacy board](docs/screenshots/11-legacy-board.png) |
+
+| Legacy prompt runner                                                   | Legacy billing flow                                       | Legacy mobile home                                                |
+| ---------------------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------- |
+| ![Legacy prompt runner](docs/screenshots/13-legacy-problem-runner.png) | ![Legacy billing](docs/screenshots/14-legacy-billing.png) | ![Legacy mobile home](docs/screenshots/15-legacy-mobile-home.png) |
+
 ## Architecture
 
 ```mermaid
