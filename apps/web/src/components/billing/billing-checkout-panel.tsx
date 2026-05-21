@@ -57,7 +57,7 @@ export function BillingCheckoutPanel({
     session && !isMockSession && session.url ? session.url : null;
   const createCheckoutMutation = useMutation({
     mutationKey: ["billing", "checkout", "create", billingEmail],
-    mutationFn: () => createCheckoutSession(billingEmail),
+    mutationFn: createCheckoutSession,
   });
   const completeCheckoutMutation = useMutation({
     mutationKey: ["billing", "checkout", "complete", session?.id],
@@ -339,14 +339,11 @@ async function readBillingSubscription(): Promise<BillingSubscription> {
   return unwrapApiResponse(await api.GET("/api/v1/billing/subscription"));
 }
 
-async function createCheckoutSession(
-  customerEmail: string,
-): Promise<CheckoutSession> {
+async function createCheckoutSession(): Promise<CheckoutSession> {
   const api = createPrompteerApiClient();
   return unwrapApiResponse(
     await api.POST("/api/v1/billing/checkout", {
       body: {
-        customer_email: customerEmail,
         plan: "pro_monthly",
       },
     }),

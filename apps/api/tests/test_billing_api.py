@@ -45,7 +45,7 @@ def test_billing_checkout_create_retrieve_and_complete() -> None:
 
     create_response = client.post(
         "/api/v1/billing/checkout",
-        json={"customer_email": "paid@prompteer.dev"},
+        json={"plan": "pro_monthly"},
     )
     assert create_response.status_code == 200
     session = create_response.json()
@@ -80,13 +80,13 @@ def test_billing_checkout_requires_authentication() -> None:
 
     response = client.post(
         "/api/v1/billing/checkout",
-        json={"customer_email": "paid@prompteer.dev"},
+        json={"plan": "pro_monthly"},
     )
 
     assert response.status_code == 401
 
 
-def test_checkout_sessions_are_user_scoped() -> None:
+def test_checkout_create_ignores_spoofed_legacy_customer_email() -> None:
     app = create_billing_test_app()
     client = TestClient(app)
     create_response = client.post(
@@ -96,6 +96,11 @@ def test_checkout_sessions_are_user_scoped() -> None:
     assert create_response.status_code == 200
     session_id = create_response.json()["id"]
     assert create_response.json()["customer_email"] == "paid@prompteer.dev"
+    with Session(app.state.test_engine) as assertion_session:
+        checkout_record = assertion_session.get(StripeCheckoutSession, session_id)
+    assert checkout_record is not None
+    assert checkout_record.customer_email == "paid@prompteer.dev"
+    assert checkout_record.user_id == "00000000-0000-4000-8000-000000000002"
 
     app.dependency_overrides[get_current_principal] = override_admin_principal
 
@@ -112,7 +117,7 @@ def test_mock_checkout_completion_updates_user_plan() -> None:
 
     create_response = client.post(
         "/api/v1/billing/checkout",
-        json={"customer_email": "paid@prompteer.dev"},
+        json={"plan": "pro_monthly"},
     )
     assert create_response.status_code == 200
 
@@ -140,7 +145,7 @@ def test_mock_checkout_completion_captures_receipt_email(
 
     create_response = client.post(
         "/api/v1/billing/checkout",
-        json={"customer_email": "paid@prompteer.dev"},
+        json={"plan": "pro_monthly"},
     )
     assert create_response.status_code == 200
     session_id = create_response.json()["id"]
@@ -177,7 +182,7 @@ def test_billing_subscription_reflects_current_user_plan_after_checkout() -> Non
 
     create_response = client.post(
         "/api/v1/billing/checkout",
-        json={"customer_email": "paid@prompteer.dev"},
+        json={"plan": "pro_monthly"},
     )
     assert create_response.status_code == 200
     complete_response = client.post(
@@ -199,7 +204,7 @@ def test_stripe_webhook_updates_user_plan() -> None:
 
     create_response = client.post(
         "/api/v1/billing/checkout",
-        json={"customer_email": "paid@prompteer.dev"},
+        json={"plan": "pro_monthly"},
     )
     assert create_response.status_code == 200
     completion = asyncio.run(
@@ -242,7 +247,7 @@ def test_stripe_webhook_captures_receipt_email(
 
     create_response = client.post(
         "/api/v1/billing/checkout",
-        json={"customer_email": "paid@prompteer.dev"},
+        json={"plan": "pro_monthly"},
     )
     assert create_response.status_code == 200
     session_id = create_response.json()["id"]
@@ -275,7 +280,7 @@ def test_stripe_webhook_delivery_is_idempotent() -> None:
 
     create_response = client.post(
         "/api/v1/billing/checkout",
-        json={"customer_email": "paid@prompteer.dev"},
+        json={"plan": "pro_monthly"},
     )
     assert create_response.status_code == 200
     completion = asyncio.run(
@@ -382,7 +387,7 @@ def test_stripe_webhook_matches_customer_email_case_insensitively() -> None:
     client = TestClient(app)
     create_response = client.post(
         "/api/v1/billing/checkout",
-        json={"customer_email": "paid@prompteer.dev"},
+        json={"plan": "pro_monthly"},
     )
     assert create_response.status_code == 200
     completion = asyncio.run(
@@ -533,13 +538,13 @@ def test_billing_checkout_create_is_rate_limited() -> None:
     for _ in range(5):
         response = client.post(
             "/api/v1/billing/checkout",
-            json={"customer_email": "paid@prompteer.dev"},
+            json={"plan": "pro_monthly"},
         )
         assert response.status_code == 200
 
     limited = client.post(
         "/api/v1/billing/checkout",
-        json={"customer_email": "paid@prompteer.dev"},
+        json={"plan": "pro_monthly"},
     )
 
     assert limited.status_code == 429

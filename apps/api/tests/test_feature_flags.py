@@ -123,7 +123,7 @@ def test_disabled_payments_route_returns_problem_details(
 
     response = client.post(
         "/api/v1/billing/checkout",
-        json={"customer_email": "paid@prompteer.dev"},
+        json={"plan": "pro_monthly"},
     )
 
     assert_feature_disabled(response)

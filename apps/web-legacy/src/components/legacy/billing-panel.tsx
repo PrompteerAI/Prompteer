@@ -56,7 +56,6 @@ export function LegacyBillingPanel({
       const response = unwrapApiResponse(
         await api.POST("/api/v1/billing/checkout", {
           body: {
-            customer_email: billingEmail,
             plan: "pro_monthly",
           },
         }),

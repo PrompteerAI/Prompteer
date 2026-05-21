@@ -246,12 +246,6 @@
       },
       "CheckoutCreateRequest": {
         "properties": {
-          "customer_email": {
-            "default": "paid@prompteer.dev",
-            "format": "email",
-            "title": "Customer Email",
-            "type": "string"
-          },
           "plan": {
             "const": "pro_monthly",
             "default": "pro_monthly",

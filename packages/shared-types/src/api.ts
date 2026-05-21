@@ -443,12 +443,6 @@ export interface components {
     /** CheckoutCreateRequest */
     CheckoutCreateRequest: {
       /**
-       * Customer Email
-       * Format: email
-       * @default paid@prompteer.dev
-       */
-      customer_email: string;
-      /**
        * Plan
        * @default pro_monthly
        * @constant

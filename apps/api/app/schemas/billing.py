@@ -7,7 +7,6 @@ from pydantic import BaseModel, EmailStr
 
 class CheckoutCreateRequest(BaseModel):
     plan: Literal["pro_monthly"] = "pro_monthly"
-    customer_email: EmailStr = "paid@prompteer.dev"
 
 
 class CheckoutSessionRead(BaseModel):
