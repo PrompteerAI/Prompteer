@@ -37,6 +37,7 @@ export default async function LoginPage({
   const t = await getTranslations("login");
   const serverEnv = getServerEnv();
   const useMockGoogle =
+    serverEnv.ENV !== "production" &&
     publicEnv.NEXT_PUBLIC_USE_MOCK_GOOGLE &&
     !(serverEnv.GOOGLE_CLIENT_ID && serverEnv.GOOGLE_CLIENT_SECRET);
   const accounts = useMockGoogle

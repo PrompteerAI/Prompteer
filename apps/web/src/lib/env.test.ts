@@ -4,6 +4,15 @@ import { describe, expect, it } from "vitest";
 
 import { parsePublicEnv, parseServerEnv } from "./env";
 
+const productionEnv = {
+  ENV: "production",
+  AUTH_SECRET: "replace-with-a-real-32-byte-random-secret",
+  AUTH_JWT_PRIVATE_KEY:
+    "-----BEGIN PRIVATE KEY-----\\nfake-key-for-parser-only\\n-----END PRIVATE KEY-----",
+  GOOGLE_CLIENT_ID: "google-client",
+  GOOGLE_CLIENT_SECRET: "google-secret",
+};
+
 describe("parsePublicEnv", () => {
   it("parses explicit false-like strings as false", () => {
     const parsed = parsePublicEnv({
@@ -86,6 +95,8 @@ describe("parseServerEnv", () => {
       parseServerEnv({
         ENV: "production",
         AUTH_SECRET: "replace-with-a-real-32-byte-random-secret",
+        GOOGLE_CLIENT_ID: "google-client",
+        GOOGLE_CLIENT_SECRET: "google-secret",
       }),
     ).toThrow(/AUTH_JWT_PRIVATE_KEY/);
   });
@@ -95,17 +106,32 @@ describe("parseServerEnv", () => {
       parseServerEnv({
         NODE_ENV: "production",
         AUTH_SECRET: "replace-with-a-real-32-byte-random-secret",
+        GOOGLE_CLIENT_ID: "google-client",
+        GOOGLE_CLIENT_SECRET: "google-secret",
       }),
     ).toThrow(/AUTH_JWT_PRIVATE_KEY/);
   });
 
+  it("requires Google OAuth credentials in production", () => {
+    expect(() =>
+      parseServerEnv({
+        ...productionEnv,
+        GOOGLE_CLIENT_ID: "",
+        GOOGLE_CLIENT_SECRET: "",
+        NEXT_PUBLIC_USE_MOCK_GOOGLE: "true",
+      }),
+    ).toThrow(/GOOGLE_CLIENT_ID/);
+
+    expect(() =>
+      parseServerEnv({
+        ...productionEnv,
+        GOOGLE_CLIENT_SECRET: undefined,
+      }),
+    ).toThrow(/GOOGLE_CLIENT_SECRET/);
+  });
+
   it("defaults dev-only affordances off in production", () => {
-    const parsed = parseServerEnv({
-      ENV: "production",
-      AUTH_SECRET: "replace-with-a-real-32-byte-random-secret",
-      AUTH_JWT_PRIVATE_KEY:
-        "-----BEGIN PRIVATE KEY-----\\nfake-key-for-parser-only\\n-----END PRIVATE KEY-----",
-    });
+    const parsed = parseServerEnv(productionEnv);
 
     expect(parsed.AUTH_SECRET).toBe(
       "replace-with-a-real-32-byte-random-secret",

@@ -144,6 +144,20 @@ export const serverEnvSchema = serverEnvObjectSchema.superRefine(
         message: "AUTH_JWT_PRIVATE_KEY is required in production.",
       });
     }
+    if (env.ENV === "production" && !env.GOOGLE_CLIENT_ID) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["GOOGLE_CLIENT_ID"],
+        message: "GOOGLE_CLIENT_ID is required in production.",
+      });
+    }
+    if (env.ENV === "production" && !env.GOOGLE_CLIENT_SECRET) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["GOOGLE_CLIENT_SECRET"],
+        message: "GOOGLE_CLIENT_SECRET is required in production.",
+      });
+    }
   },
 );
 

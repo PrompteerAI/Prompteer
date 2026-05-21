@@ -208,6 +208,8 @@
   },
   "errors": {
     "title": "Something went wrong",
+    "unexpectedDescription": "An unexpected error interrupted this page. Try again, or report it with the support ID if one is shown.",
+    "supportId": "Support ID",
     "apiUnavailableTitle": "Service unavailable",
     "apiUnavailableDescription": "Prompteer could not load this page from the API.",
     "requestId": "Request ID",

@@ -17,6 +17,8 @@ export function ApiUnavailable({
   requestIdLabel,
   error,
 }: ApiUnavailableProps): React.ReactElement {
+  const showDetail = process.env.NODE_ENV !== "production";
+
   return (
     <section className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-950">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
@@ -30,9 +32,11 @@ export function ApiUnavailable({
             <p className="mt-2 text-sm leading-6 text-amber-900">
               {description}
             </p>
-            <p className="mt-3 text-sm leading-6 text-amber-900">
-              {error.message}
-            </p>
+            {showDetail ? (
+              <p className="mt-3 text-sm leading-6 text-amber-900">
+                {error.message}
+              </p>
+            ) : null}
             {error.requestId ? (
               <p className="mt-3 break-all font-mono text-xs text-amber-800">
                 {requestIdLabel}: {error.requestId}

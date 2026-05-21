@@ -20,6 +20,7 @@ export default function ErrorPage({
     mutationKey: ["client-error-report", error.digest ?? error.message],
     mutationFn: () => reportError(error),
   });
+  const showDetail = process.env.NODE_ENV !== "production";
 
   useEffect(() => {
     if (publicEnv.NEXT_PUBLIC_SENTRY_DSN) {
@@ -31,7 +32,14 @@ export default function ErrorPage({
     <main className="grid min-h-screen place-items-center bg-zinc-50 px-6">
       <div className="w-full max-w-md rounded-lg border border-zinc-200 bg-white p-6">
         <h1 className="text-xl font-semibold text-zinc-950">{t("title")}</h1>
-        <p className="mt-2 text-sm text-zinc-600">{error.message}</p>
+        <p className="mt-2 text-sm leading-6 text-zinc-600">
+          {showDetail ? error.message : t("unexpectedDescription")}
+        </p>
+        {error.digest ? (
+          <p className="mt-3 break-all font-mono text-xs text-zinc-500">
+            {t("supportId")}: {error.digest}
+          </p>
+        ) : null}
         <div className="mt-4 flex flex-wrap gap-3">
           <button
             className="rounded-md bg-zinc-950 px-4 py-2 text-sm text-white"
