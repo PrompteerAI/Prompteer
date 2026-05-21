@@ -13,7 +13,7 @@ Sources:
 - https://docs.stripe.com/checkout/fulfillment
 - https://docs.stripe.com/webhooks/signature
 
-Prompteer uses `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` for real checkout. Empty values select local mock checkout sessions and mock webhook signing.
+Prompteer uses `STRIPE_SECRET_KEY` to switch checkout creation to real Stripe. `STRIPE_WEBHOOK_SECRET` is required in production and for live webhook fulfillment; without it, real checkout sessions can still be created in development, but incoming Stripe webhook events are rejected with a clear diagnostic. Empty values select local mock checkout sessions and mock webhook signing.
 
 The frontend uses hosted Checkout by opening the `url` returned by a server-created Checkout Session. The current flow does not load Stripe.js or require a browser publishable key. If Prompteer later adopts embedded Checkout or Stripe.js `redirectToCheckout`, add that key and document the new browser contract separately.
 
@@ -61,4 +61,4 @@ The mock Checkout Session response keeps the upstream fields the app needs for b
 
 When a real Stripe session is created, the Next.js billing screen shows an `Open Stripe Checkout` link pointing at the returned hosted Checkout URL instead of showing the mock completion action.
 
-Webhook signature verification follows Stripe's documented `t=timestamp,v1=signature` HMAC-SHA256 scheme. Empty `STRIPE_WEBHOOK_SECRET` uses the local-only `whsec_mock_prompteer` secret.
+Webhook signature verification follows Stripe's documented `t=timestamp,v1=signature` HMAC-SHA256 scheme. Empty `STRIPE_WEBHOOK_SECRET` uses the local-only `whsec_mock_prompteer` secret only when `STRIPE_SECRET_KEY` is blank and the local mock is selected.

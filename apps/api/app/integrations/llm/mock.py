@@ -1,9 +1,10 @@
 """Deterministic OpenAI and Anthropic LLM mocks.
 
-Schema references verified on 2026-05-21:
-- OpenAI Chat Completions: https://platform.openai.com/docs/api-reference/chat/create
-- Anthropic Messages: https://docs.anthropic.com/en/api/messages
-- Anthropic Messages streaming: https://docs.anthropic.com/en/docs/build-with-claude/streaming
+Schema references verified on 2026-05-22:
+- OpenAI Chat Completions: https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create
+- OpenAI Chat Completions streaming: https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events
+- Anthropic Messages: https://platform.claude.com/docs/en/api/messages/create
+- Anthropic Messages streaming: https://platform.claude.com/docs/en/build-with-claude/streaming
 
 The mock exposes upstream-shaped methods and dev-only HTTP routes so local
 development can exercise the same request/response contracts as real providers.

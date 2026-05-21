@@ -1,12 +1,13 @@
 # Anthropic Integration
 
-Verified on: 2026-05-21
+Verified on: 2026-05-22
 
 Sources:
 
 - https://platform.claude.com/docs/en/api/overview
-- https://platform.claude.com/docs/en/api/messages
+- https://platform.claude.com/docs/en/api/messages/create
 - https://platform.claude.com/docs/en/build-with-claude/streaming
+- https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons
 - https://platform.claude.com/docs/en/about-claude/models/all-models
 
 Prompteer uses `ANTHROPIC_API_KEY` for real Anthropic Messages access when OpenAI is not configured. When both LLM keys are blank, Prompteer uses deterministic local mock responses.

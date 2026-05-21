@@ -1,7 +1,8 @@
 """SendGrid mail send mock.
 
-Schema reference verified on 2026-05-21:
+Schema reference verified on 2026-05-22:
 - https://www.twilio.com/docs/sendgrid/api-reference/mail-send/mail-send
+- https://www.twilio.com/docs/sendgrid/api-reference/mail-send/errors
 """
 
 import json

@@ -165,10 +165,16 @@ async def check_stripe_integration(
             detail="real Stripe mode selected without STRIPE_SECRET_KEY.",
         )
     if not settings.stripe_webhook_secret:
-        return integration_fail(
-            mode=mode,
-            detail="STRIPE_WEBHOOK_SECRET is required when STRIPE_SECRET_KEY is set.",
+        stripe_check = await check_stripe_reachable(mode=mode)
+        if stripe_check["status"] != "ok":
+            return stripe_check
+        webhook_detail = (
+            "Stripe balance endpoint is reachable; STRIPE_WEBHOOK_SECRET is not set, "
+            "so live webhook fulfillment will reject events until configured."
         )
+        if settings.is_production:
+            return integration_fail(mode=mode, detail=webhook_detail)
+        return integration_ok(mode=mode, detail=webhook_detail)
     return await check_stripe_reachable(mode=mode)
 
 

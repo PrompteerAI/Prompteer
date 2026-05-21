@@ -256,14 +256,43 @@ def test_readiness_probe_reports_real_stripe_missing_webhook_secret(
         client = TestClient(app)
         response = client.get("/api/v1/health/ready")
 
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ok"
+    stripe = body["checks"]["integrations"]["stripe"]
+    assert stripe["status"] == "ok"
+    assert stripe["mode"] == "real"
+    assert "STRIPE_WEBHOOK_SECRET is not set" in stripe["detail"]
+    assert stripe_balance.called
+
+
+def test_readiness_probe_fails_production_real_stripe_missing_webhook_secret(
+    monkeypatch: MonkeyPatch,
+    healthy_required_dependencies: None,
+) -> None:
+    monkeypatch.setattr(settings, "env", "production")
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_stripe")
+    monkeypatch.setattr(settings, "stripe_webhook_secret", "")
+
+    with respx.mock(assert_all_mocked=True, assert_all_called=False) as router:
+        stripe_balance = router.get("https://api.stripe.com/v1/balance").mock(
+            return_value=httpx.Response(
+                200,
+                json={"object": "balance", "available": [], "pending": []},
+            )
+        )
+
+        client = TestClient(app)
+        response = client.get("/api/v1/health/ready")
+
     assert response.status_code == 503
     body = response.json()
     assert body["status"] == "degraded"
     stripe = body["checks"]["integrations"]["stripe"]
     assert stripe["status"] == "fail"
     assert stripe["mode"] == "real"
-    assert "STRIPE_WEBHOOK_SECRET is required" in stripe["detail"]
-    assert not stripe_balance.called
+    assert "STRIPE_WEBHOOK_SECRET is not set" in stripe["detail"]
+    assert stripe_balance.called
 
 
 def test_readiness_probe_reports_real_anthropic_provider_ok(

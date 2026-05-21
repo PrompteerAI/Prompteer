@@ -302,13 +302,13 @@ make reset
 
 ## External Integrations
 
-| Integration  | Real-mode env vars                              | Local mock behavior                                                         | Schema notes                                                              |
-| ------------ | ----------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Google OAuth | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`      | Local OIDC provider with seeded admin/paid/free users and JWKS              | [google-oauth.md](docs/integrations/google-oauth.md), verified 2026-05-21 |
-| OpenAI       | `OPENAI_API_KEY`, optional `OPENAI_CHAT_MODEL`  | Deterministic Chat Completions responses and SSE chunks                     | [openai.md](docs/integrations/openai.md), verified 2026-05-21             |
-| Anthropic    | `ANTHROPIC_API_KEY`, optional `ANTHROPIC_MODEL` | Deterministic Messages responses and Anthropic-shaped SSE events            | [anthropic.md](docs/integrations/anthropic.md), verified 2026-05-21       |
-| Stripe       | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`    | Checkout Session create/retrieve/expire/complete with local webhook signing | [stripe.md](docs/integrations/stripe.md), verified 2026-05-22             |
-| SendGrid     | `SENDGRID_API_KEY`                              | Mail Send validation, `.eml` capture, and `/dev/mailbox` viewer             | [sendgrid.md](docs/integrations/sendgrid.md), verified 2026-05-21         |
+| Integration  | Real-mode env vars                                    | Local mock behavior                                                         | Schema notes                                                              |
+| ------------ | ----------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Google OAuth | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`            | Local OIDC provider with seeded admin/paid/free users and JWKS              | [google-oauth.md](docs/integrations/google-oauth.md), verified 2026-05-22 |
+| OpenAI       | `OPENAI_API_KEY`, optional `OPENAI_CHAT_MODEL`        | Deterministic Chat Completions responses and SSE chunks                     | [openai.md](docs/integrations/openai.md), verified 2026-05-22             |
+| Anthropic    | `ANTHROPIC_API_KEY`, optional `ANTHROPIC_MODEL`       | Deterministic Messages responses and Anthropic-shaped SSE events            | [anthropic.md](docs/integrations/anthropic.md), verified 2026-05-22       |
+| Stripe       | `STRIPE_SECRET_KEY`; webhook: `STRIPE_WEBHOOK_SECRET` | Checkout Session create/retrieve/expire/complete with local webhook signing | [stripe.md](docs/integrations/stripe.md), verified 2026-05-22             |
+| SendGrid     | `SENDGRID_API_KEY`                                    | Mail Send validation, `.eml` capture, and `/dev/mailbox` viewer             | [sendgrid.md](docs/integrations/sendgrid.md), verified 2026-05-22         |
 
 ## Deployment
 

@@ -1,12 +1,13 @@
 # OpenAI Integration
 
-Verified on: 2026-05-21
+Verified on: 2026-05-22
 
 Sources:
 
-- https://platform.openai.com/docs/api-reference/introduction
-- https://platform.openai.com/docs/api-reference/chat/create
-- https://platform.openai.com/docs/models/gpt-4.1-mini
+- https://developers.openai.com/api/reference/overview
+- https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create
+- https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events
+- https://developers.openai.com/api/docs/models/gpt-4.1-mini
 
 Prompteer uses `OPENAI_API_KEY` for real OpenAI access. When it is blank and `ANTHROPIC_API_KEY` is also blank, the API selects the deterministic mock LLM client.
 

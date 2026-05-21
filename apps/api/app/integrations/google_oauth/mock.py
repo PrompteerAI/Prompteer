@@ -1,6 +1,6 @@
 """Local Google OpenID Connect/OAuth 2.0 mock.
 
-Schema references verified on 2026-05-21:
+Schema references verified on 2026-05-22:
 - https://developers.google.com/identity/openid-connect/reference
 - https://developers.google.com/identity/protocols/oauth2/web-server
 

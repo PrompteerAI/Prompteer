@@ -1,6 +1,6 @@
 # SendGrid Integration
 
-Verified on: 2026-05-21
+Verified on: 2026-05-22
 
 Source:
 

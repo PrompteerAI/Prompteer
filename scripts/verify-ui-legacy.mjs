@@ -113,8 +113,10 @@ async function clearPngFiles(directory) {
 
 async function ensureSeedLogin(page) {
   await page.goto(routeUrl("/dev/login-as/admin%40prompteer.dev?locale=en"), {
-    waitUntil: "domcontentloaded",
+    timeout: 60_000,
+    waitUntil: "commit",
   });
+  await page.waitForURL((url) => url.pathname === "/en", { timeout: 30_000 });
   const currentPath = new URL(page.url()).pathname;
   if (currentPath !== "/en") {
     throw new Error(
@@ -124,6 +126,11 @@ async function ensureSeedLogin(page) {
 }
 
 async function hideNextDevTools(page) {
+  await page.waitForFunction(
+    () => document.head !== null || document.body !== null,
+    undefined,
+    { timeout: 30_000 },
+  );
   await page.addStyleTag({
     content: `
       nextjs-portal,
@@ -177,7 +184,10 @@ for (const capture of captures) {
     await ensureSeedLogin(page);
   }
 
-  await page.goto(routeUrl(capture.path), { waitUntil: "domcontentloaded" });
+  await page.goto(routeUrl(capture.path), {
+    timeout: 60_000,
+    waitUntil: "commit",
+  });
   await hideNextDevTools(page);
   if (capture.authenticated && page.url().includes("/login")) {
     failures.push(`${capture.name} redirected to login after seed auth.`);
