@@ -1,4 +1,4 @@
-"""Tests for rate-limit keying, headers, Redis storage, and 429 responses."""
+"""Tests for rate-limit keying, headers, storage, and 429 responses."""
 
 import pytest
 from fastapi.testclient import TestClient
@@ -87,12 +87,11 @@ def test_rate_limit_key_ignores_forwarded_for_from_untrusted_client(
     assert rate_limit_key(request) == "ip:203.0.113.12"
 
 
-def test_limiter_is_configured_for_headers_and_redis_storage() -> None:
+def test_limiter_is_configured_for_headers_and_external_storage() -> None:
     assert limiter._headers_enabled is True
     assert limiter._in_memory_fallback_enabled is False
     assert limiter._key_prefix == "prompteer"
-    assert limiter._storage_uri is not None
-    assert limiter._storage_uri.startswith("redis://")
+    assert limiter._storage_uri == settings.rate_limit_storage_url
 
 
 def test_auth_dependency_attempts_are_rate_limited_before_jwt_validation(
