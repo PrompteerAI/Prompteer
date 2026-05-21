@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Loader2, Play, WandSparkles } from "lucide-react";
+import { CheckCircle2, Loader2, LogIn, Play, WandSparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
@@ -18,12 +18,18 @@ type ChallengeRunResponse = components["schemas"]["ChallengeRunResponse"];
 
 interface LegacyChallengeRunnerProps {
   challenge: Challenge;
+  demoLoginHref: string;
+  isAuthenticated: boolean;
   llmEnabled: boolean;
+  loginHref: string;
 }
 
 export function LegacyChallengeRunner({
   challenge,
+  demoLoginHref,
+  isAuthenticated,
   llmEnabled,
+  loginHref,
 }: LegacyChallengeRunnerProps): React.ReactElement {
   const [prompt, setPrompt] = useState(defaultPrompt(challenge.tag));
   const [publishToBoard, setPublishToBoard] = useState(true);
@@ -32,7 +38,8 @@ export function LegacyChallengeRunner({
   const [isRunning, setIsRunning] = useState(false);
   const meta = categoryMeta[challenge.tag];
   const mediaMode = challenge.tag === "img" || challenge.tag === "video";
-  const canRun = llmEnabled && prompt.trim().length >= 10 && !isRunning;
+  const canRun =
+    isAuthenticated && llmEnabled && prompt.trim().length >= 10 && !isRunning;
   const helper = useMemo(() => helperText(challenge.tag), [challenge.tag]);
 
   async function runPrompt(): Promise<void> {
@@ -119,20 +126,38 @@ export function LegacyChallengeRunner({
             />
             <span>Publish this run to the board</span>
           </label>
-          <button
-            className="legacy-primary-button"
-            disabled={!canRun}
-            onClick={() => void runPrompt()}
-            style={{ marginTop: 16 }}
-            type="button"
-          >
-            {isRunning ? (
-              <Loader2 aria-hidden="true" size={18} />
-            ) : (
-              <Play aria-hidden="true" size={18} />
-            )}
-            Run prompt
-          </button>
+          {isAuthenticated ? (
+            <button
+              className="legacy-primary-button"
+              disabled={!canRun}
+              onClick={() => void runPrompt()}
+              style={{ marginTop: 16 }}
+              type="button"
+            >
+              {isRunning ? (
+                <Loader2 aria-hidden="true" size={18} />
+              ) : (
+                <Play aria-hidden="true" size={18} />
+              )}
+              Run prompt
+            </button>
+          ) : (
+            <div className="legacy-login-callout" role="note">
+              <p>
+                Sign in before running prompts. The legacy preview will reuse
+                the primary Prompteer Auth.js session through the gateway.
+              </p>
+              <div className="legacy-auth-inline-actions">
+                <a className="legacy-primary-button" href={demoLoginHref}>
+                  <LogIn aria-hidden="true" size={18} />
+                  Demo login
+                </a>
+                <a className="legacy-secondary-button" href={loginHref}>
+                  Primary login
+                </a>
+              </div>
+            </div>
+          )}
           {!llmEnabled ? (
             <p style={{ color: "#c92a2a" }}>
               Prompt runs are disabled by feature flag.

@@ -4,6 +4,9 @@ import type { components } from "@prompteer/shared-types";
 export type Challenge = components["schemas"]["ChallengeRead"];
 export type ChallengeTag = components["schemas"]["ChallengeTag"];
 export type Level = components["schemas"]["ChallengeLevel"];
+export type BoardFeed = components["schemas"]["BoardFeedRead"];
+export type Post = components["schemas"]["PostRead"];
+export type Share = components["schemas"]["ShareRead"];
 
 export const categoryMeta: Record<
   ChallengeTag,
@@ -59,4 +62,33 @@ export function challengeExcerpt(challenge: Challenge): string {
     challenge.content?.replace(/\s+/g, " ").trim() ??
     "Practice prompt design against this seeded Prompteer challenge."
   );
+}
+
+export function boardPostHref(postId: string): string {
+  return `/board/post/${postId}`;
+}
+
+export function boardShareHref(shareId: string): string {
+  return `/board/shared/${shareId}`;
+}
+
+export function formatBoardDate(createdAt: string): string {
+  const date = new Date(createdAt);
+  if (Number.isNaN(date.getTime())) {
+    return "Unknown date";
+  }
+
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
+export function findBoardPost(feed: BoardFeed, postId: string): Post | null {
+  return feed.posts.find((post) => post.id === postId) ?? null;
+}
+
+export function findBoardShare(feed: BoardFeed, shareId: string): Share | null {
+  return feed.shares.find((share) => share.id === shareId) ?? null;
 }

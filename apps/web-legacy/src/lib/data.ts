@@ -1,4 +1,6 @@
 import { createPrompteerApiClient, unwrapApiResponse } from "./api-client";
+import { authGatewayOrigin } from "./env";
+import { cookies } from "next/headers";
 import type { components } from "@prompteer/shared-types";
 
 export type BoardFeed = components["schemas"]["BoardFeedRead"];
@@ -51,4 +53,31 @@ export async function readIntegrations(): Promise<IntegrationModes> {
   return unwrapApiResponse(
     await api.GET("/api/v1/config/integrations", { cache: "no-store" }),
   );
+}
+
+export async function readBillingSubscription(): Promise<BillingSubscription | null> {
+  const cookieHeader = (await cookies()).toString();
+  if (!cookieHeader) {
+    return null;
+  }
+
+  const response = await fetch(
+    `${authGatewayOrigin()}/api/backend/api/v1/billing/subscription`,
+    {
+      headers: {
+        accept: "application/json",
+        cookie: cookieHeader,
+      },
+      cache: "no-store",
+    },
+  );
+
+  if (response.status === 401) {
+    return null;
+  }
+  if (!response.ok) {
+    throw new Error(`Billing subscription request failed: ${response.status}`);
+  }
+
+  return (await response.json()) as BillingSubscription;
 }

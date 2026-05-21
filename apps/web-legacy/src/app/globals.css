@@ -485,6 +485,14 @@ button {
   border-width: 0 0 1px;
   padding: 0 30px;
   font-family: Inter, sans-serif;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.legacy-board-row:hover {
+  background: #f8fbff;
+  color: var(--legacy-blue-strong);
 }
 
 .legacy-board-row:last-child {
@@ -492,7 +500,75 @@ button {
 }
 
 .legacy-board-title {
+  display: inline-flex;
+  align-items: center;
   font-weight: 700;
+}
+
+.legacy-board-detail {
+  display: grid;
+  gap: 18px;
+}
+
+.legacy-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.legacy-detail-meta span,
+.legacy-detail-callout span {
+  border-radius: 999px;
+  background: #edf6ff;
+  padding: 6px 10px;
+  color: var(--legacy-blue-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.legacy-detail-body {
+  white-space: pre-wrap;
+}
+
+.legacy-detail-callout {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--legacy-border);
+  border-radius: 10px;
+  background: #f8fbff;
+  padding: 18px;
+}
+
+.legacy-detail-callout span {
+  width: fit-content;
+}
+
+.legacy-detail-callout strong {
+  font-size: 18px;
+}
+
+.legacy-login-callout {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  border: 1px solid var(--legacy-border);
+  border-radius: 10px;
+  background: #f8fbff;
+  padding: 16px;
+}
+
+.legacy-login-callout.compact {
+  margin-top: 0;
+}
+
+.legacy-login-callout p {
+  margin: 0;
+}
+
+.legacy-auth-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .legacy-problem-shell {
@@ -707,13 +783,50 @@ button {
     flex-direction: column;
   }
 
-  .legacy-board {
-    overflow-x: auto;
+  .legacy-board-header {
+    display: none;
   }
 
-  .legacy-board-header,
+  .legacy-board-list {
+    display: grid;
+    gap: 12px;
+    background: transparent;
+  }
+
   .legacy-board-row {
-    min-width: 920px;
+    min-height: auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 9px;
+    border-width: 1px;
+    border-radius: 12px;
+    padding: 18px;
+  }
+
+  .legacy-board-row span {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    color: var(--legacy-text);
+    font-size: 14px;
+  }
+
+  .legacy-board-row span::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    color: var(--legacy-muted);
+    font-weight: 700;
+  }
+
+  .legacy-board-row .legacy-board-title {
+    display: inline-flex;
+    justify-content: flex-start;
+    color: var(--legacy-blue-strong);
+    font-size: 16px;
+  }
+
+  .legacy-board-row .legacy-board-title::before {
+    content: none;
   }
 
   .legacy-footer {

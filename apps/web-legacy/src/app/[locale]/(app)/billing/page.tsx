@@ -1,15 +1,23 @@
 import { LegacyBillingPanel } from "@/components/legacy/billing-panel";
 import { readGatewaySession } from "@/lib/auth-gateway";
-import { readFeatures } from "@/lib/data";
+import { readBillingSubscription, readFeatures } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
-export default async function BillingPage(): Promise<React.ReactElement> {
+type Props = {
+  params: Promise<{ locale: string }>;
+};
+
+export default async function BillingPage({
+  params,
+}: Props): Promise<React.ReactElement> {
+  const { locale } = await params;
   const [session, features] = await Promise.all([
     readGatewaySession(),
     readFeatures(),
   ]);
-  const email = session?.user?.email ?? "paid@prompteer.dev";
+  const subscription = session?.user ? await readBillingSubscription() : null;
+  const email = session?.user?.email ?? null;
 
   return (
     <main className="legacy-page">
@@ -19,7 +27,10 @@ export default async function BillingPage(): Promise<React.ReactElement> {
       </section>
       <LegacyBillingPanel
         billingEmail={email}
-        initialSubscription={null}
+        demoLoginHref={`/dev/login-as/paid%40prompteer.dev?locale=${locale}`}
+        initialSubscription={subscription}
+        isAuthenticated={Boolean(session?.user)}
+        loginHref={`/${locale}/login`}
         paymentsEnabled={features.payments}
       />
     </main>

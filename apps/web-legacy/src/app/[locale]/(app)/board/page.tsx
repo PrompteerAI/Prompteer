@@ -2,6 +2,7 @@ import { MessageSquareText, Sparkles } from "lucide-react";
 
 import { Link } from "@/i18n/navigation";
 import { readBoard } from "@/lib/data";
+import { boardPostHref, boardShareHref, formatBoardDate } from "@/lib/legacy";
 
 export const dynamic = "force-dynamic";
 
@@ -14,8 +15,10 @@ export default async function BoardPage(): Promise<React.ReactElement> {
       category: post.tag.toUpperCase(),
       number: post.challenge?.challenge_number ?? "-",
       author: post.author.display_name,
-      type: post.type,
-      href: "/board",
+      type: post.type === "share" ? "Share" : "Question",
+      href: boardPostHref(post.id),
+      createdAt: post.created_at,
+      sortAt: post.created_at,
     })),
     ...feed.shares.map((share) => ({
       id: share.id,
@@ -23,10 +26,12 @@ export default async function BoardPage(): Promise<React.ReactElement> {
       category: share.challenge.tag.toUpperCase(),
       number: share.challenge.challenge_number,
       author: share.author.display_name,
-      type: "share",
-      href: "/board",
+      type: "Share",
+      href: boardShareHref(share.id),
+      createdAt: share.created_at,
+      sortAt: share.created_at,
     })),
-  ];
+  ].sort((a, b) => new Date(b.sortAt).getTime() - new Date(a.sortAt).getTime());
 
   return (
     <main className="legacy-page">
@@ -68,8 +73,8 @@ export default async function BoardPage(): Promise<React.ReactElement> {
               href={row.href}
               key={`${row.type}-${row.id}`}
             >
-              <span className="legacy-board-title">
-                {row.type === "share" ? (
+              <span className="legacy-board-title" data-label="Title">
+                {row.type === "Share" ? (
                   <Sparkles
                     aria-hidden="true"
                     size={16}
@@ -84,11 +89,11 @@ export default async function BoardPage(): Promise<React.ReactElement> {
                 )}
                 {row.title}
               </span>
-              <span>{row.category}</span>
-              <span>{row.number}</span>
-              <span>{row.author}</span>
-              <span>{row.type}</span>
-              <span>Today</span>
+              <span data-label="Category">{row.category}</span>
+              <span data-label="Problem">{row.number}</span>
+              <span data-label="Author">{row.author}</span>
+              <span data-label="Type">{row.type}</span>
+              <span data-label="Date">{formatBoardDate(row.createdAt)}</span>
             </Link>
           ))}
         </div>
