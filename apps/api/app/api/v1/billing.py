@@ -3,14 +3,17 @@
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Request, Response, status
+from sqlmodel import Session, select
 
 from app.api.deps import get_optional_principal
 from app.core.config import settings
 from app.core.feature_flags import dev_routes_enabled, require_feature_enabled
 from app.core.ratelimit import PAYMENTS_RATE_LIMIT, limiter
 from app.core.security import Principal
+from app.db.session import get_session
 from app.integrations.payments import get_payments_client
 from app.integrations.payments.mock import MockStripeClient, MockStripeError
+from app.models.domain import User, utc_now
 from app.schemas.billing import CheckoutCreateRequest, CheckoutSessionRead
 
 router = APIRouter(prefix="/billing", tags=["billing"])
@@ -58,6 +61,7 @@ async def complete_mock_checkout(
     response: Response,
     session_id: Annotated[str, Path(min_length=8)],
     principal: Annotated[Principal | None, Depends(get_optional_principal)],
+    db_session: Annotated[Session, Depends(get_session)],
 ) -> CheckoutSessionRead:
     del request, response, principal
     require_feature_enabled("payments")
@@ -67,7 +71,22 @@ async def complete_mock_checkout(
         result = await MockStripeClient().complete_checkout_session(session_id)
     except MockStripeError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-    return checkout_session_to_read(result["session"], provider="mock")
+    checkout_session = result["session"]
+    mark_customer_paid(db_session, checkout_session)
+    return checkout_session_to_read(checkout_session, provider="mock")
+
+
+def mark_customer_paid(db_session: Session, checkout_session: dict[str, Any]) -> None:
+    customer_email = checkout_session.get("customer_email")
+    if not isinstance(customer_email, str):
+        return
+    user = db_session.exec(select(User).where(User.email == customer_email)).first()
+    if user is None:
+        return
+    user.plan = "paid"
+    user.updated_at = utc_now()
+    db_session.add(user)
+    db_session.commit()
 
 
 def checkout_payload(request: CheckoutCreateRequest) -> dict[str, Any]:
