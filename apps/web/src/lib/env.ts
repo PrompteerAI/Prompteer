@@ -92,6 +92,7 @@ export const serverEnvSchema = publicEnvSchema.extend({
   GOOGLE_CLIENT_ID: optionalEnvString,
   GOOGLE_CLIENT_SECRET: optionalEnvString,
   AUTH_ALLOW_SEED_LOGIN: envBoolean(true),
+  ENABLE_DEV_ROUTES: envBoolean(true),
 });
 
 export type PublicEnv = z.infer<typeof publicEnvSchema>;
@@ -129,6 +130,7 @@ export function parseServerEnv(rawEnv: RawEnv): ServerEnv {
     GOOGLE_CLIENT_ID: rawEnv.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: rawEnv.GOOGLE_CLIENT_SECRET,
     AUTH_ALLOW_SEED_LOGIN: rawEnv.AUTH_ALLOW_SEED_LOGIN,
+    ENABLE_DEV_ROUTES: rawEnv.ENABLE_DEV_ROUTES,
   });
 }
 

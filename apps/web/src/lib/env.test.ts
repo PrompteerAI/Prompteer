@@ -46,6 +46,7 @@ describe("parseServerEnv", () => {
     const parsed = parseServerEnv({});
 
     expect(parsed.APP_VERSION).toBe("0.1.0");
+    expect(parsed.ENABLE_DEV_ROUTES).toBe(true);
   });
 
   it("preserves escaped newlines in configured JWT private keys", () => {
@@ -54,5 +55,13 @@ describe("parseServerEnv", () => {
     });
 
     expect(parsed.AUTH_JWT_PRIVATE_KEY).toBe("line-one\nline-two");
+  });
+
+  it("parses disabled dev routes for server-only route guards", () => {
+    const parsed = parseServerEnv({
+      ENABLE_DEV_ROUTES: "false",
+    });
+
+    expect(parsed.ENABLE_DEV_ROUTES).toBe(false);
   });
 });

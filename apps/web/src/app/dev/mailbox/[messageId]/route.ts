@@ -5,6 +5,7 @@ import {
   mailboxMessageHtml,
   readMailboxMessage,
 } from "@/server/dev-mailbox";
+import { devRoutesEnabled } from "@/server/dev-routes";
 
 interface MailboxMessageRouteContext {
   params: Promise<{
@@ -16,6 +17,10 @@ export async function GET(
   _request: Request,
   context: MailboxMessageRouteContext,
 ): Promise<Response> {
+  if (!devRoutesEnabled()) {
+    return new Response("Not found", { status: 404 });
+  }
+
   const { messageId } = await context.params;
   try {
     const message = await readMailboxMessage(decodeURIComponent(messageId));

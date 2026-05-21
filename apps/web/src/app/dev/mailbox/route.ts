@@ -5,8 +5,13 @@ import {
   mailboxErrorHtml,
   mailboxIndexHtml,
 } from "@/server/dev-mailbox";
+import { devRoutesEnabled } from "@/server/dev-routes";
 
 export async function GET(): Promise<Response> {
+  if (!devRoutesEnabled()) {
+    return new Response("Not found", { status: 404 });
+  }
+
   try {
     const messages = await listMailboxMessages();
     return htmlResponse(mailboxIndexHtml(messages));
