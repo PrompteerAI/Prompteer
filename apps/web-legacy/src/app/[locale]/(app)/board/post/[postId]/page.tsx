@@ -1,6 +1,7 @@
 import { Link } from "@/i18n/navigation";
-import { readBoard } from "@/lib/data";
-import { findBoardPost, formatBoardDate } from "@/lib/legacy";
+import { ApiResponseError } from "@/lib/api-client";
+import { readBoardPost, type Post } from "@/lib/data";
+import { formatBoardDate } from "@/lib/legacy";
 
 type Props = {
   params: Promise<{ postId: string }>;
@@ -10,8 +11,7 @@ export default async function BoardPostPage({
   params,
 }: Props): Promise<React.ReactElement> {
   const { postId } = await params;
-  const feed = await readBoard(50);
-  const post = findBoardPost(feed, postId);
+  const post = await readPostDetail(postId);
 
   if (!post) {
     return (
@@ -20,8 +20,8 @@ export default async function BoardPostPage({
           <div className="legacy-empty-state">
             <h1>Post not found</h1>
             <p>
-              This legacy board post is not in the current community feed. It
-              may be older than the active feed window or no longer available.
+              This legacy board post is no longer available from the community
+              detail API.
             </p>
             <Link
               className="legacy-secondary-button"
@@ -76,4 +76,15 @@ export default async function BoardPostPage({
       </section>
     </main>
   );
+}
+
+async function readPostDetail(postId: string): Promise<Post | null> {
+  try {
+    return await readBoardPost(postId);
+  } catch (error) {
+    if (error instanceof ApiResponseError && error.response.status === 404) {
+      return null;
+    }
+    throw error;
+  }
 }

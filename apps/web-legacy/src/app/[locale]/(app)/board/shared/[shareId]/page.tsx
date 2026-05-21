@@ -1,6 +1,7 @@
 import { Link } from "@/i18n/navigation";
-import { readBoard } from "@/lib/data";
-import { findBoardShare, formatBoardDate } from "@/lib/legacy";
+import { ApiResponseError } from "@/lib/api-client";
+import { readBoardShare, type Share } from "@/lib/data";
+import { formatBoardDate } from "@/lib/legacy";
 
 type Props = {
   params: Promise<{ shareId: string }>;
@@ -10,8 +11,7 @@ export default async function SharedPostPage({
   params,
 }: Props): Promise<React.ReactElement> {
   const { shareId } = await params;
-  const feed = await readBoard(50);
-  const share = findBoardShare(feed, shareId);
+  const share = await readShareDetail(shareId);
 
   if (!share) {
     return (
@@ -20,9 +20,8 @@ export default async function SharedPostPage({
           <div className="legacy-empty-state">
             <h1>Shared prompt not found</h1>
             <p>
-              This shared prompt is not in the current community feed. It may be
-              private, older than the active feed window, or no longer
-              available.
+              This shared prompt may be private or no longer available from the
+              community detail API.
             </p>
             <Link
               className="legacy-secondary-button"
@@ -75,4 +74,15 @@ export default async function SharedPostPage({
       </section>
     </main>
   );
+}
+
+async function readShareDetail(shareId: string): Promise<Share | null> {
+  try {
+    return await readBoardShare(shareId);
+  } catch (error) {
+    if (error instanceof ApiResponseError && error.response.status === 404) {
+      return null;
+    }
+    throw error;
+  }
 }

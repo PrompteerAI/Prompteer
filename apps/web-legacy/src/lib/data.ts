@@ -8,6 +8,8 @@ export type Challenge = components["schemas"]["ChallengeRead"];
 export type ChallengeTag = components["schemas"]["ChallengeTag"];
 export type FeatureFlags = components["schemas"]["FeatureFlagsRead"];
 export type IntegrationModes = components["schemas"]["IntegrationModesRead"];
+export type Post = components["schemas"]["PostRead"];
+export type Share = components["schemas"]["ShareRead"];
 export type BillingSubscription =
   components["schemas"]["BillingSubscriptionRead"];
 
@@ -36,6 +38,26 @@ export async function readBoard(limit = 12): Promise<BoardFeed> {
   return unwrapApiResponse(
     await api.GET("/api/v1/community/board", {
       params: { query: { limit } },
+      cache: "no-store",
+    }),
+  );
+}
+
+export async function readBoardPost(postId: string): Promise<Post> {
+  const api = createPrompteerApiClient();
+  return unwrapApiResponse(
+    await api.GET("/api/v1/community/posts/{post_id}", {
+      params: { path: { post_id: postId } },
+      cache: "no-store",
+    }),
+  );
+}
+
+export async function readBoardShare(shareId: string): Promise<Share> {
+  const api = createPrompteerApiClient();
+  return unwrapApiResponse(
+    await api.GET("/api/v1/community/shares/{share_id}", {
+      params: { path: { share_id: shareId } },
       cache: "no-store",
     }),
   );
