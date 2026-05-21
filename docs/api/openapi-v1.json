@@ -105,6 +105,27 @@
           "level": {
             "$ref": "#/components/schemas/ChallengeLevel"
           },
+          "references": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "img": "#/components/schemas/ImgChallengeReferenceRead",
+                  "video": "#/components/schemas/VideoChallengeReferenceRead"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ImgChallengeReferenceRead"
+                },
+                {
+                  "$ref": "#/components/schemas/VideoChallengeReferenceRead"
+                }
+              ]
+            },
+            "title": "References",
+            "type": "array"
+          },
           "tag": {
             "$ref": "#/components/schemas/ChallengeTag"
           },
@@ -119,7 +140,8 @@
           "tag",
           "level",
           "title",
-          "content"
+          "content",
+          "references"
         ],
         "title": "ChallengeRead",
         "type": "object"
@@ -395,6 +417,30 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "ImgChallengeReferenceRead": {
+        "properties": {
+          "file_path": {
+            "title": "File Path",
+            "type": "string"
+          },
+          "file_type": {
+            "title": "File Type",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "img",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": ["kind", "id", "file_path", "file_type"],
+        "title": "ImgChallengeReferenceRead",
+        "type": "object"
+      },
       "IntegrationModesRead": {
         "properties": {
           "email": {
@@ -616,6 +662,30 @@
         },
         "required": ["loc", "msg", "type"],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "VideoChallengeReferenceRead": {
+        "properties": {
+          "file_path": {
+            "title": "File Path",
+            "type": "string"
+          },
+          "file_type": {
+            "title": "File Type",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "video",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": ["kind", "id", "file_path", "file_type"],
+        "title": "VideoChallengeReferenceRead",
         "type": "object"
       }
     }

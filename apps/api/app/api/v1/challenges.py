@@ -1,5 +1,7 @@
 """API v1 challenge routes; no sibling challenge API version exists yet."""
 
+from collections import defaultdict
+from collections.abc import Iterable
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
@@ -15,12 +17,22 @@ from app.core.time import ensure_utc
 from app.db.session import get_session
 from app.integrations.llm import get_llm_client
 from app.integrations.llm.base import LLMClient, LLMProviderError
-from app.models.domain import Challenge, ChallengeTag, Share, utc_now
+from app.models.domain import (
+    Challenge,
+    ChallengeTag,
+    ImgReference,
+    Share,
+    VideoReference,
+    utc_now,
+)
 from app.schemas.challenge import (
     ChallengeRead,
+    ChallengeReferenceRead,
     ChallengeRunRequest,
     ChallengeRunResponse,
     ChallengeRunShareRead,
+    ImgChallengeReferenceRead,
+    VideoChallengeReferenceRead,
 )
 from app.services.llm_quota import (
     assert_llm_quota_available,
@@ -50,7 +62,15 @@ async def list_challenges(
     statement = select(Challenge).order_by(col(Challenge.challenge_number))
     if tag is not None:
         statement = statement.where(Challenge.tag == tag)
-    return [challenge_to_read(challenge) for challenge in session.exec(statement).all()]
+    challenges = list(session.exec(statement).all())
+    references_by_challenge_id = load_challenge_references(session, challenges)
+    return [
+        challenge_to_read(
+            challenge,
+            references=references_by_challenge_id.get(challenge.id, []),
+        )
+        for challenge in challenges
+    ]
 
 
 @router.get("/{challenge_id}")
@@ -62,7 +82,12 @@ async def get_challenge(
     session: Annotated[Session, Depends(get_session)],
 ) -> ChallengeRead:
     del request, response
-    return challenge_to_read(load_challenge(session, challenge_id))
+    challenge = load_challenge(session, challenge_id)
+    references_by_challenge_id = load_challenge_references(session, [challenge])
+    return challenge_to_read(
+        challenge,
+        references=references_by_challenge_id.get(challenge.id, []),
+    )
 
 
 @router.post("/{challenge_id}/run")
@@ -108,8 +133,12 @@ async def run_challenge_prompt(
         challenge_id=challenge.id,
         run=run_request,
     )
+    references = load_challenge_references(session, [challenge]).get(challenge.id, [])
     return ChallengeRunResponse(
-        challenge=challenge_to_read(challenge),
+        challenge=challenge_to_read(
+            challenge,
+            references=references,
+        ),
         prompt=run_request.prompt,
         provider=llm_client.provider,
         output=llm_result["output"],
@@ -260,7 +289,65 @@ def load_challenge(session: Session, challenge_id: str) -> Challenge:
     return challenge
 
 
-def challenge_to_read(challenge: Challenge) -> ChallengeRead:
+def load_challenge_references(
+    session: Session,
+    challenges: Iterable[Challenge],
+) -> dict[str, list[ChallengeReferenceRead]]:
+    challenge_ids_by_tag: dict[ChallengeTag, list[str]] = defaultdict(list)
+    for challenge in challenges:
+        challenge_ids_by_tag[challenge.tag].append(challenge.id)
+
+    references_by_challenge_id: dict[str, list[ChallengeReferenceRead]] = defaultdict(list)
+    img_challenge_ids = challenge_ids_by_tag[ChallengeTag.img]
+    if img_challenge_ids:
+        img_references = session.exec(
+            select(ImgReference)
+            .where(col(ImgReference.challenge_id).in_(img_challenge_ids))
+            .order_by(
+                col(ImgReference.challenge_id),
+                col(ImgReference.file_path),
+                col(ImgReference.id),
+            )
+        ).all()
+        for img_reference in img_references:
+            references_by_challenge_id[img_reference.challenge_id].append(
+                ImgChallengeReferenceRead(
+                    kind="img",
+                    id=img_reference.id,
+                    file_path=img_reference.file_path,
+                    file_type=img_reference.file_type,
+                )
+            )
+
+    video_challenge_ids = challenge_ids_by_tag[ChallengeTag.video]
+    if video_challenge_ids:
+        video_references = session.exec(
+            select(VideoReference)
+            .where(col(VideoReference.challenge_id).in_(video_challenge_ids))
+            .order_by(
+                col(VideoReference.challenge_id),
+                col(VideoReference.file_path),
+                col(VideoReference.id),
+            )
+        ).all()
+        for video_reference in video_references:
+            references_by_challenge_id[video_reference.challenge_id].append(
+                VideoChallengeReferenceRead(
+                    kind="video",
+                    id=video_reference.id,
+                    file_path=video_reference.file_path,
+                    file_type=video_reference.file_type,
+                )
+            )
+
+    return dict(references_by_challenge_id)
+
+
+def challenge_to_read(
+    challenge: Challenge,
+    *,
+    references: list[ChallengeReferenceRead],
+) -> ChallengeRead:
     return ChallengeRead(
         id=challenge.id,
         challenge_number=challenge.challenge_number,
@@ -268,6 +355,7 @@ def challenge_to_read(challenge: Challenge) -> ChallengeRead:
         level=challenge.level,
         title=challenge.title,
         content=challenge.content,
+        references=references,
     )
 
 

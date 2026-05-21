@@ -54,6 +54,7 @@ def test_list_and_run_seeded_coding_challenge() -> None:
     challenges = list_response.json()
     assert len(challenges) == 3
     assert challenges[0]["title"] == "FizzBuzz prompt repair"
+    assert challenges[0]["references"] == []
 
     run_response = client.post(
         f"/api/v1/challenges/{challenges[0]['id']}/run",
@@ -81,6 +82,57 @@ def test_list_and_run_seeded_coding_challenge() -> None:
     board_response = client.get("/api/v1/community/board")
     assert board_response.status_code == 200
     assert any(share["id"] == result["share"]["id"] for share in board_response.json()["shares"])
+
+
+def test_list_challenges_includes_media_references_and_empty_ps_references() -> None:
+    client, _engine, _challenge_id = create_seeded_challenge_client()
+
+    response = client.get("/api/v1/challenges")
+
+    assert response.status_code == 200
+    challenges_by_number = {
+        challenge["challenge_number"]: challenge for challenge in response.json()
+    }
+    assert challenges_by_number[1]["tag"] == "ps"
+    assert challenges_by_number[1]["references"] == []
+    assert challenges_by_number[2]["tag"] == "img"
+    assert challenges_by_number[2]["references"] == [
+        {
+            "kind": "img",
+            "id": challenges_by_number[2]["references"][0]["id"],
+            "file_path": "seed/references/product-hero.png",
+            "file_type": "image/png",
+        }
+    ]
+    assert challenges_by_number[3]["tag"] == "video"
+    assert challenges_by_number[3]["references"] == [
+        {
+            "kind": "video",
+            "id": challenges_by_number[3]["references"][0]["id"],
+            "file_path": "seed/references/launch-teaser.mp4",
+            "file_type": "video/mp4",
+        }
+    ]
+
+
+def test_get_challenge_includes_media_references_and_empty_ps_references() -> None:
+    client, _engine, _challenge_id = create_seeded_challenge_client()
+    list_response = client.get("/api/v1/challenges")
+    assert list_response.status_code == 200
+    challenges_by_number = {
+        challenge["challenge_number"]: challenge for challenge in list_response.json()
+    }
+
+    ps_response = client.get(f"/api/v1/challenges/{challenges_by_number[1]['id']}")
+    img_response = client.get(f"/api/v1/challenges/{challenges_by_number[2]['id']}")
+    video_response = client.get(f"/api/v1/challenges/{challenges_by_number[3]['id']}")
+
+    assert ps_response.status_code == 200
+    assert ps_response.json()["references"] == []
+    assert img_response.status_code == 200
+    assert img_response.json()["references"] == challenges_by_number[2]["references"]
+    assert video_response.status_code == 200
+    assert video_response.json()["references"] == challenges_by_number[3]["references"]
 
 
 def test_challenge_run_can_skip_public_share_creation() -> None:

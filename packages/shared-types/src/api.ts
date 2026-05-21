@@ -379,6 +379,11 @@ export interface components {
       /** Id */
       id: string;
       level: components["schemas"]["ChallengeLevel"];
+      /** References */
+      references: (
+        | components["schemas"]["ImgChallengeReferenceRead"]
+        | components["schemas"]["VideoChallengeReferenceRead"]
+      )[];
       tag: components["schemas"]["ChallengeTag"];
       /** Title */
       title: string;
@@ -504,6 +509,20 @@ export interface components {
       /** Detail */
       detail?: components["schemas"]["ValidationError"][];
     };
+    /** ImgChallengeReferenceRead */
+    ImgChallengeReferenceRead: {
+      /** File Path */
+      file_path: string;
+      /** File Type */
+      file_type: string;
+      /** Id */
+      id: string;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: "img";
+    };
     /** IntegrationModesRead */
     IntegrationModesRead: {
       /**
@@ -593,6 +612,20 @@ export interface components {
       msg: string;
       /** Error Type */
       type: string;
+    };
+    /** VideoChallengeReferenceRead */
+    VideoChallengeReferenceRead: {
+      /** File Path */
+      file_path: string;
+      /** File Type */
+      file_type: string;
+      /** Id */
+      id: string;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: "video";
     };
   };
   responses: never;

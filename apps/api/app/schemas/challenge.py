@@ -2,10 +2,31 @@
 # These models define the public OpenAPI contract consumed by the web app.
 
 from datetime import datetime
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
 
 from app.models.domain import ChallengeLevel, ChallengeTag
+
+
+class ImgChallengeReferenceRead(BaseModel):
+    kind: Literal["img"]
+    id: str
+    file_path: str
+    file_type: str
+
+
+class VideoChallengeReferenceRead(BaseModel):
+    kind: Literal["video"]
+    id: str
+    file_path: str
+    file_type: str
+
+
+ChallengeReferenceRead = Annotated[
+    ImgChallengeReferenceRead | VideoChallengeReferenceRead,
+    Field(discriminator="kind"),
+]
 
 
 class ChallengeRead(BaseModel):
@@ -15,6 +36,7 @@ class ChallengeRead(BaseModel):
     level: ChallengeLevel
     title: str
     content: str | None
+    references: list[ChallengeReferenceRead]
 
 
 class ChallengeRunRequest(BaseModel):

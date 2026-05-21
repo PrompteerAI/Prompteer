@@ -21,6 +21,7 @@ const baseChallenge: Challenge = {
   level: "medium",
   title: "Prompt repair",
   content: "  Repair a prompt with extra   whitespace. ",
+  references: [],
 };
 
 const baseFeed: BoardFeed = {
