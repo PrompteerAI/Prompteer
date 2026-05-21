@@ -7,7 +7,10 @@ import { getServerEnv } from "./env";
 import type { paths } from "@prompteer/shared-types";
 
 export class ApiResponseError extends Error {
-  constructor(public readonly response: Response) {
+  constructor(
+    public readonly response: Response,
+    public readonly body?: unknown,
+  ) {
     super(response.statusText || "API request failed");
     this.name = "ApiResponseError";
   }
@@ -29,7 +32,7 @@ export function createPrompteerApiClient(): ApiClient {
 
 export function unwrapApiResponse<T>(result: ApiResult<T>): NonNullable<T> {
   if (result.error) {
-    throw new ApiResponseError(result.response);
+    throw new ApiResponseError(result.response, result.error);
   }
   if (result.data === undefined) {
     throw new ApiResponseError(result.response);

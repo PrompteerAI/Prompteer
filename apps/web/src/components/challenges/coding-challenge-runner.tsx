@@ -139,6 +139,8 @@ export function CodingChallengeRunner({
         </label>
         <select
           className="mt-2 h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-950"
+          aria-describedby={errors.challengeId ? "challenge-error" : undefined}
+          aria-invalid={errors.challengeId ? "true" : undefined}
           id="challenge"
           {...register("challengeId")}
         >
@@ -148,6 +150,11 @@ export function CodingChallengeRunner({
             </option>
           ))}
         </select>
+        {errors.challengeId ? (
+          <p className="mt-2 text-sm text-red-600" id="challenge-error">
+            {errors.challengeId.message}
+          </p>
+        ) : null}
 
         <p className="mt-6 text-sm leading-6 text-zinc-600">
           {selectedChallenge.content ?? t("noInstructions")}
@@ -155,6 +162,7 @@ export function CodingChallengeRunner({
       </div>
 
       <form
+        aria-busy={isRunning}
         className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm"
         onSubmit={(event) => void handleSubmit(runPrompt)(event)}
       >
@@ -163,11 +171,15 @@ export function CodingChallengeRunner({
         </label>
         <textarea
           className="mt-2 min-h-44 w-full resize-y rounded-md border border-zinc-300 px-3 py-2 text-sm leading-6 text-zinc-950 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+          aria-describedby={errors.prompt ? "prompt-error" : undefined}
+          aria-invalid={errors.prompt ? "true" : undefined}
           id="prompt"
           {...register("prompt")}
         />
         {errors.prompt ? (
-          <p className="mt-2 text-sm text-red-600">{errors.prompt.message}</p>
+          <p className="mt-2 text-sm text-red-600" id="prompt-error">
+            {errors.prompt.message}
+          </p>
         ) : null}
         <label className="mt-4 flex items-start gap-3 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm text-zinc-700">
           <input
@@ -201,7 +213,11 @@ export function CodingChallengeRunner({
           <p className="mt-3 text-sm text-amber-700">{t("disabledNotice")}</p>
         ) : null}
 
-        {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
+        {error ? (
+          <p className="mt-4 text-sm text-red-600" role="alert">
+            {error}
+          </p>
+        ) : null}
 
         <div
           aria-live="polite"

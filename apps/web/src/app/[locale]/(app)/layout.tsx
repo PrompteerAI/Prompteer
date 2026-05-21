@@ -2,6 +2,7 @@
 // this group; every product surface here requires an Auth.js session.
 import { redirect } from "next/navigation";
 
+import { localizedPath } from "@/i18n/paths";
 import { auth } from "@/lib/auth";
 
 type Props = {
@@ -16,7 +17,7 @@ export default async function AppLayout({
   const session = await auth();
   if (!session?.user) {
     const { locale } = await params;
-    redirect(`/${locale}/login`);
+    redirect(localizedPath("/login", locale));
   }
 
   return <>{children}</>;

@@ -188,6 +188,7 @@ export function BillingCheckoutPanel({
         <div className="mt-5 flex flex-wrap gap-3">
           <button
             className="inline-flex h-10 items-center gap-2 rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+            aria-busy={createCheckoutMutation.isPending}
             disabled={!paymentsEnabled || isLoading}
             onClick={() => {
               void createCheckout();
@@ -214,6 +215,7 @@ export function BillingCheckoutPanel({
           ) : (
             <button
               className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:text-zinc-400"
+              aria-busy={completeCheckoutMutation.isPending}
               disabled={
                 !paymentsEnabled ||
                 !session ||
@@ -249,7 +251,11 @@ export function BillingCheckoutPanel({
           </p>
         ) : null}
 
-        {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
+        {error ? (
+          <p className="mt-4 text-sm text-red-600" role="alert">
+            {error}
+          </p>
+        ) : null}
 
         {step === "complete" ? (
           <div

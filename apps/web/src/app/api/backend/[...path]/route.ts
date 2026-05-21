@@ -49,15 +49,23 @@ async function forwardToApi(
     });
   }
 
-  const upstreamResponse = await fetch(
-    upstreamUrl(request, await context.params),
-    {
+  let upstreamResponse: Response;
+  try {
+    upstreamResponse = await fetch(upstreamUrl(request, await context.params), {
       method: request.method,
       headers: upstreamHeaders(request, session),
       body: request.method === "GET" ? undefined : await request.text(),
       cache: "no-store",
-    },
-  );
+    });
+  } catch {
+    return problemResponse({
+      status: 502,
+      title: "Bad Gateway",
+      detail: "The API server is unavailable.",
+      code: "api_unavailable",
+      instance: request.nextUrl.pathname,
+    });
+  }
 
   const headers = new Headers();
   for (const header of FORWARDED_RESPONSE_HEADERS) {
@@ -97,6 +105,10 @@ function upstreamHeaders(request: NextRequest, session: Session): Headers {
     headers.set("content-type", contentType);
   }
   headers.set("accept", accept ?? "application/json");
+  const requestId = request.headers.get("x-request-id");
+  if (requestId) {
+    headers.set("x-request-id", requestId.slice(0, 128));
+  }
   headers.set("authorization", `Bearer ${apiTokenForSession(session)}`);
   return headers;
 }
