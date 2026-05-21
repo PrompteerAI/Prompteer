@@ -16,6 +16,14 @@ from app.core.observability import capture_exception
 
 logger = structlog.get_logger(__name__)
 
+HTTP_ERROR_CODES = {
+    status.HTTP_400_BAD_REQUEST: "bad_request",
+    status.HTTP_401_UNAUTHORIZED: "unauthorized",
+    status.HTTP_403_FORBIDDEN: "forbidden",
+    status.HTTP_404_NOT_FOUND: "not_found",
+    status.HTTP_405_METHOD_NOT_ALLOWED: "method_not_allowed",
+}
+
 
 class ProblemException(Exception):
     def __init__(
@@ -86,8 +94,12 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException) 
         status_code=exc.status_code,
         title=title,
         detail=str(exc.detail),
-        code="http_error",
+        code=http_error_code(exc.status_code),
     )
+
+
+def http_error_code(status_code: int) -> str:
+    return HTTP_ERROR_CODES.get(status_code, "http_error")
 
 
 async def validation_exception_handler(

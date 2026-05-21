@@ -55,7 +55,7 @@ When Google credentials are blank, Auth.js uses the local mock OIDC provider. In
 
 ## Error model
 
-The API returns RFC 9457 Problem Details for all errors. Frontend code normalizes API, network, and parse errors through one typed helper.
+The API returns RFC 9457 Problem Details for all errors. Domain failures use explicit stable codes such as `quota_exceeded` and `feature_disabled`; generic FastAPI HTTP errors use status-specific codes for common cases such as `unauthorized`, `not_found`, and `bad_request` before falling back to `http_error`. Frontend code normalizes API, network, and parse errors through one typed helper.
 
 ## Observability
 

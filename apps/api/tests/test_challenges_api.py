@@ -206,7 +206,7 @@ def test_challenge_run_requires_authentication() -> None:
 
     assert response.status_code == 401
     assert response.headers["content-type"].startswith("application/problem+json")
-    assert response.json()["code"] == "http_error"
+    assert response.json()["code"] == "unauthorized"
 
 
 def test_challenge_run_rate_limit_is_scoped_to_authenticated_user() -> None:
