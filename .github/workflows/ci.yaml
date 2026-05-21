@@ -201,6 +201,27 @@ jobs:
           done
           cat .verify/pnpm-dev.log
           exit 1
+      - name: Start pnpm dev:legacy from fresh checkout
+        run: |
+          set -euo pipefail
+          mkdir -p .verify
+          pnpm dev:legacy > .verify/pnpm-dev-legacy.log 2>&1 &
+          dev_pid=$!
+          cleanup() {
+            kill "$dev_pid" >/dev/null 2>&1 || true
+            wait "$dev_pid" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          for _ in $(seq 1 120); do
+            if curl --fail --silent --show-error http://localhost:3000/api/health >/dev/null \
+              && curl --fail --silent --show-error http://localhost:3001/en >/dev/null \
+              && curl --fail --silent --show-error http://localhost:8000/api/v1/health/live >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat .verify/pnpm-dev-legacy.log
+          exit 1
       - name: Capture dev contract logs
         if: always()
         run: |
@@ -214,6 +235,7 @@ jobs:
           if-no-files-found: ignore
           path: |
             .verify/pnpm-dev.log
+            .verify/pnpm-dev-legacy.log
             .verify/dev-contract-compose-ps.txt
             .verify/dev-contract-compose.log
       - name: Stop Compose

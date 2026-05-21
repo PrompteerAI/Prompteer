@@ -64,9 +64,13 @@ Legacy-design preview:
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------- |
 | ![Legacy preview home](docs/screenshots/09-legacy-home.png) | ![Legacy coding category](docs/screenshots/10-legacy-coding-category.png) | ![Legacy board](docs/screenshots/11-legacy-board.png) |
 
-| Legacy prompt runner                                                   | Legacy billing flow                                       | Legacy mobile home                                                |
-| ---------------------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------- |
-| ![Legacy prompt runner](docs/screenshots/13-legacy-problem-runner.png) | ![Legacy billing](docs/screenshots/14-legacy-billing.png) | ![Legacy mobile home](docs/screenshots/15-legacy-mobile-home.png) |
+| Legacy login                                          | Legacy prompt runner                                                   | Legacy billing flow                                       |
+| ----------------------------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------- |
+| ![Legacy login](docs/screenshots/12-legacy-login.png) | ![Legacy prompt runner](docs/screenshots/13-legacy-problem-runner.png) | ![Legacy billing](docs/screenshots/14-legacy-billing.png) |
+
+| Legacy mobile home                                                | Legacy mobile coding category                                         |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------- |
+| ![Legacy mobile home](docs/screenshots/15-legacy-mobile-home.png) | ![Legacy mobile coding](docs/screenshots/16-legacy-mobile-coding.png) |
 
 ## Architecture
 
@@ -230,6 +234,12 @@ Capture desktop and mobile UI screenshots against Docker Compose:
 
 ```sh
 make verify-ui
+```
+
+Capture the legacy-preview screenshots used above:
+
+```sh
+make verify-ui-legacy
 ```
 
 Add a database migration:

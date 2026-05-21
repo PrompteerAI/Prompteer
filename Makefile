@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap dev lint typecheck test audit format build verify env-check types types-check migration-check backup-restore-check compose-deps compose-health e2e verify-ui tree api-dev api-lint api-test seed reset reset-db logs
+.PHONY: help bootstrap dev dev-legacy lint typecheck test audit format build verify env-check types types-check migration-check backup-restore-check compose-deps compose-health e2e verify-ui verify-ui-legacy tree api-dev api-lint api-test seed reset reset-db logs
 
 help: ## Show available Makefile targets.
 	@awk 'BEGIN {FS = ":.*##"; printf "Available targets:\n"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -10,6 +10,9 @@ bootstrap: ## Install deps, start Compose, migrate, and seed local data.
 
 dev: ## Start the local API and web dev servers.
 	pnpm dev
+
+dev-legacy: ## Start API, primary web, and legacy-preview dev servers.
+	pnpm dev:legacy
 
 lint: ## Run JavaScript and Python lint checks.
 	pnpm lint
@@ -78,6 +81,10 @@ verify-ui: ## Capture desktop/mobile screenshots against Docker Compose.
 	scripts/compose-up.sh --build
 	$(MAKE) compose-health
 	bash -lc 'source scripts/lib/load-env.sh; load_env_file ".env"; apply_compose_verification_env; env PROMPTEER_WEB_URL="$$PROMPTEER_WEB_URL" node scripts/verify-ui.mjs'
+
+verify-ui-legacy: ## Capture README legacy-preview screenshots against pnpm dev:legacy.
+	scripts/compose-up.sh postgres redis
+	bash -lc 'set -euo pipefail; source scripts/lib/load-env.sh; load_env_file ".env"; apply_local_port_env; WEB_LEGACY_PORT="$${WEB_LEGACY_PORT:-3001}"; mkdir -p .verify; pnpm dev:legacy > .verify/pnpm-dev-legacy.log 2>&1 & dev_pid=$$!; cleanup() { kill "$$dev_pid" >/dev/null 2>&1 || true; wait "$$dev_pid" >/dev/null 2>&1 || true; }; trap cleanup EXIT; for _ in $$(seq 1 120); do if curl --fail --silent --show-error "http://localhost:$$WEB_PORT/api/health" >/dev/null && curl --fail --silent --show-error "http://localhost:$$API_PORT/api/v1/health/live" >/dev/null && curl --fail --location --silent --show-error "http://localhost:$$WEB_LEGACY_PORT/en" >/dev/null; then env PROMPTEER_LEGACY_WEB_URL="http://localhost:$$WEB_LEGACY_PORT/en" node scripts/verify-ui-legacy.mjs; exit 0; fi; sleep 2; done; cat .verify/pnpm-dev-legacy.log; exit 1'
 
 tree: ## Show the source-oriented repository tree without generated artifacts.
 	scripts/tree-project.sh
