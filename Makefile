@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap dev lint typecheck test format build verify env-check types types-check migration-check backup-restore-check compose-deps compose-health e2e verify-ui tree api-dev api-lint api-test seed reset reset-db logs
+.PHONY: help bootstrap dev lint typecheck test audit format build verify env-check types types-check migration-check backup-restore-check compose-deps compose-health e2e verify-ui tree api-dev api-lint api-test seed reset reset-db logs
 
 help: ## Show available Makefile targets.
 	@awk 'BEGIN {FS = ":.*##"; printf "Available targets:\n"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -25,6 +25,9 @@ test: ## Run JavaScript and Python tests.
 	$(MAKE) compose-deps
 	scripts/api-test.sh -q
 
+audit: ## Check JavaScript dependency advisories at moderate severity and above.
+	pnpm audit --audit-level moderate
+
 format: ## Format JavaScript, TypeScript, Markdown, and Python files.
 	pnpm format
 	cd apps/api && uv run ruff format .
@@ -35,6 +38,7 @@ build: ## Build frontend packages.
 verify: ## Run the core local verification suite.
 	pnpm format:check
 	$(MAKE) env-check
+	$(MAKE) audit
 	$(MAKE) lint
 	$(MAKE) typecheck
 	$(MAKE) test
@@ -60,7 +64,7 @@ backup-restore-check: ## Verify PostgreSQL backup and restore scripts against th
 	scripts/verify-backup-restore.sh
 
 compose-deps: ## Start Docker Compose dependencies required by local tests.
-	scripts/compose-up.sh redis
+	scripts/compose-up.sh --force-recreate redis
 
 compose-health: ## Assert every Docker Compose service is running and healthy.
 	scripts/check-compose-health.sh

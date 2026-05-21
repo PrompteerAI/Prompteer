@@ -11,6 +11,7 @@
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
+    "audit": "pnpm audit --audit-level moderate",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "commitlint": "commitlint --edit"
@@ -22,5 +23,10 @@
     "lint-staged": "^15.5.2",
     "prettier": "^3.5.3",
     "turbo": "^2.5.4"
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss": "8.5.15"
+    }
   }
 }
