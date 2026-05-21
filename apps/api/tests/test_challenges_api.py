@@ -1,5 +1,6 @@
 """Tests for challenge listing, prompt runs, sharing, quotas, and provider routing."""
 
+import time
 from collections.abc import Generator
 from typing import Any
 
@@ -116,6 +117,24 @@ def test_challenge_run_can_skip_public_share_creation() -> None:
     with Session(engine) as assertion_session:
         after_count = len(assertion_session.exec(select(Share)).all())
     assert after_count == before_count
+
+
+def test_mock_challenge_run_returns_within_acceptance_budget() -> None:
+    client, _engine, challenge_id = create_seeded_challenge_client()
+
+    started = time.perf_counter()
+    response = client.post(
+        f"/api/v1/challenges/{challenge_id}/run",
+        json={
+            "prompt": "Explain FizzBuzz clearly and keep the answer compact.",
+            "publish_to_board": False,
+        },
+    )
+    duration_seconds = time.perf_counter() - started
+
+    assert response.status_code == 200
+    assert response.json()["provider"] == "mock"
+    assert duration_seconds < 2.0
 
 
 def test_challenge_run_uses_configured_openai_model(monkeypatch: pytest.MonkeyPatch) -> None:
