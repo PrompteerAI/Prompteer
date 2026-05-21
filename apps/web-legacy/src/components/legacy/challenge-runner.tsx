@@ -8,6 +8,7 @@ import { normalizeError } from "@/lib/errors";
 import {
   categoryMeta,
   challengeExcerpt,
+  challengeReferencePreview,
   levelClass,
   levelLabel,
   type Challenge,
@@ -38,9 +39,11 @@ export function LegacyChallengeRunner({
   const [isRunning, setIsRunning] = useState(false);
   const meta = categoryMeta[challenge.tag];
   const mediaMode = challenge.tag === "img" || challenge.tag === "video";
+  const referencePreview = challengeReferencePreview(challenge);
   const canRun =
     isAuthenticated && llmEnabled && prompt.trim().length >= 10 && !isRunning;
   const helper = useMemo(() => helperText(challenge.tag), [challenge.tag]);
+  const primaryReference = referencePreview?.primaryReference ?? null;
 
   async function runPrompt(): Promise<void> {
     if (!canRun) {
@@ -178,11 +181,99 @@ export function LegacyChallengeRunner({
           {mediaMode ? (
             <div
               className={`legacy-card-media ${challenge.tag === "video" ? "video" : ""}`}
-              style={{ borderRadius: 12, margin: "16px 0", minHeight: 220 }}
+              style={{
+                borderRadius: 12,
+                margin: "16px 0",
+                minHeight: 220,
+                overflow: "hidden",
+              }}
             >
-              {challenge.tag === "video" ? (
+              {primaryReference?.previewUrl &&
+              primaryReference.kind === "img" ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  alt=""
+                  src={primaryReference.previewUrl}
+                  style={{
+                    height: "100%",
+                    inset: 0,
+                    objectFit: "cover",
+                    position: "absolute",
+                    width: "100%",
+                    zIndex: 1,
+                  }}
+                />
+              ) : null}
+              {primaryReference?.previewUrl &&
+              primaryReference.kind === "video" ? (
+                <video
+                  aria-label={`${challenge.title} reference preview`}
+                  controls
+                  muted
+                  playsInline
+                  preload="metadata"
+                  src={primaryReference.previewUrl}
+                  style={{
+                    height: "100%",
+                    inset: 0,
+                    objectFit: "cover",
+                    position: "absolute",
+                    width: "100%",
+                    zIndex: 1,
+                  }}
+                />
+              ) : null}
+              {challenge.tag === "video" && !primaryReference?.previewUrl ? (
                 <span aria-hidden="true" className="legacy-play-symbol" />
               ) : null}
+            </div>
+          ) : null}
+          {referencePreview ? (
+            <div
+              aria-label="Reference metadata"
+              style={{
+                background: "#ffffff",
+                border: "1px solid var(--legacy-border)",
+                borderRadius: 12,
+                color: "#1f2937",
+                fontSize: 13,
+                lineHeight: 1.45,
+                margin: "0 0 16px",
+                padding: "12px 14px",
+              }}
+            >
+              <strong>{referencePreview.countLabel}</strong>
+              {referencePreview.references.length > 0 ? (
+                <ul
+                  style={{
+                    display: "grid",
+                    gap: 6,
+                    listStyle: "none",
+                    margin: "8px 0 0",
+                    padding: 0,
+                  }}
+                >
+                  {referencePreview.references.map((reference, index) => (
+                    <li key={`${reference.filePath}-${index}`}>
+                      <span style={{ fontWeight: 700 }}>
+                        Reference {index + 1}:
+                      </span>{" "}
+                      <span style={{ overflowWrap: "anywhere" }}>
+                        {reference.fileType} · {reference.filePath}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <span
+                  style={{
+                    display: "block",
+                    marginTop: 8,
+                  }}
+                >
+                  No reference file attached
+                </span>
+              )}
             </div>
           ) : null}
           <div className="legacy-output-area" aria-live="polite">

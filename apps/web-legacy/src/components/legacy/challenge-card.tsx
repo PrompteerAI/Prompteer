@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 import {
   categoryMeta,
   challengeExcerpt,
+  challengeReferencePreview,
   levelClass,
   levelLabel,
   type Challenge,
@@ -23,6 +24,8 @@ export function ChallengeCard({
   const href = meta.problemRoute(challenge.id);
   const isVideo = challenge.tag === "video";
   const isImage = challenge.tag === "img";
+  const referencePreview = challengeReferencePreview(challenge);
+  const primaryReference = referencePreview?.primaryReference ?? null;
 
   if (variant === "media") {
     return (
@@ -30,6 +33,38 @@ export function ChallengeCard({
         <div
           className={`legacy-card-media ${isVideo ? "video" : isImage ? "" : "algorithm"}`}
         >
+          {primaryReference?.previewUrl && primaryReference.kind === "img" ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              alt=""
+              src={primaryReference.previewUrl}
+              style={{
+                height: "100%",
+                inset: 0,
+                objectFit: "cover",
+                position: "absolute",
+                width: "100%",
+                zIndex: 1,
+              }}
+            />
+          ) : null}
+          {primaryReference?.previewUrl && primaryReference.kind === "video" ? (
+            <video
+              aria-label={`${challenge.title} reference preview`}
+              muted
+              playsInline
+              preload="metadata"
+              src={primaryReference.previewUrl}
+              style={{
+                height: "100%",
+                inset: 0,
+                objectFit: "cover",
+                position: "absolute",
+                width: "100%",
+                zIndex: 1,
+              }}
+            />
+          ) : null}
           {isVideo ? (
             <span aria-hidden="true" className="legacy-play-symbol" />
           ) : null}
@@ -39,6 +74,38 @@ export function ChallengeCard({
           >
             {meta.label}
           </span>
+          {referencePreview ? (
+            <div
+              style={{
+                background: "rgb(255 255 255 / 0.88)",
+                borderRadius: 8,
+                bottom: 16,
+                color: "#1f2937",
+                fontSize: 12,
+                left: 16,
+                lineHeight: 1.35,
+                maxWidth: "calc(100% - 32px)",
+                padding: "8px 10px",
+                position: "absolute",
+                right: 16,
+                zIndex: 2,
+              }}
+            >
+              <strong>{referencePreview.countLabel}</strong>
+              <span
+                style={{
+                  display: "block",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {primaryReference
+                  ? `Primary: ${primaryReference.fileType} · ${primaryReference.filePath}`
+                  : "No reference file attached"}
+              </span>
+            </div>
+          ) : null}
         </div>
         <div className="legacy-card-body">
           <p className="legacy-pill">Challenge #{challenge.challenge_number}</p>

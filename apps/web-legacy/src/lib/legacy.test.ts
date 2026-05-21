@@ -5,9 +5,11 @@ import {
   boardShareHref,
   categoryMeta,
   challengeExcerpt,
+  challengeReferencePreview,
   findBoardPost,
   findBoardShare,
   formatBoardDate,
+  isBrowserPreviewUrl,
   levelClass,
   levelLabel,
   type BoardFeed,
@@ -91,6 +93,104 @@ describe("legacy helpers", () => {
     expect(challengeExcerpt({ ...baseChallenge, content: null })).toContain(
       "Practice prompt design",
     );
+    expect(challengeExcerpt({ ...baseChallenge, content: "   " })).toContain(
+      "Practice prompt design",
+    );
+  });
+
+  it("omits reference preview metadata for coding challenges", () => {
+    expect(challengeReferencePreview(baseChallenge)).toBeNull();
+  });
+
+  it("summarizes media references without treating storage paths as browser URLs", () => {
+    const preview = challengeReferencePreview({
+      ...baseChallenge,
+      tag: "img",
+      references: [
+        {
+          id: "reference-1",
+          kind: "img",
+          file_type: "image/png",
+          file_path: "seed/references/product-hero.png",
+        },
+        {
+          id: "reference-2",
+          kind: "img",
+          file_type: "image/jpeg",
+          file_path: "https://cdn.example.com/secondary.jpg",
+        },
+      ],
+    });
+
+    expect(preview).toEqual({
+      countLabel: "2 references",
+      kind: "img",
+      primaryReference: {
+        filePath: "seed/references/product-hero.png",
+        fileType: "image/png",
+        kind: "img",
+        previewUrl: null,
+      },
+      references: [
+        {
+          filePath: "seed/references/product-hero.png",
+          fileType: "image/png",
+          kind: "img",
+          previewUrl: null,
+        },
+        {
+          filePath: "https://cdn.example.com/secondary.jpg",
+          fileType: "image/jpeg",
+          kind: "img",
+          previewUrl: "https://cdn.example.com/secondary.jpg",
+        },
+      ],
+    });
+  });
+
+  it("normalizes blank media reference fields", () => {
+    const preview = challengeReferencePreview({
+      ...baseChallenge,
+      tag: "video",
+      references: [
+        {
+          id: "reference-1",
+          kind: "video",
+          file_type: "   ",
+          file_path: "   ",
+        },
+      ],
+    });
+
+    expect(preview?.primaryReference).toEqual({
+      filePath: "No reference file attached",
+      fileType: "video reference",
+      kind: "video",
+      previewUrl: null,
+    });
+  });
+
+  it("allows only directly renderable matching media preview URLs", () => {
+    expect(
+      isBrowserPreviewUrl("seed/references/launch-teaser.mp4", "video"),
+    ).toBe(false);
+    expect(isBrowserPreviewUrl("/references/launch-teaser.mp4", "video")).toBe(
+      true,
+    );
+    expect(
+      isBrowserPreviewUrl("https://cdn.example.com/reference.mp4", "video"),
+    ).toBe(true);
+    expect(isBrowserPreviewUrl("data:image/png;base64,abc", "img")).toBe(true);
+    expect(isBrowserPreviewUrl("data:image/png,abc", "img")).toBe(true);
+    expect(isBrowserPreviewUrl("data:text/plain;base64,abc", "img")).toBe(
+      false,
+    );
+    expect(
+      isBrowserPreviewUrl("https://cdn.example.com/reference.mp4", "img"),
+    ).toBe(false);
+    expect(
+      isBrowserPreviewUrl("ftp://cdn.example.com/reference.mp4", "video"),
+    ).toBe(false);
   });
 
   it("builds board read routes from backend ids", () => {
