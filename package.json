@@ -7,9 +7,13 @@
   "scripts": {
     "prepare": "husky || true",
     "dev": "scripts/dev.sh",
+    "dev:legacy": "scripts/dev-legacy.sh",
     "build": "turbo build",
+    "build:legacy": "pnpm --filter @prompteer/web-legacy build",
     "lint": "turbo lint",
+    "lint:legacy": "pnpm --filter @prompteer/web-legacy lint",
     "typecheck": "turbo typecheck",
+    "typecheck:legacy": "pnpm --filter @prompteer/web-legacy typecheck",
     "test": "turbo test",
     "audit": "pnpm audit --audit-level moderate",
     "format": "prettier --write .",

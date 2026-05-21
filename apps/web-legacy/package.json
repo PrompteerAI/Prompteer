@@ -1,0 +1,34 @@
+{
+  "name": "@prompteer/web-legacy",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "locales": "node ../../scripts/generate-web-locales.mjs apps/web-legacy",
+    "dev": "pnpm run locales && ../../scripts/web-legacy-dev.sh",
+    "build": "pnpm run locales && ../../scripts/web-legacy-build.sh",
+    "lint": "pnpm run locales && eslint .",
+    "typecheck": "pnpm run locales && tsc --noEmit",
+    "test": "pnpm run locales && vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@prompteer/shared-types": "workspace:*",
+    "lucide-react": "^0.513.0",
+    "next": "^15.3.3",
+    "next-intl": "^4.1.0",
+    "openapi-fetch": "0.17.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zod": "^3.25.56"
+  },
+  "devDependencies": {
+    "@prompteer/eslint-config": "workspace:*",
+    "@prompteer/tsconfig": "workspace:*",
+    "@types/node": "^22.15.30",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.6",
+    "eslint": "^9.28.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.3"
+  }
+}

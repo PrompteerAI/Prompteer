@@ -1,14 +1,15 @@
-// Generates the web locale manifest from apps/web/src/messages/*.json so adding
-// a locale is a message-file operation instead of an app-code edit.
+// Generates a web locale manifest from <app>/src/messages/*.json so adding a
+// locale is a message-file operation instead of an app-code edit.
 import { readdir, readFile, writeFile } from "node:fs/promises";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = dirname(
   fileURLToPath(new URL("../package.json", import.meta.url)),
 );
-const messagesDir = join(repoRoot, "apps/web/src/messages");
-const outputFile = join(repoRoot, "apps/web/src/i18n/locales.generated.ts");
+const appDir = resolve(repoRoot, process.argv[2] ?? "apps/web");
+const messagesDir = join(appDir, "src/messages");
+const outputFile = join(appDir, "src/i18n/locales.generated.ts");
 const defaultLocale = "en";
 const localePattern = /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/;
 
@@ -21,7 +22,9 @@ validateLocales(locales);
 await validateMessageShapes(messageFiles);
 await writeLocalesManifest(locales);
 
-console.log(`Generated ${locales.length} web locale(s): ${locales.join(", ")}`);
+console.log(
+  `Generated ${locales.length} locale(s) for ${relativeAppDir()}: ${locales.join(", ")}`,
+);
 
 function validateLocales(locales) {
   if (!locales.includes(defaultLocale)) {
@@ -102,4 +105,10 @@ export type AppLocale = (typeof locales)[number];
 export const defaultLocale: AppLocale = "${defaultLocale}";
 `;
   await writeFile(outputFile, contents);
+}
+
+function relativeAppDir() {
+  return appDir.startsWith(repoRoot)
+    ? appDir.slice(repoRoot.length + 1)
+    : appDir;
 }

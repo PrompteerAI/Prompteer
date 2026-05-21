@@ -88,6 +88,7 @@ Prompteer is organized as a monorepo with clear runtime boundaries:
 ```text
 apps/
   web/          Next.js frontend, Auth.js, UI, Playwright e2e
+  web-legacy/   Legacy-design Next.js preview backed by the rebuilt APIs
   api/          FastAPI backend, SQLModel/Alembic, Celery, provider mocks
 packages/
   shared-types/ Generated OpenAPI TypeScript types
@@ -161,15 +162,29 @@ Run the hot-reload local development stack:
 pnpm dev
 ```
 
+Run both frontend designs side by side:
+
+```sh
+./scripts/compose-up.sh postgres redis
+pnpm dev:legacy
+```
+
+`apps/web-legacy` opens on `WEB_LEGACY_PORT=3001` by default and recreates the
+old Prompteer frontend design against the rebuilt backend. The primary
+`apps/web` process still owns Auth.js, JWKS, and `/api/backend/*`; the legacy
+preview proxies authenticated calls through that gateway so both frontend
+designs can run without a second token issuer.
+
 Run frontend and backend independently:
 
 ```sh
 pnpm --filter @prompteer/web dev
+pnpm --filter @prompteer/web-legacy dev
 make api-dev
 ```
 
 Hot-reload ports are configured in `.env` with `WEB_PORT=3000` and
-`API_PORT=8000`. Compose host ports are configured with `HTTP_PORT=80`,
+`WEB_LEGACY_PORT=3001`, and `API_PORT=8000`. Compose host ports are configured with `HTTP_PORT=80`,
 `POSTGRES_PORT=55432`, and `REDIS_PORT=56379`; `COMPOSE_BIND_HOST=127.0.0.1`
 keeps published ports local-only by default. Compose injects `HTTP_PORT` into the
 containerized public origin used by Auth.js, API JWT issuer checks, and mock

@@ -9,6 +9,7 @@ const ENV_EXAMPLE_PATH = ".env.example";
 const SCAN_FILES = [
   "apps/api/app/core/config.py",
   "apps/web/src/lib/env.ts",
+  "apps/web-legacy/src/lib/env.ts",
   "apps/web/src/instrumentation-client.ts",
   "apps/web/src/sentry.edge.config.ts",
   "apps/web/src/sentry.server.config.ts",
@@ -32,12 +33,16 @@ const SCAN_FILES = [
   "scripts/api-test.sh",
   "scripts/web-dev.sh",
   "scripts/web-build.sh",
+  "scripts/dev-legacy.sh",
+  "scripts/web-legacy-dev.sh",
+  "scripts/web-legacy-build.sh",
   "scripts/restore-db.sh",
   "scripts/verify-backup-restore.sh",
   "scripts/verify-ui.mjs",
   "compose.yaml",
   "package.json",
   "apps/web/package.json",
+  "apps/web-legacy/package.json",
 ];
 
 const SYSTEM_ENV_KEYS = new Set([
