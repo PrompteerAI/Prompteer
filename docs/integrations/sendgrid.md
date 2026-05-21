@@ -29,7 +29,7 @@ Accepted messages are written as `.eml` files under `.mock/email/`. The mock als
 POST /v3/mail/send
 ```
 
-Successful mock sends return `202 Accepted` with an empty body, matching the SendGrid Mail Send success response shape.
+Successful mock sends return `202 Accepted` with an empty body, matching the SendGrid Mail Send success response shape. Invalid payloads return Prompteer RFC 9457 Problem Details with `code: "sendgrid_payload_invalid"` and a SendGrid-style `errors[]` array containing `message`, `field`, and `help` entries.
 
 Development mailbox route:
 
@@ -38,4 +38,4 @@ GET /api/v1/dev/mailbox
 GET /api/v1/dev/mailbox/{message_id}
 ```
 
-These routes are available only when dev routes are enabled and the app is not running in production. Development startup and `make seed` both write deterministic captured emails for the demo accounts so the mailbox has readable local data after first setup.
+These routes are available only when dev routes are enabled and the app is not running in production; disabled dev routes return normal Prompteer Problem Details instead of exposing mock-only endpoints. Development startup and `make seed` both write deterministic captured emails for the demo accounts so the mailbox has readable local data after first setup.

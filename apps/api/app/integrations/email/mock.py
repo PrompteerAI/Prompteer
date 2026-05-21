@@ -12,11 +12,12 @@ from pathlib import Path
 from re import sub
 from typing import Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field, ValidationError, field_validator
 from starlette import status
-from starlette.responses import JSONResponse, Response
+from starlette.responses import Response
 
+from app.core.errors import ProblemException
 from app.core.feature_flags import dev_routes_enabled, require_feature_enabled
 from app.core.ratelimit import EMAIL_RATE_LIMIT, limiter
 
@@ -60,7 +61,9 @@ class SendGridMailPayload(BaseModel):
 
 
 def require_mock_routes() -> bool:
-    return dev_routes_enabled()
+    if not dev_routes_enabled():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    return True
 
 
 @router.post("/v3/mail/send", response_model=None)
@@ -71,17 +74,19 @@ async def sendgrid_mail_send(
     payload: dict[str, Any],
 ) -> Response:
     del request, response
-    if not require_mock_routes():
-        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"detail": "Not found"})
+    require_mock_routes()
     require_feature_enabled("email")
     client = MockSendGridClient()
     try:
         await client.send(payload)
     except ValidationError as exc:
-        return JSONResponse(
+        raise ProblemException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            content={"errors": sendgrid_validation_errors(exc)},
-        )
+            title="Bad Request",
+            detail="The SendGrid mail send payload is invalid.",
+            code="sendgrid_payload_invalid",
+            errors=sendgrid_validation_errors(exc),
+        ) from exc
     return Response(status_code=status.HTTP_202_ACCEPTED)
 
 

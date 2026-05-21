@@ -92,12 +92,36 @@ def test_mock_sendgrid_http_route_rejects_invalid_payload(
     )
 
     assert response.status_code == 400
+    assert response.headers["content-type"].startswith("application/problem+json")
     body = response.json()
+    assert body["code"] == "sendgrid_payload_invalid"
     assert "errors" in body
     assert {error["field"] for error in body["errors"]} == {
         "personalizations.0.to.0.email",
         "content.0.type",
     }
+
+
+def test_mock_sendgrid_http_route_requires_dev_routes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(email_mock, "default_mailbox_dir", lambda: tmp_path / ".mock" / "email")
+    monkeypatch.setattr(settings, "enable_dev_routes", False)
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/v3/mail/send",
+        json={
+            "personalizations": [{"to": [{"email": "paid@prompteer.dev"}]}],
+            "from": {"email": "no-reply@prompteer.dev"},
+            "subject": "Disabled dev route",
+            "content": [{"type": "text/plain", "value": "Hello"}],
+        },
+    )
+
+    assert response.status_code == 404
+    assert response.headers["content-type"].startswith("application/problem+json")
+    assert response.json()["code"] == "not_found"
 
 
 def test_mock_sendgrid_http_route_is_rate_limited(
