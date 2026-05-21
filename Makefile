@@ -1,6 +1,8 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap dev dev-legacy lint typecheck test audit format build verify env-check types types-check migration-check backup-restore-check compose-deps compose-dev-deps compose-health e2e verify-ui verify-ui-legacy tree api-dev api-lint api-test seed reset reset-db logs
+PROMPTEER_UPDATE_README_SCREENSHOTS ?= 0
+
+.PHONY: help bootstrap dev dev-legacy lint typecheck test audit format build verify env-check types types-check migration-check backup-restore-check compose-deps compose-dev-deps compose-health e2e verify-ui verify-ui-primary verify-ui-legacy update-ui-screenshots tree api-dev api-lint api-test seed reset reset-db logs
 
 help: ## Show available Makefile targets.
 	@awk 'BEGIN {FS = ":.*##"; printf "Available targets:\n"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -81,14 +83,29 @@ e2e: ## Run Playwright end-to-end tests against Docker Compose.
 	pnpm --filter @prompteer/web exec playwright install chromium
 	bash -lc 'source scripts/lib/load-env.sh; load_env_file ".env"; apply_compose_verification_env; env -u NO_COLOR CI=1 PLAYWRIGHT_BASE_URL="$$PLAYWRIGHT_BASE_URL" pnpm --filter @prompteer/web test:e2e'
 
-verify-ui: ## Capture desktop/mobile screenshots against Docker Compose.
+verify-ui: ## Assert README UI screenshots across primary and legacy frontends.
+	docker compose down -v
+	rm -rf .mock/email
+	$(MAKE) verify-ui-primary PROMPTEER_UPDATE_README_SCREENSHOTS=0
+	$(MAKE) verify-ui-legacy
+	node scripts/check-ui-screenshots.mjs
+
+verify-ui-primary: ## Capture primary web desktop/mobile screenshots against Docker Compose.
 	scripts/compose-up.sh --build
 	$(MAKE) compose-health
-	bash -lc 'source scripts/lib/load-env.sh; load_env_file ".env"; apply_compose_verification_env; env PROMPTEER_WEB_URL="$$PROMPTEER_WEB_URL" node scripts/verify-ui.mjs'
+	bash -lc 'source scripts/lib/load-env.sh; load_env_file ".env"; apply_compose_verification_env; env PROMPTEER_UPDATE_README_SCREENSHOTS="$(PROMPTEER_UPDATE_README_SCREENSHOTS)" PROMPTEER_WEB_URL="$$PROMPTEER_WEB_URL" node scripts/verify-ui.mjs'
 
 verify-ui-legacy: ## Capture README legacy-preview screenshots against pnpm dev:legacy.
 	scripts/compose-up.sh postgres redis
-	bash -lc 'set -euo pipefail; source scripts/lib/load-env.sh; load_env_file ".env"; apply_local_port_env; WEB_LEGACY_PORT="$${WEB_LEGACY_PORT:-3001}"; mkdir -p .verify; pnpm dev:legacy > .verify/pnpm-dev-legacy.log 2>&1 & dev_pid=$$!; cleanup() { kill "$$dev_pid" >/dev/null 2>&1 || true; wait "$$dev_pid" >/dev/null 2>&1 || true; }; trap cleanup EXIT; for _ in $$(seq 1 120); do if curl --fail --silent --show-error "http://localhost:$$WEB_PORT/api/health" >/dev/null && curl --fail --silent --show-error "http://localhost:$$API_PORT/api/v1/health/live" >/dev/null && curl --fail --location --silent --show-error "http://localhost:$$WEB_LEGACY_PORT/en" >/dev/null; then env PROMPTEER_LEGACY_WEB_URL="http://localhost:$$WEB_LEGACY_PORT/en" node scripts/verify-ui-legacy.mjs; exit 0; fi; sleep 2; done; cat .verify/pnpm-dev-legacy.log; exit 1'
+	bash -lc 'set -euo pipefail; source scripts/lib/load-env.sh; load_env_file ".env"; apply_local_port_env; WEB_LEGACY_PORT="$${WEB_LEGACY_PORT:-3001}"; mkdir -p .verify; pnpm dev:legacy > .verify/pnpm-dev-legacy.log 2>&1 & dev_pid=$$!; cleanup() { kill "$$dev_pid" >/dev/null 2>&1 || true; wait "$$dev_pid" >/dev/null 2>&1 || true; }; trap cleanup EXIT; for _ in $$(seq 1 120); do if curl --fail --silent --show-error "http://localhost:$$WEB_PORT/api/health" >/dev/null && curl --fail --silent --show-error "http://localhost:$$API_PORT/api/v1/health/live" >/dev/null && curl --fail --location --silent --show-error "http://localhost:$$WEB_LEGACY_PORT/en" >/dev/null; then env PROMPTEER_LEGACY_SCREENSHOT_DIR=".verify/screenshots/legacy" PROMPTEER_LEGACY_WEB_URL="http://localhost:$$WEB_LEGACY_PORT/en" node scripts/verify-ui-legacy.mjs; exit 0; fi; sleep 2; done; cat .verify/pnpm-dev-legacy.log; exit 1'
+
+update-ui-screenshots: ## Promote current primary and legacy UI captures into docs/screenshots.
+	docker compose down -v
+	rm -rf .mock/email
+	$(MAKE) verify-ui-primary PROMPTEER_UPDATE_README_SCREENSHOTS=1
+	$(MAKE) verify-ui-legacy
+	cp .verify/screenshots/legacy/*.png docs/screenshots/
+	node scripts/check-ui-screenshots.mjs
 
 tree: ## Show the source-oriented repository tree without generated artifacts.
 	scripts/tree-project.sh

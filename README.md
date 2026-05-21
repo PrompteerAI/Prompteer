@@ -242,10 +242,20 @@ Run the full local verification suite:
 make verify
 ```
 
-Capture desktop and mobile UI screenshots against Docker Compose:
+Assert every README screenshot route against Docker Compose and the legacy
+preview:
 
 ```sh
 make verify-ui
+```
+
+This resets local Compose volumes, reseeds deterministic demo data, writes
+reviewer artifacts to `.verify/screenshots/`, and writes exact README filename
+candidates to `.verify/screenshots/readme/` and `.verify/screenshots/legacy/`.
+To refresh the committed images in `docs/screenshots/`, run:
+
+```sh
+make update-ui-screenshots
 ```
 
 Capture the legacy-preview screenshots used above:

@@ -13,30 +13,145 @@ const configuredUrl = new URL(
 );
 const origin = configuredUrl.origin;
 const outDir = new URL("../.verify/screenshots/", import.meta.url);
+const updateReadmeScreenshots =
+  process.env.PROMPTEER_UPDATE_README_SCREENSHOTS === "1";
+const readmeOutDir = new URL("../.verify/screenshots/readme/", import.meta.url);
+const promotedReadmeOutDir = new URL("../docs/screenshots/", import.meta.url);
 
 const routes = [
-  { name: "01-landing", path: "/en", auth: false },
-  { name: "02-login", path: "/en/login", auth: false },
-  { name: "03-coding-challenge", path: "/en/challenges/coding", auth: true },
-  { name: "05-billing-checkout", path: "/en/billing", auth: true },
-  { name: "06-board", path: "/en/board", auth: true },
-  { name: "07-mailbox", path: "/dev/mailbox", auth: false },
-  { name: "08-settings", path: "/en/profile", auth: true },
-  { name: "19-image-challenges", path: "/en/challenges/image", auth: true },
+  {
+    name: "01-landing",
+    path: "/en",
+    auth: false,
+    expectedText: ["Prompt challenge workspace"],
+    readme: true,
+  },
+  {
+    name: "02-login",
+    path: "/en/login",
+    auth: false,
+    expectedText: ["Sign in"],
+    readme: true,
+  },
+  {
+    name: "03-coding-challenge",
+    path: "/en/challenges/coding",
+    auth: true,
+    expectedText: ["Prompt repair workspace", "FizzBuzz prompt repair"],
+    readme: true,
+  },
+  {
+    name: "04-prompt-editor",
+    path: "/en/challenges/coding",
+    auth: true,
+    expectedText: ["Mock run result", "Run kept private"],
+    readme: true,
+    afterGoto: async (page) => {
+      await page
+        .getByRole("textbox", { name: "Prompt" })
+        .fill(
+          "Explain FizzBuzz rules, then produce concise Python with clear edge cases.",
+        );
+      await page.getByRole("checkbox", { name: /Publish to board/ }).uncheck();
+      await page.getByRole("button", { name: "Run prompt" }).click();
+      await page.getByText("Mock run result").waitFor({ timeout: 15_000 });
+    },
+  },
+  {
+    name: "05-billing-checkout",
+    path: "/en/billing",
+    auth: true,
+    expectedText: ["Subscription checkout", "Checkout session"],
+    readme: true,
+  },
+  {
+    name: "06-board",
+    path: "/en/board",
+    auth: true,
+    expectedText: ["Shared prompt reviews", "Public prompt shares"],
+    readme: true,
+  },
+  {
+    name: "07-mailbox",
+    path: "/dev/mailbox",
+    auth: false,
+    expectedText: ["Mock mailbox"],
+    readme: true,
+  },
+  {
+    name: "08-settings",
+    path: "/en/profile",
+    auth: true,
+    expectedText: ["Profile settings", "Integration mode"],
+    readme: true,
+  },
+  {
+    name: "17-board-share-detail",
+    path: "/en/board",
+    auth: true,
+    expectedText: ["Prompt share detail", "Submitted prompt"],
+    readme: true,
+    afterGoto: async (page) => {
+      await page
+        .getByRole("link", { name: /Read prompt share:/ })
+        .first()
+        .click();
+      await page.waitForURL(/\/en\/board\/shares\/[^/]+$/);
+    },
+  },
+  {
+    name: "18-board-post-detail",
+    path: "/en/board",
+    auth: true,
+    expectedText: ["Question detail"],
+    readme: true,
+    afterGoto: async (page) => {
+      await page
+        .getByRole("link", { name: /Read question:/ })
+        .first()
+        .click();
+      await page.waitForURL(/\/en\/board\/posts\/[^/]+$/);
+    },
+  },
+  {
+    name: "19-image-challenges",
+    path: "/en/challenges/image",
+    auth: true,
+    expectedText: ["Image prompt challenges", "product-hero.png"],
+    readme: true,
+  },
   {
     name: "20-image-challenge-detail",
     path: "/en/challenges/image",
     auth: true,
     detailLinkName: /View details: Product hero image prompt/,
     expectedUrl: /\/en\/challenges\/image\/[^/]+$/,
+    expectedText: [
+      "Product hero image prompt",
+      "Product hero",
+      "Hero composition with product focus",
+    ],
+    readme: true,
   },
-  { name: "21-video-challenges", path: "/en/challenges/video", auth: true },
+  {
+    name: "21-video-challenges",
+    path: "/en/challenges/video",
+    auth: true,
+    expectedText: ["Video prompt challenges", "launch-teaser.mp4"],
+    readme: true,
+  },
   {
     name: "22-video-challenge-detail",
     path: "/en/challenges/video",
     auth: true,
     detailLinkName: /View details: Launch teaser video prompt/,
     expectedUrl: /\/en\/challenges\/video\/[^/]+$/,
+    expectedText: [
+      "Launch teaser video prompt",
+      "Launch teaser",
+      "16:9 launch teaser storyboard",
+    ],
+    readme: true,
   },
 ];
 
@@ -49,13 +164,13 @@ function routeUrl(path) {
   return new URL(path, origin).toString();
 }
 
-async function clearPrimaryScreenshots() {
+async function clearPngFiles(directoryUrl) {
   try {
-    const entries = await readdir(outDir, { withFileTypes: true });
+    const entries = await readdir(directoryUrl, { withFileTypes: true });
     await Promise.all(
       entries
         .filter((entry) => entry.isFile() && entry.name.endsWith(".png"))
-        .map((entry) => unlink(new URL(entry.name, outDir))),
+        .map((entry) => unlink(new URL(entry.name, directoryUrl))),
     );
   } catch (error) {
     if (error && typeof error === "object" && "code" in error) {
@@ -78,8 +193,23 @@ async function ensureSeedLogin(page) {
   }
 }
 
+async function settleForScreenshot(page) {
+  await page.evaluate(() => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  });
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(100);
+}
+
 await mkdir(outDir, { recursive: true });
-await clearPrimaryScreenshots();
+await mkdir(readmeOutDir, { recursive: true });
+if (updateReadmeScreenshots) {
+  await mkdir(promotedReadmeOutDir, { recursive: true });
+}
+await clearPngFiles(outDir);
+await clearPngFiles(readmeOutDir);
 
 const browser = await chromium.launch();
 const failures = [];
@@ -121,14 +251,37 @@ for (const viewport of viewports) {
       await page.waitForURL(route.expectedUrl);
       await page.locator("body").waitFor({ state: "visible" });
     }
+    if (route.afterGoto) {
+      await route.afterGoto(page);
+      await page.locator("body").waitFor({ state: "visible" });
+    }
+    for (const expectedText of route.expectedText ?? []) {
+      await page.getByText(expectedText).first().waitFor({
+        state: "visible",
+        timeout: 10_000,
+      });
+    }
     await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {
       // Some server-rendered pages keep background fetches open; visible body is
       // the screenshot readiness gate, while network idle is only a stabilizer.
     });
+    await settleForScreenshot(page);
     await page.screenshot({
       path: new URL(`${route.name}-${viewport.name}.png`, outDir).pathname,
       fullPage: true,
     });
+    if (route.readme && viewport.name === "desktop") {
+      await page.screenshot({
+        path: new URL(`${route.name}.png`, readmeOutDir).pathname,
+        fullPage: true,
+      });
+      if (updateReadmeScreenshots) {
+        await page.screenshot({
+          path: new URL(`${route.name}.png`, promotedReadmeOutDir).pathname,
+          fullPage: true,
+        });
+      }
+    }
   }
 
   await context.close();
@@ -143,4 +296,9 @@ if (failures.length > 0) {
 
 console.log(
   `Saved ${routes.length * viewports.length} screenshots to ${outDir.pathname}`,
+);
+console.log(
+  updateReadmeScreenshots
+    ? `Updated primary README screenshots in ${promotedReadmeOutDir.pathname}`
+    : `Saved README-name screenshots to ${readmeOutDir.pathname}`,
 );

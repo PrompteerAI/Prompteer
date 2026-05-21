@@ -1,6 +1,6 @@
 // Playwright-based screenshot helper for the legacy-preview frontend. It
 // captures the bounded set of legacy screenshots referenced by the README.
-import { mkdir } from "node:fs/promises";
+import { mkdir, readdir, unlink } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
 
@@ -27,21 +27,25 @@ const captures = [
     name: "09-legacy-home",
     path: "/en",
     viewport: desktop,
+    expectedText: ["Top Challenges", "Product hero image prompt"],
   },
   {
     name: "10-legacy-coding-category",
     path: "/en/category/coding",
     viewport: desktop,
+    expectedText: ["Algorithm", "FizzBuzz prompt repair"],
   },
   {
     name: "11-legacy-board",
     path: "/en/board",
     viewport: desktop,
+    expectedText: ["Board", "Shared questions and prompt runs"],
   },
   {
     name: "12-legacy-login",
     path: "/en/login",
     viewport: desktop,
+    expectedText: ["Login", "Demo login"],
   },
   {
     name: "13-legacy-problem-runner",
@@ -62,27 +66,49 @@ const captures = [
         timeout: 15_000,
       });
     },
+    expectedText: ["Prompt editor", "Private run"],
   },
   {
     name: "14-legacy-billing",
     path: "/en/billing",
     viewport: desktop,
     authenticated: true,
+    expectedText: ["Prompteer Pro", "Billing email"],
   },
   {
     name: "15-legacy-mobile-home",
     path: "/en",
     viewport: mobile,
+    expectedText: ["Top Challenges", "Challenge Category"],
   },
   {
     name: "16-legacy-mobile-coding",
     path: "/en/category/coding",
     viewport: mobile,
+    expectedText: ["Algorithm", "FizzBuzz prompt repair"],
   },
 ];
 
 function routeUrl(path) {
   return new URL(path, origin).toString();
+}
+
+async function clearPngFiles(directory) {
+  try {
+    const entries = await readdir(directory, { withFileTypes: true });
+    await Promise.all(
+      entries
+        .filter((entry) => entry.isFile() && entry.name.endsWith(".png"))
+        .map((entry) => unlink(resolve(directory, entry.name))),
+    );
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error) {
+      if (error.code === "ENOENT") {
+        return;
+      }
+    }
+    throw error;
+  }
 }
 
 async function ensureSeedLogin(page) {
@@ -116,7 +142,18 @@ async function hideNextDevTools(page) {
   });
 }
 
+async function settleForScreenshot(page) {
+  await page.evaluate(() => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  });
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(100);
+}
+
 await mkdir(outDir, { recursive: true });
+await clearPngFiles(outDir);
 
 const browser = await chromium.launch();
 const failures = [];
@@ -150,11 +187,18 @@ for (const capture of captures) {
     await hideNextDevTools(page);
   }
   await page.locator("body").waitFor({ state: "visible" });
+  for (const expectedText of capture.expectedText ?? []) {
+    await page.getByText(expectedText).first().waitFor({
+      state: "visible",
+      timeout: 10_000,
+    });
+  }
   await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {
     // Some server-rendered pages keep background fetches open; visible body is
     // the screenshot readiness gate, while network idle is only a stabilizer.
   });
   await hideNextDevTools(page);
+  await settleForScreenshot(page);
   await page.screenshot({
     path: resolve(outDir, `${capture.name}.png`),
     fullPage: true,
