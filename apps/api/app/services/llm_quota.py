@@ -15,12 +15,13 @@ def resolve_user_for_principal(session: Session, principal: Principal) -> User:
     user = session.exec(select(User).where(User.auth_subject == principal.subject)).first()
     if user is None:
         user = session.get(User, principal.subject)
-    if user is None and principal.email:
-        user = session.exec(select(User).where(User.email == principal.email)).first()
+    principal_email = normalized_email(principal.email) if principal.email else None
+    if user is None and principal_email:
+        user = session.exec(select(User).where(User.email == principal_email)).first()
     if user is not None:
         return user
 
-    if not principal.email:
+    if not principal_email:
         raise ProblemException(
             status_code=401,
             title="Unauthorized",
@@ -30,12 +31,16 @@ def resolve_user_for_principal(session: Session, principal: Principal) -> User:
 
     user = User(
         auth_subject=principal.subject,
-        email=principal.email,
-        display_name=principal.email.split("@", maxsplit=1)[0],
+        email=principal_email,
+        display_name=principal_email.split("@", maxsplit=1)[0],
     )
     session.add(user)
     session.flush()
     return user
+
+
+def normalized_email(email: str) -> str:
+    return email.strip().lower()
 
 
 def assert_llm_quota_available(session: Session, user: User) -> None:

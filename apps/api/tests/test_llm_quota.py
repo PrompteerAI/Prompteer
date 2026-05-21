@@ -18,7 +18,7 @@ from app.db.seed import seed
 from app.db.session import get_session
 from app.main import create_app
 from app.models.domain import Challenge, LLMUsageDay, User
-from app.services.llm_quota import current_usage_date
+from app.services.llm_quota import current_usage_date, resolve_user_for_principal
 
 
 @pytest.fixture(autouse=True)
@@ -80,6 +80,23 @@ def test_challenge_run_halts_when_daily_quota_is_exhausted(
     body = response.json()
     assert body["code"] == "quota_exceeded"
     assert body["type"] == "https://prompteer.dev/errors/quota-exceeded"
+
+
+def test_resolve_user_for_principal_matches_email_case_insensitively() -> None:
+    engine = seeded_engine()
+
+    with Session(engine) as session:
+        user = resolve_user_for_principal(
+            session,
+            Principal(
+                subject="mock-google-oauth2|case-variant",
+                email=" FREE@PROMPTEER.DEV ",
+                is_admin=False,
+            ),
+        )
+
+    assert user.email == "free@prompteer.dev"
+    assert user.id == "00000000-0000-4000-8000-000000000003"
 
 
 def seeded_engine() -> Engine:

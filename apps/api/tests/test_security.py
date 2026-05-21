@@ -57,6 +57,32 @@ def test_verify_jwt_with_jwks_rejects_wrong_audience() -> None:
         )
 
 
+def test_verify_jwt_with_jwks_rejects_missing_expiration() -> None:
+    private_key: RSAPrivateKey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    public_key = private_key.public_key()
+    now = datetime.now(tz=UTC)
+    token = jwt.encode(
+        {
+            "iss": "http://localhost:3000",
+            "aud": "prompteer-api",
+            "sub": "mock-google-oauth2|admin",
+            "email": "admin@prompteer.dev",
+            "iat": int(now.timestamp()),
+        },
+        private_key,
+        algorithm="RS256",
+        headers={"kid": "test-key"},
+    )
+
+    with pytest.raises(AuthTokenError):
+        verify_jwt_with_jwks(
+            token,
+            {"keys": [public_jwk(public_key)]},
+            issuer="http://localhost:3000",
+            audience="prompteer-api",
+        )
+
+
 @pytest.mark.asyncio
 async def test_get_current_principal_requires_bearer_token() -> None:
     with pytest.raises(HTTPException) as exc_info:

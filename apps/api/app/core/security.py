@@ -122,6 +122,7 @@ def verify_jwt_with_jwks(
             algorithms=["RS256"],
             audience=audience,
             issuer=issuer,
+            options={"require": ["exp", "iat", "iss", "aud", "sub"]},
         )
     except jwt.PyJWTError as exc:
         raise AuthTokenError("Invalid Auth.js JWT.") from exc

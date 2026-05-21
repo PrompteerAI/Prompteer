@@ -1,6 +1,7 @@
 # RFC 9457 Problem Details handlers shared by API v1 and platform middleware.
 # Unexpected exceptions are captured for observability before returning JSON.
 
+from collections.abc import Mapping
 from http import HTTPStatus
 from typing import Any
 
@@ -55,7 +56,7 @@ def problem_response(
     detail: str,
     code: str,
     errors: list[dict[str, Any]] | None = None,
-    headers: dict[str, str] | None = None,
+    headers: Mapping[str, str] | None = None,
 ) -> JSONResponse:
     body: dict[str, Any] = {
         "type": f"https://prompteer.dev/errors/{code.replace('_', '-')}",
@@ -95,6 +96,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException) 
         title=title,
         detail=str(exc.detail),
         code=http_error_code(exc.status_code),
+        headers=exc.headers,
     )
 
 

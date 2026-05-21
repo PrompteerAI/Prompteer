@@ -46,13 +46,17 @@ def mark_customer_paid(
     if not isinstance(customer_email, str):
         return StripeWebhookResult(event_id=event_id, event_type=event_type, processed=False)
 
-    user = db_session.exec(select(User).where(User.email == customer_email)).first()
+    normalized_customer_email = customer_email.strip().lower()
+    if not normalized_customer_email:
+        return StripeWebhookResult(event_id=event_id, event_type=event_type, processed=False)
+
+    user = db_session.exec(select(User).where(User.email == normalized_customer_email)).first()
     if user is None:
         return StripeWebhookResult(
             event_id=event_id,
             event_type=event_type,
             processed=False,
-            customer_email=customer_email,
+            customer_email=normalized_customer_email,
         )
 
     user.plan = "paid"
@@ -63,6 +67,6 @@ def mark_customer_paid(
         event_id=event_id,
         event_type=event_type,
         processed=True,
-        customer_email=customer_email,
+        customer_email=normalized_customer_email,
         user_id=user.id,
     )

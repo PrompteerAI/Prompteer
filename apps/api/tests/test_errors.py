@@ -32,3 +32,22 @@ def test_http_exception_handler_keeps_generic_code_for_unmapped_status() -> None
 
     assert response.status_code == 409
     assert response.json()["code"] == "http_error"
+
+
+def test_http_exception_handler_preserves_security_headers() -> None:
+    app = create_app()
+
+    @app.get("/protected")
+    async def protected() -> None:
+        raise HTTPException(
+            status_code=401,
+            detail="Missing bearer token.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    response = TestClient(app).get("/protected")
+
+    assert response.status_code == 401
+    assert response.headers["www-authenticate"] == "Bearer"
+    assert response.headers["content-type"].startswith("application/problem+json")
+    assert response.json()["code"] == "unauthorized"

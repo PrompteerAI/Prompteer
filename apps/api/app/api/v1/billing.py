@@ -90,7 +90,13 @@ async def stripe_webhook(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Missing Stripe-Signature header.",
         )
-    payload = (await request.body()).decode("utf-8")
+    try:
+        payload = (await request.body()).decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Stripe webhook payload must be UTF-8 encoded.",
+        ) from exc
     result = handle_stripe_webhook_payload(db_session, payload, stripe_signature)
     return stripe_webhook_to_read(result)
 

@@ -135,6 +135,56 @@ def test_stripe_webhook_rejects_invalid_signature() -> None:
     assert response.json()["code"] == "bad_request"
 
 
+def test_stripe_webhook_rejects_non_utf8_payload() -> None:
+    client = TestClient(create_billing_test_app())
+
+    response = client.post(
+        "/api/v1/billing/webhooks/stripe",
+        content=b"\xff",
+        headers={
+            "Content-Type": "application/json",
+            "Stripe-Signature": "t=1800000000,v1=bad",
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.headers["content-type"].startswith("application/problem+json")
+    assert response.json()["code"] == "bad_request"
+    assert "UTF-8" in response.json()["detail"]
+
+
+def test_stripe_webhook_matches_customer_email_case_insensitively() -> None:
+    app = create_billing_test_app(initial_paid_plan="free")
+    client = TestClient(app)
+    event = {
+        "id": "evt_case_insensitive",
+        "object": "event",
+        "type": "checkout.session.completed",
+        "data": {"object": {"customer_email": "PAID@PROMPTEER.DEV"}},
+    }
+    payload = json.dumps(event, separators=(",", ":"), sort_keys=True)
+    signature = MockStripeClient().sign_webhook_payload(payload)
+
+    response = client.post(
+        "/api/v1/billing/webhooks/stripe",
+        content=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Stripe-Signature": signature,
+        },
+    )
+
+    assert response.status_code == 200
+    webhook = response.json()
+    assert webhook["processed"] is True
+    assert webhook["customer_email"] == "paid@prompteer.dev"
+    with Session(app.state.test_engine) as assertion_session:
+        paid_user = assertion_session.exec(
+            select(User).where(User.email == "paid@prompteer.dev")
+        ).one()
+    assert paid_user.plan == "paid"
+
+
 def test_billing_checkout_create_is_rate_limited() -> None:
     client = TestClient(create_app())
 
