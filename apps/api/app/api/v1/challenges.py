@@ -14,7 +14,7 @@ from app.core.time import ensure_utc
 from app.db.session import get_session
 from app.integrations.llm import get_llm_client
 from app.integrations.llm.base import LLMClient
-from app.models.domain import Challenge, ChallengeTag, Share
+from app.models.domain import Challenge, ChallengeTag, Share, utc_now
 from app.schemas.challenge import (
     ChallengeRead,
     ChallengeRunRequest,
@@ -248,12 +248,22 @@ def create_prompt_share(
 ) -> Share | None:
     if not run.publish_to_board:
         return None
-    share = Share(
-        challenge_id=challenge_id,
-        user_id=user_id,
-        prompt=run.prompt,
-        is_public=True,
-    )
+    share = session.exec(
+        select(Share)
+        .where(Share.user_id == user_id, Share.challenge_id == challenge_id)
+        .order_by(col(Share.updated_at).desc(), col(Share.created_at).desc())
+    ).first()
+    if share is None:
+        share = Share(
+            challenge_id=challenge_id,
+            user_id=user_id,
+            prompt=run.prompt,
+            is_public=True,
+        )
+    else:
+        share.prompt = run.prompt
+        share.is_public = True
+        share.updated_at = utc_now()
     session.add(share)
     session.commit()
     session.refresh(share)

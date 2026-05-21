@@ -1,13 +1,12 @@
 // End-to-end checks for authenticated prompt, billing, board, and settings flows.
-import { randomUUID } from "node:crypto";
-
 import { expect, test } from "@playwright/test";
 
 import { loginAs } from "./helpers";
 
 test("seeded user can run a coding prompt", async ({ page }) => {
   await loginAs(page);
-  const prompt = `Explain FizzBuzz rules, then produce concise Python with E2E-created board proof. Run ${randomUUID()}.`;
+  const prompt =
+    "Explain FizzBuzz rules, then produce concise Python with clear edge cases.";
 
   await page.goto("/en/challenges/coding");
   await expect(

@@ -120,6 +120,42 @@ def test_challenge_run_can_skip_public_share_creation() -> None:
     assert after_count == before_count
 
 
+def test_challenge_run_updates_existing_public_share_for_user_challenge() -> None:
+    client, engine, challenge_id = create_seeded_challenge_client()
+
+    first_response = client.post(
+        f"/api/v1/challenges/{challenge_id}/run",
+        json={"prompt": "Explain FizzBuzz with a compact Python solution."},
+    )
+    second_response = client.post(
+        f"/api/v1/challenges/{challenge_id}/run",
+        json={"prompt": "Explain FizzBuzz rules before concise Python."},
+    )
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    first_share = first_response.json()["share"]
+    second_share = second_response.json()["share"]
+    assert first_share["id"] == second_share["id"]
+
+    with Session(engine) as assertion_session:
+        shares = assertion_session.exec(
+            select(Share).where(
+                Share.user_id == "00000000-0000-4000-8000-000000000001",
+                Share.challenge_id == challenge_id,
+            )
+        ).all()
+        assert len(shares) == 1
+        assert shares[0].prompt == "Explain FizzBuzz rules before concise Python."
+
+    board_response = client.get("/api/v1/community/board")
+
+    assert board_response.status_code == 200
+    board_shares = board_response.json()["shares"]
+    assert board_shares[0]["id"] == second_share["id"]
+    assert board_shares[0]["prompt"] == "Explain FizzBuzz rules before concise Python."
+
+
 def test_mock_challenge_run_returns_within_acceptance_budget() -> None:
     client, _engine, challenge_id = create_seeded_challenge_client()
 

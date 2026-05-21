@@ -54,7 +54,9 @@ async def read_board_feed(
         )
     posts = session.exec(posts_statement.order_by(col(Post.created_at).desc()).limit(limit)).all()
     shares = session.exec(
-        shares_statement.order_by(col(Share.created_at).desc()).limit(limit)
+        shares_statement.order_by(col(Share.updated_at).desc(), col(Share.created_at).desc()).limit(
+            limit
+        )
     ).all()
     return BoardFeedRead(
         posts=[post_to_read(session, post) for post in posts],
