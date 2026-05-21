@@ -1,7 +1,7 @@
 """Local Google OpenID Connect/OAuth 2.0 mock.
 
-Schema references verified on 2026-05-20:
-- https://developers.google.com/identity/openid-connect/openid-connect
+Schema references verified on 2026-05-21:
+- https://developers.google.com/identity/openid-connect/reference
 - https://developers.google.com/identity/protocols/oauth2/web-server
 
 The mock intentionally mirrors Google's endpoint paths so Auth.js can use it as a
@@ -11,13 +11,19 @@ normal OIDC issuer in local development when real Google credentials are absent.
 from __future__ import annotations
 
 import base64
+import os
+import time
+from contextlib import suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from tempfile import gettempdir
 from typing import Annotated, Any
 from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 
 import jwt
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPublicKey
 from fastapi import APIRouter, Form, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
@@ -31,6 +37,11 @@ MOCK_GOOGLE_KEY_ID = "prompteer-dev-google-oauth"
 MOCK_GOOGLE_TOKEN_SECRET = "prompteer-dev-google-oauth-state"
 ACCESS_TOKEN_SECONDS = 3600
 AUTH_CODE_SECONDS = 300
+MOCK_GOOGLE_PRIVATE_KEY_PATH = (
+    Path(gettempdir()) / "prompteer" / "mock-google-oauth-private-key.pem"
+)
+MOCK_GOOGLE_KEY_WAIT_ATTEMPTS = 40
+MOCK_GOOGLE_KEY_WAIT_SECONDS = 0.05
 
 
 @dataclass(frozen=True)
@@ -83,40 +94,74 @@ MOCK_USERS: dict[str, MockGoogleUser] = {
 
 DEFAULT_MOCK_EMAIL = "free@prompteer.dev"
 
-# Dev-only deterministic key. Keeping it stable makes the mock OIDC provider safe
-# across multiple Gunicorn/Uvicorn worker processes.
-DEV_PRIVATE_KEY_PEM = b"""-----BEGIN PRIVATE KEY-----
-MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQD5NTen4/48CaNr
-B0FCTll7r2Ii8UuQQAREGIlK9JZZxS2QlS9/WpZ5sbmLwABsZvUiGFqdL7IQZ3f2
-SFgGgNe8KdEqqy+xPHysTod0R4EbM6m84uOi5q36Z4L5PxzJp3uwqDtMdTLWq4O1
-r8NhjCunjeYtY5Eh8lCaoL4MdAhF31Reca0YRizuiuTdfeQ3AAa29zatxwPSSgIS
-QJC9SeKwXuO0KPzJHGHqn9uwV0OkH7SMpDxJawA/Gn2RAqN6nef/3lSKEtvetF7G
-dAPV3LEcvkvqK8r+b6W7d3+gh+6qUGhwchjNOQOyLz1bVmyWueKt1QEz1LfM8Te0
-mEEWnc0PAgMBAAECggEAYHSepBb00hwQ6l4WfimBLQRHAatPSffdLtYoXaCpiPlu
-l2WGys4vK88EN/kKsOpwus+eUvShAQRrRCHgIDRCTAwLb25uuTTmNHL4rqL2b6bh
-bcCLxwNuF1t1MC+jXtG6aDfVK9S45qngArSS9PCh/OpJSwwconz9gbvxkzRd91yj
-7mQLIYYLF/sP5dNWRBETJVWtxNVj8f7JbMRy2x/3negFl+JXXM2mXtwzirGNzSSu
-Kngvdl6nY+6AR9twpJlDf9b6OZsX2Nr2nff8yyUI7dUeYtUzB6k4wBUTC1wn7lGW
-bQAuGIXrSNFxfXe4GrzSaofmZsYbNk5PRVLsBULlQQKBgQD9aZ75oAZtnWhbbkla
-sX6K3mSatxKfyZFqQhxllw7umedTStyAnYDAn21Y5++5Q5mkQ9O7oPeDrd0FxwZ8
-9WTE+KPwop3cSbBCOURcwdtmYO3Er7pm0kCTFoieNcsjGuED1vSnhENJr5JVB2QC
-YKzR5wO9CK+x5fKSPpjX4ezrEQKBgQD7wJsjUP+dbUpsMsKnw49B7roZYo8U+kL2
-r0g99zEtOzoG0IXgjnYdi1uputl/SemFBRyzIkNuAic+Hkc7VIoD31a1XOW20Udf
-IXm+BDj1xLH8pFrtZfg1C7G1yzo6kfu1RWUwm1UpLdISBRgVXv78PD9nV+N2xRbu
-u/7fYlv2HwKBgQDMdMc7CA2nqvRjsFumvMYoLL5mxYZVPUABx005+eKmR64H2cKG
-Uo1q3DZRIPCdPRldGwxducV5jHFjE+z8LNEcyq8am1laPmnjRGkPnajytQmhQ1bV
-VpWbFvcrDqPSswERJAFIlsHjVbBuwgPCl1VYFVdC0RtQIQLRU4flxfZswQKBgQCB
-firOWaWBpmu3h8yUWoTflxnmYMnUMn4rQTHZncKPz30jcDLMtLqQq9P0VAX38V7K
-azy974vblAP3cb+WBwAOydxh4WzPQoqBpkhmsulRkWEz4J5cqiynrGI2blh/NAPS
-0+UewWdmjQkW98PRilGCEMNUNuLrfqkzF0QcRw2iZQKBgDtjTiL2xaJhi+SkMaYf
-HpFc0dwm+oB2u9bSV0r7VD/lxCJxJpwMwwUboEU1t1zWO//S9oVvlfKPi17s1fI/
-dYANaX4VHOLAYodYFmAE81pj7fdUrv/KrPtq4UWVtSXf8mxeUo96OyfnODQhI2VS
-DMqVf3DMtFbz7gd8PEUqPyZb
------END PRIVATE KEY-----"""
-loaded_private_key = serialization.load_pem_private_key(DEV_PRIVATE_KEY_PEM, password=None)
-if not isinstance(loaded_private_key, RSAPrivateKey):
-    raise TypeError("Mock Google OAuth private key must be an RSA private key.")
-DEV_PRIVATE_KEY: RSAPrivateKey = loaded_private_key
+
+def load_private_key_pem(private_key_pem: bytes, *, source: Path) -> RSAPrivateKey:
+    loaded_private_key = serialization.load_pem_private_key(private_key_pem, password=None)
+    if not isinstance(loaded_private_key, RSAPrivateKey):
+        msg = f"Mock Google OAuth private key at {source} must be an RSA private key."
+        raise TypeError(msg)
+    return loaded_private_key
+
+
+def serialize_private_key(private_key: RSAPrivateKey) -> bytes:
+    return private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+
+
+def generate_private_key_file(path: Path) -> RSAPrivateKey:
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    private_key_pem = serialize_private_key(private_key)
+    temp_path = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+    file_descriptor = os.open(temp_path, flags, 0o600)
+    with os.fdopen(file_descriptor, "wb") as key_file:
+        key_file.write(private_key_pem)
+    temp_path.replace(path)
+    with suppress(OSError):
+        path.chmod(0o600)
+    return private_key
+
+
+def wait_for_private_key(path: Path) -> RSAPrivateKey:
+    for _ in range(MOCK_GOOGLE_KEY_WAIT_ATTEMPTS):
+        if path.exists():
+            try:
+                return load_private_key_pem(path.read_bytes(), source=path)
+            except (OSError, TypeError, ValueError):
+                time.sleep(MOCK_GOOGLE_KEY_WAIT_SECONDS)
+                continue
+        time.sleep(MOCK_GOOGLE_KEY_WAIT_SECONDS)
+    msg = f"Mock Google OAuth private key was not created at {path}."
+    raise RuntimeError(msg)
+
+
+def load_or_create_private_key(path: Path = MOCK_GOOGLE_PRIVATE_KEY_PATH) -> RSAPrivateKey:
+    if path.exists():
+        return load_private_key_pem(path.read_bytes(), source=path)
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with suppress(OSError):
+        path.parent.chmod(0o700)
+
+    lock_path = path.with_name(f"{path.name}.lock")
+    try:
+        file_descriptor = os.open(lock_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        return wait_for_private_key(path)
+
+    try:
+        with os.fdopen(file_descriptor, "w", encoding="utf-8") as lock_file:
+            lock_file.write(str(os.getpid()))
+        return generate_private_key_file(path)
+    finally:
+        with suppress(FileNotFoundError):
+            lock_path.unlink()
+
+
+DEV_PRIVATE_KEY: RSAPrivateKey = load_or_create_private_key()
 DEV_PUBLIC_KEY: RSAPublicKey = DEV_PRIVATE_KEY.public_key()
 
 router = APIRouter(tags=["mock-google-oauth"])

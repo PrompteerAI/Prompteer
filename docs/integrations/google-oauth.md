@@ -1,10 +1,10 @@
 # Google OAuth Integration
 
-Verified on: 2026-05-20
+Verified on: 2026-05-21
 
 Sources:
 
-- https://developers.google.com/identity/openid-connect/openid-connect
+- https://developers.google.com/identity/openid-connect/reference
 - https://developers.google.com/identity/protocols/oauth2/web-server
 
 Prompteer uses Google OAuth through Auth.js. Empty `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` select the local mock OpenID Connect provider at `AUTH_MOCK_GOOGLE_ISSUER`.
@@ -34,7 +34,7 @@ The token endpoint returns Google's standard fields for an authorization-code ex
 }
 ```
 
-The `id_token` is signed with a dev-only RS256 key generated at API startup. The public key is published through JWKS and the issuer is the exact `AUTH_MOCK_GOOGLE_ISSUER` value with trailing slashes removed. If `AUTH_MOCK_GOOGLE_SERVER_BASE_URL` is set, only the discovery document's token, userinfo, and JWKS URLs use that internal base; the issuer and authorization endpoint stay public.
+The `id_token` is signed with a dev-only RS256 key generated at API startup and stored outside the repository in the runtime temp directory. Multiple Gunicorn/Uvicorn workers reuse that runtime key, so token signing and JWKS stay consistent for the lifetime of the local API process group. The public key is published through JWKS and the issuer is the exact `AUTH_MOCK_GOOGLE_ISSUER` value with trailing slashes removed. If `AUTH_MOCK_GOOGLE_SERVER_BASE_URL` is set, only the discovery document's token, userinfo, and JWKS URLs use that internal base; the issuer and authorization endpoint stay public.
 
 `/v3/userinfo` returns schema-compatible profile claims:
 

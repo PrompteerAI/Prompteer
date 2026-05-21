@@ -1,5 +1,7 @@
 """Tests for the local Google-compatible OIDC mock and discovery metadata."""
 
+import stat
+from pathlib import Path
 from typing import Any, cast
 from urllib.parse import parse_qs, urlparse
 
@@ -13,6 +15,7 @@ from app.integrations.google_oauth.mock import (
     MOCK_GOOGLE_CLIENT_ID,
     MOCK_GOOGLE_CLIENT_SECRET,
     authorization_header,
+    load_or_create_private_key,
 )
 from app.main import create_app
 
@@ -46,6 +49,21 @@ def test_openid_discovery_and_jwks_shape() -> None:
     assert key["kty"] == "RSA"
     assert key["alg"] == "RS256"
     assert key["use"] == "sig"
+
+
+def test_mock_google_private_key_is_generated_to_runtime_file(tmp_path: Path) -> None:
+    key_path = tmp_path / "mock-google-oauth-private-key.pem"
+
+    first_key = load_or_create_private_key(key_path)
+    second_key = load_or_create_private_key(key_path)
+
+    assert key_path.exists()
+    assert key_path.read_text(encoding="utf-8").startswith("-----BEGIN PRIVATE KEY-----")
+    assert stat.S_IMODE(key_path.stat().st_mode) == 0o600
+    assert (
+        first_key.private_numbers().public_numbers.n
+        == second_key.private_numbers().public_numbers.n
+    )
 
 
 def test_openid_discovery_can_publish_internal_server_endpoints(
