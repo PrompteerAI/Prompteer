@@ -21,10 +21,12 @@ type CheckoutSession = components["schemas"]["CheckoutSessionRead"];
 type CheckoutStep = "idle" | "created" | "complete";
 
 interface BillingCheckoutPanelProps {
+  billingEmail: string;
   paymentsEnabled: boolean;
 }
 
 export function BillingCheckoutPanel({
+  billingEmail,
   paymentsEnabled,
 }: BillingCheckoutPanelProps): React.ReactElement {
   const locale = useLocale();
@@ -36,8 +38,8 @@ export function BillingCheckoutPanel({
   const hostedCheckoutUrl =
     session && !isMockSession && session.url ? session.url : null;
   const createCheckoutMutation = useMutation({
-    mutationKey: ["billing", "checkout", "create"],
-    mutationFn: createCheckoutSession,
+    mutationKey: ["billing", "checkout", "create", billingEmail],
+    mutationFn: () => createCheckoutSession(billingEmail),
   });
   const completeCheckoutMutation = useMutation({
     mutationKey: ["billing", "checkout", "complete", session?.id],
@@ -131,7 +133,7 @@ export function BillingCheckoutPanel({
           <div className="flex items-center justify-between border-t border-zinc-200 pt-3">
             <dt className="text-zinc-500">{t("plan.billingEmail")}</dt>
             <dd className="font-medium text-zinc-950">
-              {session?.customer_email ?? t("plan.fallbackEmail")}
+              {session?.customer_email ?? billingEmail}
             </dd>
           </div>
         </dl>
@@ -187,7 +189,7 @@ export function BillingCheckoutPanel({
 
         <div className="mt-5 flex flex-wrap gap-3">
           <button
-            className="inline-flex h-10 items-center gap-2 rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+            className="inline-flex min-h-11 items-center gap-2 rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
             aria-busy={createCheckoutMutation.isPending}
             disabled={!paymentsEnabled || isLoading}
             onClick={() => {
@@ -204,7 +206,7 @@ export function BillingCheckoutPanel({
           </button>
           {hostedCheckoutUrl ? (
             <a
-              className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
+              className="inline-flex min-h-11 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
               href={hostedCheckoutUrl}
               rel="noreferrer"
               target="_blank"
@@ -214,7 +216,7 @@ export function BillingCheckoutPanel({
             </a>
           ) : (
             <button
-              className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:text-zinc-400"
+              className="inline-flex min-h-11 items-center gap-2 rounded-md border border-emerald-700 bg-emerald-50 px-4 text-sm font-medium text-emerald-900 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-zinc-300 disabled:bg-white disabled:text-zinc-400"
               aria-busy={completeCheckoutMutation.isPending}
               disabled={
                 !paymentsEnabled ||
@@ -236,7 +238,7 @@ export function BillingCheckoutPanel({
             </button>
           )}
           <button
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
+            className="inline-flex min-h-11 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
             onClick={reset}
             type="button"
           >
@@ -263,7 +265,7 @@ export function BillingCheckoutPanel({
             className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-900"
           >
             {t.rich("checkout.completed", {
-              email: session?.customer_email ?? t("plan.fallbackEmail"),
+              email: session?.customer_email ?? billingEmail,
               event: (chunks) => <code>{chunks}</code>,
             })}
           </div>
@@ -273,12 +275,14 @@ export function BillingCheckoutPanel({
   );
 }
 
-async function createCheckoutSession(): Promise<CheckoutSession> {
+async function createCheckoutSession(
+  customerEmail: string,
+): Promise<CheckoutSession> {
   const api = createPrompteerApiClient();
   return unwrapApiResponse(
     await api.POST("/api/v1/billing/checkout", {
       body: {
-        customer_email: "paid@prompteer.dev",
+        customer_email: customerEmail,
         plan: "pro_monthly",
       },
     }),

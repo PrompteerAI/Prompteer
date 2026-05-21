@@ -6,11 +6,14 @@ import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
 
 export const dynamic = "force-dynamic";
 
+const boardFeedLimit = 5;
+
 export default async function BoardPage(): Promise<React.ReactElement> {
   const t = await getTranslations("board");
   const api = createPrompteerApiClient();
   const feed = unwrapApiResponse(
     await api.GET("/api/v1/community/board", {
+      params: { query: { limit: boardFeedLimit } },
       cache: "no-store",
     }),
   );

@@ -8,19 +8,23 @@ import { getServerEnv, publicEnv } from "@/lib/env";
 
 type Props = {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ callbackUrl?: string | string[] }>;
 };
 
 export default async function LoginPage({
   params,
+  searchParams,
 }: Props): Promise<React.ReactElement> {
-  const { locale } = await params;
+  const [{ locale }, query] = await Promise.all([params, searchParams]);
+  const redirectTo = safeCallbackUrl(query.callbackUrl, locale);
+
   async function signInWithGoogle(formData: FormData): Promise<void> {
     "use server";
 
     const loginHint = formData.get("login_hint");
     await signIn(
       "google",
-      { redirectTo: localizedPath("/", locale) },
+      { redirectTo },
       typeof loginHint === "string" && loginHint.length > 0
         ? { login_hint: loginHint }
         : undefined,
@@ -48,7 +52,7 @@ export default async function LoginPage({
           {accounts.map(({ email, label, Icon }) => (
             <button
               key={email || "google"}
-              className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950"
+              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950"
               name="login_hint"
               type="submit"
               value={email}
@@ -61,4 +65,39 @@ export default async function LoginPage({
       </div>
     </main>
   );
+}
+
+function safeCallbackUrl(
+  value: string | string[] | undefined,
+  locale: string,
+): `/${string}` {
+  const fallback = localizedPath("/", locale);
+  const rawValue = Array.isArray(value) ? value[0] : value;
+
+  if (
+    !rawValue ||
+    !rawValue.startsWith("/") ||
+    rawValue.startsWith("//") ||
+    rawValue.includes("\\") ||
+    rawValue.includes("\n") ||
+    rawValue.includes("\r")
+  ) {
+    return fallback;
+  }
+
+  try {
+    const parsedUrl = new URL(rawValue, "http://localhost");
+    const localePrefix = `/${locale}`;
+    if (
+      parsedUrl.origin === "http://localhost" &&
+      (parsedUrl.pathname === localePrefix ||
+        parsedUrl.pathname.startsWith(`${localePrefix}/`))
+    ) {
+      return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}` as `/${string}`;
+    }
+  } catch {
+    return fallback;
+  }
+
+  return fallback;
 }

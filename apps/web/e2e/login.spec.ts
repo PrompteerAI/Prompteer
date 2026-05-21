@@ -17,6 +17,20 @@ test("mock Google OAuth login completes through the local OIDC server", async ({
   await expect(page.getByText("Prompteer Admin")).toBeVisible();
 });
 
+test("signed-out protected routes return to the original path after login", async ({
+  page,
+}) => {
+  await page.goto("/en/board");
+  await expect(page).toHaveURL(/\/en\/login\?callbackUrl=%2Fen%2Fboard$/);
+
+  await page.getByRole("button", { name: "Admin demo" }).click();
+
+  await page.waitForURL("/en/board");
+  await expect(
+    page.getByRole("heading", { name: "Shared prompt reviews" }),
+  ).toBeVisible();
+});
+
 test("seed login route issues an Auth.js session", async ({ page }) => {
   await page.goto("/dev/login-as/admin%40prompteer.dev");
   await page.waitForURL("/en");

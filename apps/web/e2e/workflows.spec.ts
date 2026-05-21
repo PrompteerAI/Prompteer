@@ -53,6 +53,22 @@ test("paid demo user can complete mock checkout", async ({ page }) => {
   await expect(page.getByText("checkout.session.completed")).toBeVisible();
 });
 
+test("billing checkout uses the active session email", async ({ page }) => {
+  await loginAs(page, "admin@prompteer.dev");
+
+  await page.goto("/en/billing");
+  await expect(page.getByText("admin@prompteer.dev")).toBeVisible();
+
+  await page.getByRole("button", { name: "Start checkout" }).click();
+  await expect(page.getByText(/cs_test_/)).toBeVisible();
+  await expect(page.getByText("admin@prompteer.dev")).toBeVisible();
+
+  await page.getByRole("button", { name: "Complete mock checkout" }).click();
+  await expect(
+    page.getByText(/Subscription active for admin@prompteer.dev/),
+  ).toBeVisible();
+});
+
 test("real checkout sessions expose hosted Stripe URL", async ({ page }) => {
   await loginAs(page, "paid@prompteer.dev");
 

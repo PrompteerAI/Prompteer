@@ -138,7 +138,7 @@ export function CodingChallengeRunner({
           {t("challengeLabel")}
         </label>
         <select
-          className="mt-2 h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-950"
+          className="mt-2 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-950"
           aria-describedby={errors.challengeId ? "challenge-error" : undefined}
           aria-invalid={errors.challengeId ? "true" : undefined}
           id="challenge"
@@ -197,7 +197,7 @@ export function CodingChallengeRunner({
           </span>
         </label>
         <button
-          className="mt-4 inline-flex h-10 items-center gap-2 rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+          className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
           disabled={!llmEnabled || isRunning || !isValid}
           type="submit"
         >
@@ -247,7 +247,7 @@ export function CodingChallengeRunner({
                     {t("published")}
                   </span>
                   <Link
-                    className="font-medium underline underline-offset-4 hover:text-emerald-700"
+                    className="inline-flex min-h-11 items-center font-medium underline underline-offset-4 hover:text-emerald-700"
                     href="/board"
                   >
                     {t("viewBoard")}

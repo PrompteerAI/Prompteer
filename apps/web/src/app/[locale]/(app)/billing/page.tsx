@@ -2,12 +2,14 @@
 import { getTranslations } from "next-intl/server";
 
 import { BillingCheckoutPanel } from "@/components/billing/billing-checkout-panel";
+import { auth } from "@/lib/auth";
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function BillingPage(): Promise<React.ReactElement> {
-  const t = await getTranslations("billing");
+  const [t, session] = await Promise.all([getTranslations("billing"), auth()]);
+  const billingEmail = session?.user?.email ?? "paid@prompteer.dev";
   const api = createPrompteerApiClient();
   const features = unwrapApiResponse(
     await api.GET("/api/v1/config/features", {
@@ -27,7 +29,10 @@ export default async function BillingPage(): Promise<React.ReactElement> {
             {t("description")}
           </p>
         </div>
-        <BillingCheckoutPanel paymentsEnabled={features.payments} />
+        <BillingCheckoutPanel
+          billingEmail={billingEmail}
+          paymentsEnabled={features.payments}
+        />
       </div>
     </main>
   );

@@ -11,7 +11,7 @@ test("home page renders the challenge workspace", async ({ page }) => {
 test("app routes redirect signed-out users to login", async ({ page }) => {
   await page.goto("/en/board");
 
-  await page.waitForURL("/en/login");
+  await page.waitForURL(/\/en\/login\?callbackUrl=%2Fen%2Fboard$/);
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
 });
 

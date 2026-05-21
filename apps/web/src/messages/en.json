@@ -8,8 +8,11 @@
     "tagline": "Practice prompts, compare outputs, and learn from shared challenge runs."
   },
   "nav": {
+    "label": "Product navigation",
+    "home": "Home",
     "challenges": "Challenges",
     "board": "Board",
+    "billing": "Billing",
     "profile": "Profile"
   },
   "home": {
@@ -32,7 +35,7 @@
     },
     "billing": {
       "title": "Billing checkout",
-      "description": "Create and complete a Stripe-shaped subscription checkout for the paid demo."
+      "description": "Create and complete a Stripe-shaped subscription checkout for the signed-in demo account."
     }
   },
   "login": {
@@ -45,12 +48,12 @@
   "billing": {
     "eyebrow": "Billing",
     "title": "Subscription checkout",
-    "description": "Start a Pro checkout session for the paid demo account. Local mocks complete in-app; real Stripe sessions open hosted Checkout.",
+    "description": "Start a Pro checkout session for the signed-in demo account. Local mocks complete in-app; real Stripe sessions open hosted Checkout.",
     "plan": {
       "name": "Prompteer Pro",
       "price": "$12/mo",
       "fallbackPrice": "$12.00",
-      "description": "Use the paid demo account with a Stripe-shaped checkout session, local webhook completion, and deterministic subscription state.",
+      "description": "Use the active demo account with a Stripe-shaped checkout session, local webhook completion, and deterministic subscription state.",
       "provider": "Provider",
       "fallbackProvider": "mock",
       "billingEmail": "Billing email",
@@ -60,7 +63,7 @@
       "title": "Checkout session",
       "readyDescription": "A local Stripe-compatible session is ready.",
       "hostedDescription": "A hosted Stripe Checkout Session is ready. Open it to continue payment on Stripe.",
-      "createDescription": "Create a session for the paid demo user.",
+      "createDescription": "Create a session for the signed-in demo user.",
       "fallbackPaymentStatus": "unpaid",
       "amount": "Amount",
       "status": "Status",
