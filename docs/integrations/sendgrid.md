@@ -1,11 +1,12 @@
 # SendGrid Integration
 
-Verified on: 2026-05-20
+Verified on: 2026-05-21
 
 Source:
 
 - https://www.twilio.com/docs/sendgrid/ui/account-and-settings/api-keys
 - https://www.twilio.com/docs/sendgrid/api-reference/mail-send/mail-send
+- https://www.twilio.com/docs/sendgrid/api-reference/mail-send/errors
 
 Prompteer uses `SENDGRID_API_KEY` for real email delivery. Empty values select the mock email client, which writes captured messages under `.mock/email/` by default and exposes them through dev-only API routes. `MOCK_MAILBOX_DIR` can override the capture directory; Compose sets it to a writable in-container path.
 
@@ -17,11 +18,17 @@ The mock validates the SendGrid Mail Send payload shape used by Prompteer:
 
 - `personalizations[].to[].email`
 - `from.email`
-- `subject`
+- `subject` at the message level, or `personalizations[].subject`, unless a template
+  supplies the subject
 - `content[].type`
 - `content[].value`
 - optional `template_id`
-- optional `dynamic_template_data`
+- optional `personalizations[].dynamic_template_data`
+
+The mock follows SendGrid's transactional template exceptions: `content` is
+required unless `template_id` is provided, and `subject` can be omitted when a
+template supplies it. Captured template emails include the template id and dynamic
+template data in the `.eml` body so local debugging remains useful.
 
 Accepted messages are written as `.eml` files under `.mock/email/`. The mock also exposes the upstream-shaped Mail Send endpoint locally:
 

@@ -8,6 +8,7 @@ import httpx
 import pytest
 import respx
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 from app.core.config import settings
 from app.core.ratelimit import EMAIL_RATE_LIMIT
@@ -44,6 +45,50 @@ async def test_mock_sendgrid_captures_eml(tmp_path: Path) -> None:
     message_path = Path(messages[0]["path"])
     message_text = await asyncio.to_thread(message_path.read_text, encoding="utf-8")
     assert message_text.count("Welcome to Prompteer") == 1
+
+
+@pytest.mark.asyncio
+async def test_mock_sendgrid_allows_dynamic_template_without_subject_or_content(
+    tmp_path: Path,
+) -> None:
+    client = MockSendGridClient(mailbox_dir=tmp_path)
+
+    result = await client.send(
+        {
+            "personalizations": [
+                {
+                    "to": [{"email": "paid@prompteer.dev"}],
+                    "dynamic_template_data": {"plan": "Pro"},
+                }
+            ],
+            "from": {"email": "no-reply@prompteer.dev"},
+            "template_id": "d-" + "a" * 62,
+        }
+    )
+
+    messages = client.list_messages()
+    assert result == {"status": "accepted", "captured": "1"}
+    message_text = await asyncio.to_thread(
+        Path(messages[0]["path"]).read_text,
+        encoding="utf-8",
+    )
+    assert "Subject: SendGrid dynamic template email" in message_text
+    assert "X-SendGrid-Template-Id:" in message_text
+    assert "d-" in message_text
+    assert '"plan": "Pro"' in message_text
+
+
+def test_mock_sendgrid_requires_content_without_template(tmp_path: Path) -> None:
+    client = MockSendGridClient(mailbox_dir=tmp_path)
+
+    with pytest.raises(ValidationError, match="content is required"):
+        client.capture_payload(
+            {
+                "personalizations": [{"to": [{"email": "free@prompteer.dev"}]}],
+                "from": {"email": "no-reply@prompteer.dev"},
+                "subject": "No content",
+            }
+        )
 
 
 def test_default_mailbox_dir_uses_env_override(

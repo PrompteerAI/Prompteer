@@ -48,7 +48,20 @@ def construct_stripe_event(
         raise StripeWebhookSignatureError("Webhook payload must be valid JSON.") from exc
     if not isinstance(event, dict):
         raise StripeWebhookSignatureError("Webhook payload must decode to an object.")
+    validate_stripe_event_shape(event)
     return event
+
+
+def validate_stripe_event_shape(event: dict[str, Any]) -> None:
+    if event.get("object") != "event":
+        raise StripeWebhookSignatureError("Webhook payload is not a Stripe event.")
+    if not isinstance(event.get("id"), str) or not event["id"]:
+        raise StripeWebhookSignatureError("Stripe event id is missing.")
+    if not isinstance(event.get("type"), str) or not event["type"]:
+        raise StripeWebhookSignatureError("Stripe event type is missing.")
+    data = event.get("data")
+    if not isinstance(data, dict) or not isinstance(data.get("object"), dict):
+        raise StripeWebhookSignatureError("Stripe event data.object is missing.")
 
 
 def verify_stripe_webhook_signature(
@@ -81,6 +94,8 @@ def parse_signature_header(header: str) -> dict[str, str | list[str]]:
     values: dict[str, str | list[str]] = {}
     for part in header.split(","):
         key, separator, value = part.partition("=")
+        key = key.strip()
+        value = value.strip()
         if separator == "":
             continue
         if key == "v1":

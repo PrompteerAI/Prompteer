@@ -28,17 +28,29 @@ def test_body_preview_redacts_sensitive_payload_fields() -> None:
     preview = body_preview(
         {
             "api_key": "sk-live-secret",
+            "apiKey": "sk-live-camel",
+            "clientSecret": "oauth-client-secret",
             "messages": [{"role": "user", "content": "private prompt"}],
-            "metadata": {"safe": "visible", "email": "paid@prompteer.dev"},
+            "metadata": {
+                "safe": "visible",
+                "customerEmail": "paid@prompteer.dev",
+                "accessToken": "ya29.private",
+            },
         }
     )
 
     assert preview is not None
     assert "sk-live-secret" not in preview
+    assert "sk-live-camel" not in preview
+    assert "oauth-client-secret" not in preview
     assert "private prompt" not in preview
     assert "paid@prompteer.dev" not in preview
+    assert "ya29.private" not in preview
     assert '"api_key":"[redacted]"' in preview
+    assert '"apiKey":"[redacted]"' in preview
+    assert '"clientSecret":"[redacted]"' in preview
     assert '"content":"[redacted]"' in preview
+    assert '"customerEmail":"[redacted]"' in preview
     assert '"safe":"visible"' in preview
 
 

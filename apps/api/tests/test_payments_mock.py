@@ -16,7 +16,11 @@ from app.integrations.payments.mock import (
     MockStripeSignatureError,
 )
 from app.integrations.payments.real import StripeClient
-from app.integrations.payments.webhooks import MOCK_STRIPE_WEBHOOK_SECRET
+from app.integrations.payments.webhooks import (
+    MOCK_STRIPE_WEBHOOK_SECRET,
+    construct_stripe_event,
+    sign_stripe_webhook_payload,
+)
 from app.main import create_app
 
 CHECKOUT_PAYLOAD = {
@@ -132,6 +136,39 @@ def test_mock_stripe_expire_route() -> None:
 def test_mock_stripe_uses_default_webhook_secret_when_env_is_empty() -> None:
     client = MockStripeClient()
     assert client.webhook_secret() == MOCK_STRIPE_WEBHOOK_SECRET
+
+
+def test_stripe_webhook_signature_parser_accepts_spaced_segments() -> None:
+    payload = json.dumps(
+        {
+            "id": "evt_mock_spaced",
+            "object": "event",
+            "type": "checkout.session.completed",
+            "data": {"object": {"id": "cs_test_spaced", "object": "checkout.session"}},
+        },
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    signature = sign_stripe_webhook_payload(
+        payload,
+        MOCK_STRIPE_WEBHOOK_SECRET,
+    ).replace(",", ", ")
+
+    assert construct_stripe_event(payload, signature, MOCK_STRIPE_WEBHOOK_SECRET)["id"] == (
+        "evt_mock_spaced"
+    )
+
+
+def test_stripe_webhook_rejects_signed_non_event_payload() -> None:
+    payload = json.dumps(
+        {"id": "not_evt", "object": "checkout.session", "data": {"object": {}}},
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    signature = sign_stripe_webhook_payload(payload, MOCK_STRIPE_WEBHOOK_SECRET)
+
+    with pytest.raises(MockStripeSignatureError, match="not a Stripe event"):
+        construct_stripe_event(payload, signature, MOCK_STRIPE_WEBHOOK_SECRET)
 
 
 def test_payments_factory_selects_real_client(monkeypatch: pytest.MonkeyPatch) -> None:

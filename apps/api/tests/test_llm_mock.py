@@ -99,6 +99,34 @@ def test_mock_llm_dev_routes_include_streaming_sse() -> None:
     assert "event: message_stop" in anthropic_body
 
 
+@pytest.mark.asyncio
+async def test_openai_mock_stream_usage_matches_chat_completion_shape() -> None:
+    client = MockLLMClient()
+
+    chunks = [
+        chunk
+        async for chunk in client.chat_completion_stream(
+            {**OPENAI_PAYLOAD, "stream_options": {"include_usage": True}}
+        )
+    ]
+
+    data_chunks = [
+        json.loads(chunk.removeprefix("data: ").strip())
+        for chunk in chunks
+        if chunk.startswith("data: {")
+    ]
+    assert chunks[-1] == "data: [DONE]\n\n"
+    assert data_chunks[-1]["choices"] == []
+    assert set(data_chunks[-1]["usage"]) == {
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens",
+    }
+    assert data_chunks[-2]["choices"][0]["finish_reason"] == "stop"
+    assert data_chunks[-2]["usage"] is None
+    assert all("usage" in chunk for chunk in data_chunks[:-1])
+
+
 def test_llm_factory_selects_real_clients(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "openai_api_key", "sk-test")
     monkeypatch.setattr(settings, "anthropic_api_key", "")

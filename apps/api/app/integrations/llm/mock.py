@@ -90,7 +90,10 @@ class MockLLMClient:
     async def chat_completion_stream(self, payload: dict[str, Any]) -> AsyncIterator[str]:
         request = normalize_openai_request({**payload, "stream": True})
         response = await self.chat_completion(request)
-        response_text = str(response["choices"][0]["message"]["content"])
+        first_choice = response["choices"][0]
+        response_text = str(first_choice["message"]["content"])
+        finish_reason = str(first_choice["finish_reason"])
+        include_usage = include_openai_stream_usage(request)
         base_chunk = {
             "id": response["id"],
             "object": "chat.completion.chunk",
@@ -99,25 +102,29 @@ class MockLLMClient:
             "system_fingerprint": response["system_fingerprint"],
         }
         yield sse_data(
-            {
-                **base_chunk,
-                "choices": [{"index": 0, "delta": {"role": "assistant"}, "finish_reason": None}],
-            }
+            openai_stream_chunk(
+                base_chunk,
+                [{"index": 0, "delta": {"role": "assistant"}, "finish_reason": None}],
+                include_usage,
+            )
         )
         for chunk in split_text(response_text):
             yield sse_data(
-                {
-                    **base_chunk,
-                    "choices": [{"index": 0, "delta": {"content": chunk}, "finish_reason": None}],
-                }
+                openai_stream_chunk(
+                    base_chunk,
+                    [{"index": 0, "delta": {"content": chunk}, "finish_reason": None}],
+                    include_usage,
+                )
             )
-        final_chunk = {
-            **base_chunk,
-            "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
-        }
-        if include_openai_stream_usage(request):
-            final_chunk["usage"] = response["usage"]
-        yield sse_data(final_chunk)
+        yield sse_data(
+            openai_stream_chunk(
+                base_chunk,
+                [{"index": 0, "delta": {}, "finish_reason": finish_reason}],
+                include_usage,
+            )
+        )
+        if include_usage:
+            yield sse_data({**base_chunk, "choices": [], "usage": response["usage"]})
         yield "data: [DONE]\n\n"
 
     async def anthropic_message_stream(self, payload: dict[str, Any]) -> AsyncIterator[str]:
@@ -366,6 +373,17 @@ def include_openai_stream_usage(request: dict[str, Any]) -> bool:
 
 def sse_data(payload: dict[str, Any]) -> str:
     return f"data: {json.dumps(payload, separators=(',', ':'), sort_keys=True)}\n\n"
+
+
+def openai_stream_chunk(
+    base_chunk: dict[str, Any],
+    choices: list[dict[str, Any]],
+    include_usage: bool,
+) -> dict[str, Any]:
+    chunk = {**base_chunk, "choices": choices}
+    if include_usage:
+        chunk["usage"] = None
+    return chunk
 
 
 def anthropic_sse(event: str, payload: dict[str, Any]) -> str:

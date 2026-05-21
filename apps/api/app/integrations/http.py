@@ -38,6 +38,27 @@ SENSITIVE_LOG_KEYS = frozenset(
         "value",
     }
 )
+SENSITIVE_LOG_KEY_ALIASES = frozenset(
+    {
+        "accesstoken",
+        "apikey",
+        "authorization",
+        "clientsecret",
+        "content",
+        "customeremail",
+        "email",
+        "from",
+        "idtoken",
+        "key",
+        "password",
+        "refreshtoken",
+        "secret",
+        "text",
+        "to",
+        "token",
+        "value",
+    }
+)
 JITTER_RANDOM = random.SystemRandom()
 
 
@@ -283,7 +304,7 @@ def _redact(value: object) -> object:
         redacted: dict[str, object] = {}
         for key, item in value.items():
             key_text = str(key)
-            if key_text.lower() in SENSITIVE_LOG_KEYS:
+            if _is_sensitive_log_key(key_text):
                 redacted[key_text] = "[redacted]"
             else:
                 redacted[key_text] = _redact(item)
@@ -293,6 +314,12 @@ def _redact(value: object) -> object:
     if isinstance(value, tuple):
         return [_redact(item) for item in value]
     return value
+
+
+def _is_sensitive_log_key(key: str) -> bool:
+    normalized = key.lower()
+    compact = "".join(character for character in normalized if character.isalnum())
+    return normalized in SENSITIVE_LOG_KEYS or compact in SENSITIVE_LOG_KEY_ALIASES
 
 
 def _truncate_utf8(value: str, max_bytes: int) -> str:

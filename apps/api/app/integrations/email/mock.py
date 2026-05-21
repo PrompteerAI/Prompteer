@@ -4,6 +4,7 @@ Schema reference verified on 2026-05-20:
 - https://www.twilio.com/docs/sendgrid/api-reference/mail-send/mail-send
 """
 
+import json
 from datetime import UTC, datetime
 from email.message import EmailMessage
 from email.parser import BytesParser
@@ -13,7 +14,7 @@ from re import sub
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel, EmailStr, Field, ValidationError, field_validator
+from pydantic import BaseModel, EmailStr, Field, ValidationError, field_validator, model_validator
 from starlette import status
 from starlette.responses import Response
 
@@ -40,12 +41,13 @@ class Personalization(BaseModel):
     to: list[EmailAddress] = Field(min_length=1)
     cc: list[EmailAddress] = Field(default_factory=list)
     bcc: list[EmailAddress] = Field(default_factory=list)
+    subject: str | None = Field(default=None, min_length=1)
     dynamic_template_data: dict[str, Any] | None = None
 
 
 class ContentBlock(BaseModel):
     type: str
-    value: str
+    value: str = Field(min_length=1)
 
     @field_validator("type")
     @classmethod
@@ -58,9 +60,26 @@ class ContentBlock(BaseModel):
 class SendGridMailPayload(BaseModel):
     personalizations: list[Personalization] = Field(min_length=1)
     from_: EmailAddress = Field(alias="from")
-    subject: str = Field(min_length=1)
+    subject: str | None = Field(default=None, min_length=1)
     content: list[ContentBlock] = Field(default_factory=list)
     template_id: str | None = None
+
+    @model_validator(mode="after")
+    def validate_sendgrid_requirements(self) -> "SendGridMailPayload":
+        has_template = bool(self.template_id)
+        if not has_template and not self.content:
+            raise ValueError("content is required unless template_id is provided")
+        has_subject = (
+            bool(self.subject)
+            or has_template
+            or all(personalization.subject for personalization in self.personalizations)
+        )
+        if not has_subject:
+            raise ValueError(
+                "subject is required unless template_id is provided "
+                "or every personalization has a subject"
+            )
+        return self
 
 
 def require_mock_routes() -> bool:
@@ -118,7 +137,10 @@ class MockSendGridClient:
             for recipient in personalization.to:
                 path = self.mailbox_dir / self._filename(recipient.email, prefix=filename_prefix)
                 if overwrite or not path.exists():
-                    path.write_text(self._to_eml(message, recipient), encoding="utf-8")
+                    path.write_text(
+                        self._to_eml(message, personalization, recipient),
+                        encoding="utf-8",
+                    )
                 written_to.append(path)
 
         return written_to
@@ -142,11 +164,19 @@ class MockSendGridClient:
         return f"{timestamp}-{safe_to}.eml"
 
     @staticmethod
-    def _to_eml(message: SendGridMailPayload, recipient: EmailAddress) -> str:
+    def _to_eml(
+        message: SendGridMailPayload,
+        personalization: Personalization,
+        recipient: EmailAddress,
+    ) -> str:
         email = EmailMessage()
         email["To"] = recipient.email
         email["From"] = message.from_.email
-        email["Subject"] = message.subject
+        email["Subject"] = (
+            personalization.subject or message.subject or "SendGrid dynamic template email"
+        )
+        if message.template_id is not None:
+            email["X-SendGrid-Template-Id"] = message.template_id
 
         plain = next(
             (block.value for block in message.content if block.type == "text/plain"),
@@ -162,7 +192,12 @@ class MockSendGridClient:
         elif html is not None:
             email.set_content("HTML email captured by Prompteer mock mailbox.")
         else:
-            email.set_content("Template email captured by Prompteer mock mailbox.")
+            body = "Template email captured by Prompteer mock mailbox."
+            if personalization.dynamic_template_data is not None:
+                body += "\n\nDynamic template data:\n" + json_dump_template_data(
+                    personalization.dynamic_template_data
+                )
+            email.set_content(body)
 
         if html is not None:
             email.add_alternative(html, subtype="html")
@@ -198,3 +233,7 @@ def sendgrid_validation_errors(exc: ValidationError) -> list[dict[str, str | Non
         }
         for error in exc.errors()
     ]
+
+
+def json_dump_template_data(value: dict[str, Any]) -> str:
+    return json.dumps(value, ensure_ascii=True, indent=2, sort_keys=True)
