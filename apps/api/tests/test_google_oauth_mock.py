@@ -7,9 +7,12 @@ from urllib.parse import parse_qs, urlparse
 
 import jwt
 import pytest
+import respx
 from fastapi.testclient import TestClient
+from httpx import Response
 
 from app.core.config import settings
+from app.integrations.google_oauth import get_google_oauth_client
 from app.integrations.google_oauth.mock import (
     DEV_PUBLIC_KEY,
     MOCK_GOOGLE_CLIENT_ID,
@@ -17,6 +20,7 @@ from app.integrations.google_oauth.mock import (
     authorization_header,
     load_or_create_private_key,
 )
+from app.integrations.google_oauth.real import GOOGLE_JWKS_URL, GOOGLE_OIDC_DISCOVERY_URL
 from app.main import create_app
 
 
@@ -156,3 +160,45 @@ def test_mock_google_authorization_code_flow() -> None:
         "picture": "https://prompteer.dev/mock-avatars/admin.png",
         "locale": "en",
     }
+
+
+@pytest.mark.asyncio
+async def test_google_oauth_factory_selects_mock_client() -> None:
+    client = get_google_oauth_client()
+
+    discovery = await client.discovery_document()
+    keys = await client.jwks()
+
+    assert client.provider == "mock"
+    assert discovery["issuer"] == "http://localhost:8000"
+    assert keys["keys"][0]["alg"] == "RS256"
+
+
+@pytest.mark.asyncio
+async def test_google_oauth_factory_selects_real_metadata_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "google_client_id", "real-client")
+    monkeypatch.setattr(settings, "google_client_secret", "real-secret")
+    client = get_google_oauth_client()
+
+    with respx.mock(assert_all_called=True) as router:
+        router.get(GOOGLE_OIDC_DISCOVERY_URL).mock(
+            return_value=Response(
+                200,
+                json={
+                    "issuer": "https://accounts.google.com",
+                    "jwks_uri": GOOGLE_JWKS_URL,
+                },
+            )
+        )
+        router.get(GOOGLE_JWKS_URL).mock(
+            return_value=Response(200, json={"keys": [{"kid": "google-key"}]})
+        )
+
+        discovery = await client.discovery_document()
+        keys = await client.jwks()
+
+    assert client.provider == "real"
+    assert discovery["issuer"] == "https://accounts.google.com"
+    assert keys["keys"][0]["kid"] == "google-key"

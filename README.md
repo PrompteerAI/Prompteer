@@ -33,9 +33,9 @@ For hot-reload workflows, see [Development](#development).
 
 ## Screenshots & Demo
 
-| Landing workspace                                                                           | Mock Google login                                                                    | Coding challenge list                                                                          |
-| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| ![Landing workspace with seeded prompt challenge overview](docs/screenshots/01-landing.png) | ![Mock Google login screen with seed account choices](docs/screenshots/02-login.png) | ![Coding challenge view showing seeded prompt tasks](docs/screenshots/03-coding-challenge.png) |
+| Dashboard landing workspace                                                                           | Mock Google login                                                                    | Coding challenge list                                                                          |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| ![Dashboard landing workspace with seeded prompt challenge overview](docs/screenshots/01-landing.png) | ![Mock Google login screen with seed account choices](docs/screenshots/02-login.png) | ![Coding challenge view showing seeded prompt tasks](docs/screenshots/03-coding-challenge.png) |
 
 | Prompt editor and run result                                                               | Billing upgrade checkout                                                                           | Review board feed                                                                  |
 | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
@@ -206,9 +206,10 @@ pnpm --filter @prompteer/web-legacy dev
 make api-dev
 ```
 
-Hot-reload ports are configured in `.env` with `WEB_PORT=3000` and
-`WEB_LEGACY_PORT=3001`, and `API_PORT=8000`. Compose host ports are configured with `HTTP_PORT=80`,
-`POSTGRES_PORT=55432`, and `REDIS_PORT=56379`; `COMPOSE_BIND_HOST=127.0.0.1`
+Hot-reload ports are configured in `.env` with `WEB_PORT=3000`,
+`WEB_LEGACY_PORT=3001`, and `API_PORT=8000`. Compose host ports are configured
+with `HTTP_PORT=80`, `POSTGRES_PORT=55432`, and `REDIS_PORT=56379`;
+`COMPOSE_BIND_HOST=127.0.0.1`
 keeps published ports local-only by default. Compose injects `HTTP_PORT` into the
 containerized public origin used by Auth.js, API JWT issuer checks, and mock
 OAuth. `make e2e` and `make verify-ui` derive their browser target from
@@ -320,7 +321,7 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening issues or pull requests. 
 
 ## License
 
-MIT - see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).
 
 ## Acknowledgments
 

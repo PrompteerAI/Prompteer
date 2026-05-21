@@ -8,7 +8,7 @@ from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine, select
 from starlette.requests import Request
 
-import app.models  # noqa: F401
+import app.models  # noqa: F401  # Register SQLModel tables before creating test metadata.
 from app.api.deps import get_current_principal
 from app.core.config import settings
 from app.core.ratelimit import limiter, rate_limit_key, trusted_proxy_networks

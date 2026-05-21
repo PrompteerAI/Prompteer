@@ -4,7 +4,7 @@ from sqlalchemy import DateTime, UniqueConstraint
 from sqlmodel import SQLModel
 
 # Import model modules so SQLModel metadata is populated before assertions.
-import app.models  # noqa: F401
+import app.models  # noqa: F401  # Register SQLModel tables before inspecting metadata.
 from app.models.domain import Challenge, ChallengeLevel, ChallengeTag, User, utc_now
 
 

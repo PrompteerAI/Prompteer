@@ -1,3 +1,4 @@
+// Legacy-preview signup route that guides users to mock login in dev.
 import { Link } from "@/i18n/navigation";
 
 export default function SignupPage(): React.ReactElement {

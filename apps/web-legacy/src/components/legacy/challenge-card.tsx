@@ -1,3 +1,4 @@
+// Legacy-preview challenge card used by category and media listing routes.
 import { ImageIcon, Play, TerminalSquare } from "lucide-react";
 
 import { Link } from "@/i18n/navigation";
@@ -34,7 +35,7 @@ export function ChallengeCard({
           className={`legacy-card-media ${isVideo ? "video" : isImage ? "" : "algorithm"}`}
         >
           {primaryReference?.previewUrl && primaryReference.kind === "img" ? (
-            // eslint-disable-next-line @next/next/no-img-element
+            // eslint-disable-next-line @next/next/no-img-element -- Mock media can be data URLs, so Next image optimization is not useful here.
             <img
               alt=""
               src={primaryReference.previewUrl}

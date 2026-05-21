@@ -1,3 +1,4 @@
+// Legacy-preview account summary route.
 import { CreditCard, Mail, UserRound } from "lucide-react";
 
 import { ChallengeCard } from "@/components/legacy/challenge-card";

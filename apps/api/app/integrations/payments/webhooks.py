@@ -11,7 +11,7 @@ from typing import Any
 from app.core.config import settings
 
 # Local-only mock signing secret; real mode reads STRIPE_WEBHOOK_SECRET.
-MOCK_STRIPE_WEBHOOK_SECRET = "whsec_mock_prompteer"  # noqa: S105
+MOCK_STRIPE_WEBHOOK_SECRET = "whsec_mock_prompteer"  # noqa: S105  # Local-only test secret.
 
 
 class StripeWebhookSignatureError(ValueError):

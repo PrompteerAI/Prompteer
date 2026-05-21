@@ -1,3 +1,4 @@
+// Legacy-preview login route with seed-user shortcuts.
 import { ShieldCheck, Sparkles, UserRound } from "lucide-react";
 
 import { Link } from "@/i18n/navigation";

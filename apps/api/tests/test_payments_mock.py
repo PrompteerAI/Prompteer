@@ -13,7 +13,7 @@ from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
 # Import model modules so SQLModel metadata is populated for test databases.
-import app.models  # noqa: F401
+import app.models  # noqa: F401  # Register SQLModel tables before creating test metadata.
 from app.core.config import settings
 from app.db.session import get_session
 from app.integrations.payments import get_payments_client

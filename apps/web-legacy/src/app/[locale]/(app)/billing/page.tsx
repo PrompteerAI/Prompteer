@@ -1,3 +1,4 @@
+// Legacy-preview billing route that mirrors the old subscription screen.
 import { LegacyBillingPanel } from "@/components/legacy/billing-panel";
 import { readGatewaySession } from "@/lib/auth-gateway";
 import { readBillingSubscription, readFeatures } from "@/lib/data";

@@ -1,3 +1,4 @@
+// Client-side legacy-preview billing panel for mock checkout flows.
 "use client";
 
 import {

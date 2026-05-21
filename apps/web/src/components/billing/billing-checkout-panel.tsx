@@ -1,3 +1,4 @@
+// Client-side billing checkout panel for mock and hosted Stripe flows.
 "use client";
 
 // Interactive checkout exercise for the local Stripe-compatible billing mock.

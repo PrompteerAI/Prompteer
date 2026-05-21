@@ -1,3 +1,4 @@
+// Unit tests for legacy-preview environment validation.
 import { describe, expect, it } from "vitest";
 
 import { parseServerEnv } from "./env";

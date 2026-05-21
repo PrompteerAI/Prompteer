@@ -3,7 +3,7 @@
 from sqlmodel import Session, SQLModel, create_engine, select
 
 # Import model modules so SQLModel metadata is populated for test databases.
-import app.models  # noqa: F401
+import app.models  # noqa: F401  # Register SQLModel tables before creating test metadata.
 from app.db.seed import seed
 from app.integrations.payments.mock import STORE
 from app.models.domain import Challenge, Post, Profile, Share, StripeCheckoutSession, User

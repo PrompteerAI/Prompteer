@@ -1,3 +1,4 @@
+// Legacy-preview route-level error boundary.
 "use client";
 
 export default function ErrorPage({

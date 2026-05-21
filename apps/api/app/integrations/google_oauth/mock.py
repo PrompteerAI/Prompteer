@@ -554,3 +554,13 @@ def authorization_header(client_id: str, client_secret: str) -> str:
     credential = f"{quote(client_id)}:{quote(client_secret)}"
     encoded = base64.b64encode(credential.encode("utf-8")).decode("ascii")
     return f"Basic {encoded}"
+
+
+class MockGoogleOAuthClient:
+    provider = "mock"
+
+    async def discovery_document(self) -> dict[str, Any]:
+        return await openid_configuration()
+
+    async def jwks(self) -> dict[str, Any]:
+        return await jwks()

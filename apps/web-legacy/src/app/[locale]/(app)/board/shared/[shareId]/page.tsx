@@ -1,3 +1,4 @@
+// Legacy-preview shared prompt run detail route.
 import { Link } from "@/i18n/navigation";
 import { ApiResponseError } from "@/lib/api-client";
 import { readBoardShare, type Share } from "@/lib/data";

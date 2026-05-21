@@ -1,3 +1,4 @@
+// Legacy-preview route for categories that are not yet available.
 import { Clock3 } from "lucide-react";
 
 import { Link } from "@/i18n/navigation";

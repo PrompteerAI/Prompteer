@@ -1,3 +1,4 @@
+// Unit tests for legacy-preview data mapping and API fallback behavior.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const apiClientMocks = vi.hoisted(() => ({

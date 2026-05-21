@@ -1,3 +1,4 @@
+// Global error boundary used when the app shell itself fails.
 "use client";
 
 // Root App Router error boundary. Locale-specific routes have their own

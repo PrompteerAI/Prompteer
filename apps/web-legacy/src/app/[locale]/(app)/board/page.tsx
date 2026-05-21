@@ -1,3 +1,4 @@
+// Legacy-preview board route showing shared prompt runs and discussion entries.
 import { MessageSquareText, Sparkles } from "lucide-react";
 
 import { Link } from "@/i18n/navigation";

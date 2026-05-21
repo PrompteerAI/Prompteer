@@ -1,3 +1,4 @@
+// Client-side active-link navigation for authenticated app routes.
 "use client";
 
 import { Link, usePathname } from "@/i18n/navigation";

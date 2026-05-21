@@ -1,3 +1,4 @@
+// Data access helpers that adapt rebuilt API responses to legacy-preview views.
 import { createPrompteerApiClient, unwrapApiResponse } from "./api-client";
 import { authGatewayOrigin } from "./env";
 import { cookies } from "next/headers";

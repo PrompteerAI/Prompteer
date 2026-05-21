@@ -1,3 +1,4 @@
+// Legacy-preview image challenge runner route.
 import { LegacyChallengeRunner } from "@/components/legacy/challenge-runner";
 import { readGatewaySession } from "@/lib/auth-gateway";
 import { readChallenge, readFeatures } from "@/lib/data";

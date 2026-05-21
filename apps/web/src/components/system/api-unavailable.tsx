@@ -1,3 +1,4 @@
+// Service-unavailable panel shown when backend data cannot be loaded.
 import { AlertTriangle, RefreshCw } from "lucide-react";
 
 import type { NormalizedError } from "@/lib/errors";

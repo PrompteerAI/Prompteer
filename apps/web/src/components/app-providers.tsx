@@ -1,3 +1,4 @@
+// Client-side provider shell for TanStack Query and future browser contexts.
 "use client";
 
 // Client-only providers shared by localized app routes.

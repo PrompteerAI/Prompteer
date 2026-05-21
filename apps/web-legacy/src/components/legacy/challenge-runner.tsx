@@ -1,3 +1,4 @@
+// Client-side legacy-preview prompt runner shared by coding and media routes.
 "use client";
 
 import { CheckCircle2, Loader2, LogIn, Play, WandSparkles } from "lucide-react";
@@ -194,7 +195,7 @@ export function LegacyChallengeRunner({
             >
               {primaryReference?.previewUrl &&
               primaryReference.kind === "img" ? (
-                // eslint-disable-next-line @next/next/no-img-element
+                // eslint-disable-next-line @next/next/no-img-element -- Mock media can be data URLs, so Next image optimization is not useful here.
                 <img
                   alt=""
                   src={primaryReference.previewUrl}

@@ -1,3 +1,4 @@
+// Client-side prompt editor and run workflow for coding challenges.
 "use client";
 
 // Prompt runner UI for seeded coding challenges and deterministic LLM feedback.

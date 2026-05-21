@@ -1,3 +1,4 @@
+// Client-side active-link navigation for the legacy-preview header.
 "use client";
 
 import { Link, usePathname } from "@/i18n/navigation";

@@ -1,3 +1,4 @@
+// Route-level error boundary for localized application pages.
 "use client";
 
 // Localized route-level error boundary for recoverable rendering failures.

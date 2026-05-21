@@ -1,3 +1,4 @@
+// Legacy-preview board post detail route.
 import { Link } from "@/i18n/navigation";
 import { ApiResponseError } from "@/lib/api-client";
 import { readBoardPost, type Post } from "@/lib/data";

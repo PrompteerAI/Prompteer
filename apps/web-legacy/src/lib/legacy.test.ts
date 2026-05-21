@@ -1,3 +1,4 @@
+// Unit tests for legacy-preview presentation helpers.
 import { describe, expect, it } from "vitest";
 
 import {

@@ -1,3 +1,4 @@
+// Legacy-preview landing route modeled after the original frontend.
 import { ImageIcon, TerminalSquare, Video } from "lucide-react";
 
 import { ChallengeCard } from "@/components/legacy/challenge-card";

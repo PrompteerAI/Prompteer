@@ -1,3 +1,4 @@
+// Legacy-preview board composer placeholder route.
 import { Link } from "@/i18n/navigation";
 
 export default function BoardWritePage(): React.ReactElement {

@@ -1,3 +1,4 @@
+// Legacy-preview account settings route.
 import { ShieldCheck, UserRound } from "lucide-react";
 
 import { readGatewaySession } from "@/lib/auth-gateway";

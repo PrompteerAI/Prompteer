@@ -14,3 +14,11 @@ repos:
       - id: ruff
         args: [--fix]
       - id: ruff-format
+  - repo: local
+    hooks:
+      - id: mypy-api
+        name: mypy api
+        entry: bash -c 'cd apps/api && uv run mypy app tests'
+        language: system
+        pass_filenames: false
+        files: ^apps/api/.*\.py$

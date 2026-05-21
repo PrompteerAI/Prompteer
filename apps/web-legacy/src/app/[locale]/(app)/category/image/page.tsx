@@ -1,3 +1,4 @@
+// Legacy-preview image challenge category route.
 import { ChallengeCard } from "@/components/legacy/challenge-card";
 import { Link } from "@/i18n/navigation";
 import { readChallenges } from "@/lib/data";

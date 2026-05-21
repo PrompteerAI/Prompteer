@@ -1,3 +1,4 @@
+// Legacy-preview route that opens a challenge from a board post.
 import { Link } from "@/i18n/navigation";
 
 type Props = {
