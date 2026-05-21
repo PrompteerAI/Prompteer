@@ -24,6 +24,31 @@
         "title": "AuthorRead",
         "type": "object"
       },
+      "BillingSubscriptionRead": {
+        "properties": {
+          "customer_email": {
+            "format": "email",
+            "title": "Customer Email",
+            "type": "string"
+          },
+          "plan": {
+            "title": "Plan",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "status": {
+            "enum": ["active", "inactive"],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": ["plan", "status", "customer_email", "provider"],
+        "title": "BillingSubscriptionRead",
+        "type": "object"
+      },
       "BoardFeedRead": {
         "properties": {
           "date_window": {
@@ -779,6 +804,53 @@
           }
         },
         "summary": "Complete Mock Checkout",
+        "tags": ["billing"]
+      }
+    },
+    "/api/v1/billing/subscription": {
+      "get": {
+        "operationId": "read_subscription_api_v1_billing_subscription_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingSubscriptionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Subscription",
         "tags": ["billing"]
       }
     },

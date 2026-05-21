@@ -55,6 +55,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/billing/subscription": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read Subscription */
+    get: operations["read_subscription_api_v1_billing_subscription_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/billing/webhooks/stripe": {
     parameters: {
       query?: never;
@@ -290,6 +307,23 @@ export interface components {
       id: string;
       /** Plan */
       plan: string;
+    };
+    /** BillingSubscriptionRead */
+    BillingSubscriptionRead: {
+      /**
+       * Customer Email
+       * Format: email
+       */
+      customer_email: string;
+      /** Plan */
+      plan: string;
+      /** Provider */
+      provider: string;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "active" | "inactive";
     };
     /** BoardFeedRead */
     BoardFeedRead: {
@@ -631,6 +665,37 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["CheckoutSessionRead"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  read_subscription_api_v1_billing_subscription_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BillingSubscriptionRead"];
         };
       };
       /** @description Validation Error */

@@ -12,7 +12,9 @@ from sqlmodel import Session, SQLModel, create_engine, select
 
 # Import model modules so SQLModel metadata is populated for test databases.
 import app.models  # noqa: F401
+from app.api.deps import get_current_principal
 from app.core.config import settings
+from app.core.security import Principal
 from app.db.seed import seed
 from app.db.session import get_session
 from app.integrations.payments.mock import STORE, MockStripeClient
@@ -79,6 +81,41 @@ def test_mock_checkout_completion_updates_user_plan() -> None:
             select(User).where(User.email == "paid@prompteer.dev")
         ).one()
     assert paid_user.plan == "paid"
+
+
+def test_billing_subscription_reflects_current_user_plan_after_checkout() -> None:
+    app = create_billing_test_app(initial_paid_plan="free")
+    app.dependency_overrides[get_current_principal] = lambda: Principal(
+        subject="mock-google-oauth2|paid",
+        email="paid@prompteer.dev",
+    )
+    client = TestClient(app)
+
+    initial_response = client.get("/api/v1/billing/subscription")
+
+    assert initial_response.status_code == 200
+    initial_subscription = initial_response.json()
+    assert initial_subscription["customer_email"] == "paid@prompteer.dev"
+    assert initial_subscription["plan"] == "free"
+    assert initial_subscription["status"] == "inactive"
+    assert initial_subscription["provider"] == "mock"
+
+    create_response = client.post(
+        "/api/v1/billing/checkout",
+        json={"customer_email": "paid@prompteer.dev"},
+    )
+    assert create_response.status_code == 200
+    complete_response = client.post(
+        f"/api/v1/billing/checkout/{create_response.json()['id']}/complete"
+    )
+    assert complete_response.status_code == 200
+
+    current_response = client.get("/api/v1/billing/subscription")
+
+    assert current_response.status_code == 200
+    current_subscription = current_response.json()
+    assert current_subscription["plan"] == "paid"
+    assert current_subscription["status"] == "active"
 
 
 def test_stripe_webhook_updates_user_plan() -> None:

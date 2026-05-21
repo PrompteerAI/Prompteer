@@ -37,6 +37,9 @@ export default async function HomePage({
 
   const t = await getTranslations("home");
   const session = await auth();
+  const visibleEntrypoints = session?.user
+    ? entrypoints.filter((entrypoint) => entrypoint.key !== "login")
+    : entrypoints;
 
   return (
     <main className="min-h-screen bg-zinc-50 text-zinc-950">
@@ -50,7 +53,7 @@ export default async function HomePage({
               {t("title")}
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-zinc-600">
-              {t("subtitle")}
+              {session?.user ? t("signedInSubtitle") : t("subtitle")}
             </p>
           </div>
           {session?.user ? (
@@ -77,8 +80,8 @@ export default async function HomePage({
             </div>
           ) : null}
         </div>
-        <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {entrypoints.map((entrypoint) => {
+        <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {visibleEntrypoints.map((entrypoint) => {
             const Icon = entrypoint.icon;
             return (
               <Link

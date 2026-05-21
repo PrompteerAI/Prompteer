@@ -22,6 +22,13 @@ class CheckoutSessionRead(BaseModel):
     provider: str
 
 
+class BillingSubscriptionRead(BaseModel):
+    plan: str
+    status: Literal["active", "inactive"]
+    customer_email: EmailStr
+    provider: str
+
+
 class StripeWebhookRead(BaseModel):
     received: bool
     event_id: str

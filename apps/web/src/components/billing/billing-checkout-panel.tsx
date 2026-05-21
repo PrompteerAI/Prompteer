@@ -1,7 +1,7 @@
 "use client";
 
 // Interactive checkout exercise for the local Stripe-compatible billing mock.
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle2,
   CreditCard,
@@ -17,24 +17,42 @@ import { normalizeError } from "@/lib/errors";
 import type { components } from "@prompteer/shared-types";
 
 type CheckoutSession = components["schemas"]["CheckoutSessionRead"];
+type BillingSubscription = components["schemas"]["BillingSubscriptionRead"];
 
 type CheckoutStep = "idle" | "created" | "complete";
 
 interface BillingCheckoutPanelProps {
   billingEmail: string;
+  initialSubscription: BillingSubscription | null;
   paymentsEnabled: boolean;
 }
 
 export function BillingCheckoutPanel({
   billingEmail,
+  initialSubscription,
   paymentsEnabled,
 }: BillingCheckoutPanelProps): React.ReactElement {
   const locale = useLocale();
   const t = useTranslations("billing");
+  const queryClient = useQueryClient();
   const [session, setSession] = useState<CheckoutSession | null>(null);
   const [step, setStep] = useState<CheckoutStep>("idle");
   const [error, setError] = useState<string | null>(null);
+  const subscriptionQueryKey = useMemo(
+    () => ["billing", "subscription", billingEmail] as const,
+    [billingEmail],
+  );
+  const subscriptionQuery = useQuery({
+    queryKey: subscriptionQueryKey,
+    queryFn: readBillingSubscription,
+    enabled: paymentsEnabled,
+    initialData: initialSubscription ?? undefined,
+    staleTime: 10_000,
+  });
+  const subscription = subscriptionQuery.data ?? null;
   const isMockSession = session?.provider === "mock";
+  const hasActiveSubscription =
+    session?.payment_status === "paid" || subscription?.status === "active";
   const hostedCheckoutUrl =
     session && !isMockSession && session.url ? session.url : null;
   const createCheckoutMutation = useMutation({
@@ -46,7 +64,38 @@ export function BillingCheckoutPanel({
     mutationFn: completeCheckoutSession,
   });
   const isLoading =
-    createCheckoutMutation.isPending || completeCheckoutMutation.isPending;
+    createCheckoutMutation.isPending ||
+    completeCheckoutMutation.isPending ||
+    subscriptionQuery.isLoading;
+  const providerLabel =
+    session?.provider ?? subscription?.provider ?? t("plan.fallbackProvider");
+  const accountEmail =
+    session?.customer_email ?? subscription?.customer_email ?? billingEmail;
+  const paymentStatusLabel =
+    session?.payment_status ??
+    (hasActiveSubscription
+      ? t("checkout.activePaymentStatus")
+      : t("checkout.fallbackPaymentStatus"));
+  const checkoutStatusLabel =
+    session?.status ??
+    (hasActiveSubscription
+      ? t("checkout.activeStatus")
+      : t("checkout.fallbackStatus"));
+  const checkoutSessionLabel =
+    session?.id ??
+    (hasActiveSubscription
+      ? t("checkout.persistedSession")
+      : t("checkout.fallbackSession"));
+  const checkoutDescription = session
+    ? isMockSession
+      ? t("checkout.readyDescription")
+      : t("checkout.hostedDescription")
+    : hasActiveSubscription
+      ? t("checkout.activeDescription")
+      : t("checkout.createDescription");
+  const startCheckoutLabel = hasActiveSubscription
+    ? t("checkout.startAnother")
+    : t("checkout.start");
 
   const price = useMemo(() => {
     if (!session?.amount_total || !session.currency) {
@@ -93,6 +142,12 @@ export function BillingCheckoutPanel({
       const response = await completeCheckoutMutation.mutateAsync(session.id);
       setSession(response);
       setStep("complete");
+      queryClient.setQueryData<BillingSubscription>(subscriptionQueryKey, {
+        plan: "paid",
+        status: "active",
+        customer_email: response.customer_email ?? billingEmail,
+        provider: response.provider,
+      });
     } catch (caughtError) {
       const normalizedError = await normalizeError(caughtError);
       if (normalizedError.code === "rate_limited") {
@@ -127,14 +182,12 @@ export function BillingCheckoutPanel({
           <div className="flex items-center justify-between border-t border-zinc-200 pt-3">
             <dt className="text-zinc-500">{t("plan.provider")}</dt>
             <dd className="font-medium capitalize text-zinc-950">
-              {session?.provider ?? t("plan.fallbackProvider")}
+              {providerLabel}
             </dd>
           </div>
           <div className="flex items-center justify-between border-t border-zinc-200 pt-3">
             <dt className="text-zinc-500">{t("plan.billingEmail")}</dt>
-            <dd className="font-medium text-zinc-950">
-              {session?.customer_email ?? billingEmail}
-            </dd>
+            <dd className="font-medium text-zinc-950">{accountEmail}</dd>
           </div>
         </dl>
       </div>
@@ -146,15 +199,11 @@ export function BillingCheckoutPanel({
               {t("checkout.title")}
             </h2>
             <p className="mt-2 text-sm leading-6 text-zinc-600">
-              {session
-                ? isMockSession
-                  ? t("checkout.readyDescription")
-                  : t("checkout.hostedDescription")
-                : t("checkout.createDescription")}
+              {checkoutDescription}
             </p>
           </div>
           <span className="rounded-md border border-zinc-200 px-2.5 py-1 text-xs font-medium capitalize text-zinc-700">
-            {session?.payment_status ?? t("checkout.fallbackPaymentStatus")}
+            {paymentStatusLabel}
           </span>
         </div>
 
@@ -167,13 +216,13 @@ export function BillingCheckoutPanel({
             <div>
               <dt className="text-zinc-500">{t("checkout.status")}</dt>
               <dd className="mt-1 font-medium capitalize text-zinc-950">
-                {session?.status ?? t("checkout.fallbackStatus")}
+                {checkoutStatusLabel}
               </dd>
             </div>
             <div className="sm:col-span-2">
               <dt className="text-zinc-500">{t("checkout.session")}</dt>
               <dd className="mt-1 break-all font-mono text-xs text-zinc-700">
-                {session?.id ?? t("checkout.fallbackSession")}
+                {checkoutSessionLabel}
               </dd>
             </div>
             {hostedCheckoutUrl ? (
@@ -189,7 +238,11 @@ export function BillingCheckoutPanel({
 
         <div className="mt-5 flex flex-wrap gap-3">
           <button
-            className="inline-flex min-h-11 items-center gap-2 rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+            className={
+              hasActiveSubscription
+                ? "inline-flex min-h-11 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-400"
+                : "inline-flex min-h-11 items-center gap-2 rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+            }
             aria-busy={createCheckoutMutation.isPending}
             disabled={!paymentsEnabled || isLoading}
             onClick={() => {
@@ -199,10 +252,12 @@ export function BillingCheckoutPanel({
           >
             {createCheckoutMutation.isPending ? (
               <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+            ) : hasActiveSubscription ? (
+              <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
             ) : (
               <CreditCard aria-hidden="true" className="h-4 w-4" />
             )}
-            {t("checkout.start")}
+            {startCheckoutLabel}
           </button>
           {hostedCheckoutUrl ? (
             <a
@@ -237,14 +292,16 @@ export function BillingCheckoutPanel({
               {t("checkout.complete")}
             </button>
           )}
-          <button
-            className="inline-flex min-h-11 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
-            onClick={reset}
-            type="button"
-          >
-            <RotateCcw aria-hidden="true" className="h-4 w-4" />
-            {t("checkout.reset")}
-          </button>
+          {session || step !== "idle" ? (
+            <button
+              className="inline-flex min-h-11 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
+              onClick={reset}
+              type="button"
+            >
+              <RotateCcw aria-hidden="true" className="h-4 w-4" />
+              {t("checkout.reset")}
+            </button>
+          ) : null}
         </div>
 
         {!paymentsEnabled ? (
@@ -259,20 +316,27 @@ export function BillingCheckoutPanel({
           </p>
         ) : null}
 
-        {step === "complete" ? (
+        {hasActiveSubscription ? (
           <div
             aria-live="polite"
             className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-900"
           >
-            {t.rich("checkout.completed", {
-              email: session?.customer_email ?? billingEmail,
-              event: (chunks) => <code>{chunks}</code>,
-            })}
+            {step === "complete"
+              ? t.rich("checkout.completed", {
+                  email: accountEmail,
+                  event: (chunks) => <code>{chunks}</code>,
+                })
+              : t("checkout.persistedActive", { email: accountEmail })}
           </div>
         ) : null}
       </div>
     </section>
   );
+}
+
+async function readBillingSubscription(): Promise<BillingSubscription> {
+  const api = createPrompteerApiClient();
+  return unwrapApiResponse(await api.GET("/api/v1/billing/subscription"));
 }
 
 async function createCheckoutSession(

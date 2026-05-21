@@ -39,7 +39,7 @@ test("paid demo user can complete mock checkout", async ({ page }) => {
     page.getByRole("heading", { name: "Subscription checkout" }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Start checkout" }).click();
+  await page.getByRole("button", { name: /Start (new )?checkout/ }).click();
   await expect(page.getByText(/cs_test_/)).toBeVisible();
   await expect(page.getByText("unpaid")).toBeVisible();
 
@@ -56,11 +56,15 @@ test("billing checkout uses the active session email", async ({ page }) => {
   await loginAs(page, "admin@prompteer.dev");
 
   await page.goto("/en/billing");
-  await expect(page.getByText("admin@prompteer.dev")).toBeVisible();
+  await expect(
+    page.getByText("admin@prompteer.dev", { exact: true }),
+  ).toBeVisible();
 
-  await page.getByRole("button", { name: "Start checkout" }).click();
+  await page.getByRole("button", { name: /Start (new )?checkout/ }).click();
   await expect(page.getByText(/cs_test_/)).toBeVisible();
-  await expect(page.getByText("admin@prompteer.dev")).toBeVisible();
+  await expect(
+    page.getByText("admin@prompteer.dev", { exact: true }),
+  ).toBeVisible();
 
   await page.getByRole("button", { name: "Complete mock checkout" }).click();
   await expect(
@@ -88,7 +92,7 @@ test("real checkout sessions expose hosted Stripe URL", async ({ page }) => {
     });
   });
 
-  await page.getByRole("button", { name: "Start checkout" }).click();
+  await page.getByRole("button", { name: /Start (new )?checkout/ }).click();
 
   await expect(page.getByText("Hosted URL")).toBeVisible();
   await expect(

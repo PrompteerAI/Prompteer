@@ -43,10 +43,10 @@ export default async function AppLayout({
           >
             Prompteer
           </Link>
-          <div className="flex flex-wrap gap-2">
+          <div className="-mx-2 flex gap-1 overflow-x-auto px-2 pb-1 sm:mx-0 sm:px-0 sm:pb-0">
             {navItems.map((item) => (
               <Link
-                className="inline-flex min-h-11 items-center rounded-md px-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950"
+                className="inline-flex min-h-11 shrink-0 items-center rounded-md px-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950"
                 href={item.href}
                 key={item.href}
               >

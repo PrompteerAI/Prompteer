@@ -2,6 +2,8 @@
 import { LogIn, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
+import { Link } from "@/i18n/navigation";
+import { localizedPath } from "@/i18n/paths";
 import { signIn } from "@/lib/auth";
 import { getServerEnv, publicEnv } from "@/lib/env";
 import { safeLocalizedCallbackUrl } from "@/lib/redirects";
@@ -17,6 +19,7 @@ export default async function LoginPage({
 }: Props): Promise<React.ReactElement> {
   const [{ locale }, query] = await Promise.all([params, searchParams]);
   const redirectTo = safeLocalizedCallbackUrl(query.callbackUrl, locale);
+  const isContinuation = redirectTo !== localizedPath("/", locale);
 
   async function signInWithGoogle(formData: FormData): Promise<void> {
     "use server";
@@ -48,6 +51,11 @@ export default async function LoginPage({
     <main className="grid min-h-screen place-items-center bg-zinc-50 px-6">
       <div className="w-full max-w-sm rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-semibold text-zinc-950">{t("title")}</h1>
+        {isContinuation ? (
+          <p className="mt-3 text-sm leading-6 text-zinc-600">
+            {t("continueDescription")}
+          </p>
+        ) : null}
         <form action={signInWithGoogle} className="mt-6 space-y-2">
           {accounts.map(({ email, label, Icon }) => (
             <button
@@ -62,6 +70,12 @@ export default async function LoginPage({
             </button>
           ))}
         </form>
+        <Link
+          className="mt-4 inline-flex min-h-11 items-center text-sm font-medium text-zinc-700 underline underline-offset-4 hover:text-zinc-950"
+          href="/"
+        >
+          {t("home")}
+        </Link>
       </div>
     </main>
   );

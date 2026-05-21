@@ -6,21 +6,42 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Header, HTTPException, Path, Request, Response, status
 from sqlmodel import Session
 
-from app.api.deps import get_optional_principal
+from app.api.deps import get_current_principal, get_optional_principal
 from app.core.config import settings
 from app.core.feature_flags import dev_routes_enabled, require_feature_enabled
-from app.core.ratelimit import PAYMENTS_RATE_LIMIT, limiter
+from app.core.ratelimit import GENERAL_RATE_LIMIT, PAYMENTS_RATE_LIMIT, limiter
 from app.core.security import Principal
 from app.db.session import get_session
 from app.integrations.payments import get_payments_client
 from app.integrations.payments.mock import MockStripeClient, MockStripeError
 from app.integrations.payments.webhooks import StripeWebhookSignatureError, construct_stripe_event
-from app.schemas.billing import CheckoutCreateRequest, CheckoutSessionRead, StripeWebhookRead
+from app.models.domain import User
+from app.schemas.billing import (
+    BillingSubscriptionRead,
+    CheckoutCreateRequest,
+    CheckoutSessionRead,
+    StripeWebhookRead,
+)
 from app.services.billing import StripeWebhookResult, apply_stripe_webhook_event
+from app.services.llm_quota import resolve_user_for_principal
 
 router = APIRouter(prefix="/billing", tags=["billing"])
 
 PRO_MONTHLY_PRICE_CENTS = 1200
+
+
+@router.get("/subscription")
+@limiter.limit(GENERAL_RATE_LIMIT)
+async def read_subscription(
+    request: Request,
+    response: Response,
+    principal: Annotated[Principal, Depends(get_current_principal)],
+    db_session: Annotated[Session, Depends(get_session)],
+) -> BillingSubscriptionRead:
+    del request, response
+    require_feature_enabled("payments")
+    user = resolve_user_for_principal(db_session, principal)
+    return billing_subscription_to_read(user)
 
 
 @router.post("/checkout")
@@ -160,6 +181,15 @@ def checkout_session_to_read(session: dict[str, Any], *, provider: str) -> Check
             session["customer_email"] if isinstance(session["customer_email"], str) else None
         ),
         provider=provider,
+    )
+
+
+def billing_subscription_to_read(user: User) -> BillingSubscriptionRead:
+    return BillingSubscriptionRead(
+        plan=user.plan,
+        status="active" if user.plan == "paid" else "inactive",
+        customer_email=user.email,
+        provider="stripe" if settings.stripe_secret_key else "mock",
     )
 
 

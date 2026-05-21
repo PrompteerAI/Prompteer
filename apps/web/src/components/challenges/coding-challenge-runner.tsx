@@ -46,6 +46,7 @@ export function CodingChallengeRunner({
     formState: { errors, isValid },
     handleSubmit,
     register,
+    setValue,
     watch,
   } = useForm<PromptFormValues>({
     defaultValues: {
@@ -62,6 +63,7 @@ export function CodingChallengeRunner({
     mutationFn: runChallengePrompt,
   });
   const selectedChallengeId = watch("challengeId");
+  const promptInput = register("prompt");
   const result = runPromptMutation.data ?? null;
   const isRunning = runPromptMutation.isPending;
 
@@ -174,7 +176,14 @@ export function CodingChallengeRunner({
           aria-describedby={errors.prompt ? "prompt-error" : undefined}
           aria-invalid={errors.prompt ? "true" : undefined}
           id="prompt"
-          {...register("prompt")}
+          {...promptInput}
+          onInput={(event) => {
+            setValue("prompt", event.currentTarget.value, {
+              shouldDirty: true,
+              shouldTouch: true,
+              shouldValidate: true,
+            });
+          }}
         />
         {errors.prompt ? (
           <p className="mt-2 text-sm text-red-600" id="prompt-error">
@@ -252,6 +261,10 @@ export function CodingChallengeRunner({
                   >
                     {t("viewBoard")}
                   </Link>
+                  <span className="basis-full text-emerald-950">
+                    <span className="font-medium">{t("publishedPrompt")}:</span>{" "}
+                    {result.prompt}
+                  </span>
                 </div>
               ) : (
                 <p className="mt-4 text-sm text-zinc-500">
