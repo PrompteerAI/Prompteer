@@ -5,24 +5,47 @@ import {
   CodingChallengeRunner,
   type Challenge,
 } from "@/components/challenges/coding-challenge-runner";
+import { ApiUnavailable } from "@/components/system/api-unavailable";
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
+import { normalizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
 
 export default async function CodingChallengesPage(): Promise<React.ReactElement> {
   const t = await getTranslations("coding");
+  const errors = await getTranslations("errors");
   const api = createPrompteerApiClient();
-  const [challengesResult, featuresResult] = await Promise.all([
-    api.GET("/api/v1/challenges", {
-      params: { query: { tag: "ps" } },
-      cache: "no-store",
-    }),
-    api.GET("/api/v1/config/features", {
-      cache: "no-store",
-    }),
-  ]);
-  const challenges = unwrapApiResponse(challengesResult) satisfies Challenge[];
-  const features = unwrapApiResponse(featuresResult);
+  let challenges: Challenge[];
+  let features: { llm: boolean };
+
+  try {
+    const [challengesResult, featuresResult] = await Promise.all([
+      api.GET("/api/v1/challenges", {
+        params: { query: { tag: "ps" } },
+        cache: "no-store",
+      }),
+      api.GET("/api/v1/config/features", {
+        cache: "no-store",
+      }),
+    ]);
+    challenges = unwrapApiResponse(challengesResult) satisfies Challenge[];
+    features = unwrapApiResponse(featuresResult);
+  } catch (error) {
+    const normalizedError = await normalizeError(error);
+    return (
+      <main className="min-h-screen bg-zinc-50 px-6 py-8 text-zinc-950">
+        <div className="mx-auto max-w-6xl">
+          <ApiUnavailable
+            actionLabel={errors("reload")}
+            description={errors("apiUnavailableDescription")}
+            error={normalizedError}
+            requestIdLabel={errors("requestId")}
+            title={errors("apiUnavailableTitle")}
+          />
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-zinc-50 px-6 py-8 text-zinc-950">

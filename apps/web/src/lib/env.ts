@@ -6,6 +6,7 @@ type RawEnv = Record<string, string | undefined>;
 
 const TRUE_VALUES = new Set(["1", "true", "yes", "on"]);
 const FALSE_VALUES = new Set(["0", "false", "no", "off"]);
+const DEV_AUTH_SECRET = "dev-auth-secret-change-in-production";
 
 const emptyStringToUndefined = (value: unknown): unknown => {
   if (typeof value === "string" && value.trim() === "") {
@@ -76,12 +77,12 @@ export const publicEnvSchema = z.object({
   NEXT_PUBLIC_SENTRY_DSN: envString(""),
 });
 
-export const serverEnvSchema = publicEnvSchema.extend({
+const serverEnvObjectSchema = publicEnvSchema.extend({
   ENV: z.enum(["development", "test", "production"]).default("development"),
   APP_VERSION: envString("0.1.0"),
   APP_URL: envUrl("http://localhost:3000"),
   API_INTERNAL_URL: envUrl("http://localhost:8000/api/v1"),
-  AUTH_SECRET: envString("dev-auth-secret-change-in-production"),
+  AUTH_SECRET: envString(DEV_AUTH_SECRET),
   AUTH_URL: envUrl("http://localhost:3000"),
   AUTH_MOCK_GOOGLE_ISSUER: envUrl("http://localhost:8000"),
   AUTH_MOCK_GOOGLE_DISCOVERY_URL: optionalEnvUrl,
@@ -95,6 +96,19 @@ export const serverEnvSchema = publicEnvSchema.extend({
   AUTH_ALLOW_SEED_LOGIN: envBoolean(true),
   ENABLE_DEV_ROUTES: envBoolean(true),
 });
+
+export const serverEnvSchema = serverEnvObjectSchema.superRefine(
+  (env, context) => {
+    if (env.ENV === "production" && env.AUTH_SECRET === DEV_AUTH_SECRET) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["AUTH_SECRET"],
+        message:
+          "AUTH_SECRET must be set to a non-default value in production.",
+      });
+    }
+  },
+);
 
 export type PublicEnv = z.infer<typeof publicEnvSchema>;
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

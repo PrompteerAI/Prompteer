@@ -2,33 +2,61 @@
 import { getTranslations } from "next-intl/server";
 
 import { BillingCheckoutPanel } from "@/components/billing/billing-checkout-panel";
+import { ApiUnavailable } from "@/components/system/api-unavailable";
 import { auth } from "@/lib/auth";
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
+import { normalizeError } from "@/lib/errors";
 import { apiTokenForSession } from "@/server/api-token";
 
 export const dynamic = "force-dynamic";
 
 export default async function BillingPage(): Promise<React.ReactElement> {
-  const [t, session] = await Promise.all([getTranslations("billing"), auth()]);
+  const [t, errors, session] = await Promise.all([
+    getTranslations("billing"),
+    getTranslations("errors"),
+    auth(),
+  ]);
   const billingEmail = session?.user?.email ?? "paid@prompteer.dev";
   const api = createPrompteerApiClient();
-  const [featuresResult, subscriptionResult] = await Promise.all([
-    api.GET("/api/v1/config/features", {
-      cache: "no-store",
-    }),
-    session?.user?.email
-      ? api.GET("/api/v1/billing/subscription", {
-          cache: "no-store",
-          headers: {
-            authorization: `Bearer ${apiTokenForSession(session)}`,
-          },
-        })
-      : null,
-  ]);
-  const features = unwrapApiResponse(featuresResult);
-  const subscription = subscriptionResult
-    ? unwrapApiResponse(subscriptionResult)
-    : null;
+  let features: { payments: boolean };
+  let subscription: React.ComponentProps<
+    typeof BillingCheckoutPanel
+  >["initialSubscription"];
+
+  try {
+    const [featuresResult, subscriptionResult] = await Promise.all([
+      api.GET("/api/v1/config/features", {
+        cache: "no-store",
+      }),
+      session?.user?.email
+        ? api.GET("/api/v1/billing/subscription", {
+            cache: "no-store",
+            headers: {
+              authorization: `Bearer ${apiTokenForSession(session)}`,
+            },
+          })
+        : null,
+    ]);
+    features = unwrapApiResponse(featuresResult);
+    subscription = subscriptionResult
+      ? unwrapApiResponse(subscriptionResult)
+      : null;
+  } catch (error) {
+    const normalizedError = await normalizeError(error);
+    return (
+      <main className="min-h-screen bg-zinc-50 px-6 py-8 text-zinc-950">
+        <div className="mx-auto max-w-6xl">
+          <ApiUnavailable
+            actionLabel={errors("reload")}
+            description={errors("apiUnavailableDescription")}
+            error={normalizedError}
+            requestIdLabel={errors("requestId")}
+            title={errors("apiUnavailableTitle")}
+          />
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-zinc-50 px-6 py-8 text-zinc-950">

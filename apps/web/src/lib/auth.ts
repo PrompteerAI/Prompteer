@@ -66,7 +66,7 @@ function seedLoginProvider(): Provider {
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  providers: [googleProvider(), seedLoginProvider()],
+  providers: authProviders(),
   trustHost: true,
   session: {
     strategy: "jwt",
@@ -96,3 +96,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
   },
 });
+
+function authProviders(): Provider[] {
+  const providers: Provider[] = [googleProvider()];
+  if (seedLoginEnabled()) {
+    providers.push(seedLoginProvider());
+  }
+  return providers;
+}

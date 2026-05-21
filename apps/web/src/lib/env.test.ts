@@ -64,4 +64,30 @@ describe("parseServerEnv", () => {
 
     expect(parsed.ENABLE_DEV_ROUTES).toBe(false);
   });
+
+  it("rejects the default auth secret in production", () => {
+    expect(() =>
+      parseServerEnv({
+        ENV: "production",
+        AUTH_SECRET: "",
+      }),
+    ).toThrow(/AUTH_SECRET/);
+    expect(() =>
+      parseServerEnv({
+        ENV: "production",
+        AUTH_SECRET: "dev-auth-secret-change-in-production",
+      }),
+    ).toThrow(/AUTH_SECRET/);
+  });
+
+  it("accepts a non-default auth secret in production", () => {
+    const parsed = parseServerEnv({
+      ENV: "production",
+      AUTH_SECRET: "replace-with-a-real-32-byte-random-secret",
+    });
+
+    expect(parsed.AUTH_SECRET).toBe(
+      "replace-with-a-real-32-byte-random-secret",
+    );
+  });
 });

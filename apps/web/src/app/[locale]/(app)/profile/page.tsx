@@ -14,11 +14,13 @@ import {
 import NextLink from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import { ApiUnavailable } from "@/components/system/api-unavailable";
 import { Link } from "@/i18n/navigation";
 import { localizedPath } from "@/i18n/paths";
 import { auth, signOut } from "@/lib/auth";
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
 import { getServerEnv } from "@/lib/env";
+import { normalizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +39,7 @@ export default async function ProfilePage({
   }
 
   const t = await getTranslations("profile");
+  const errors = await getTranslations("errors");
   const session = await auth();
 
   if (!session?.user) {
@@ -68,12 +71,37 @@ export default async function ProfilePage({
   }
 
   const api = createPrompteerApiClient();
-  const [featuresResult, integrationsResult] = await Promise.all([
-    api.GET("/api/v1/config/features", { cache: "no-store" }),
-    api.GET("/api/v1/config/integrations", { cache: "no-store" }),
-  ]);
-  const features = unwrapApiResponse(featuresResult);
-  const integrations = unwrapApiResponse(integrationsResult);
+  let features: { llm: boolean; payments: boolean; email: boolean };
+  let integrations: {
+    google_oauth: string;
+    llm: string;
+    payments: string;
+    email: string;
+  };
+
+  try {
+    const [featuresResult, integrationsResult] = await Promise.all([
+      api.GET("/api/v1/config/features", { cache: "no-store" }),
+      api.GET("/api/v1/config/integrations", { cache: "no-store" }),
+    ]);
+    features = unwrapApiResponse(featuresResult);
+    integrations = unwrapApiResponse(integrationsResult);
+  } catch (error) {
+    const normalizedError = await normalizeError(error);
+    return (
+      <main className="min-h-screen bg-zinc-50 px-6 py-8 text-zinc-950">
+        <section className="mx-auto max-w-6xl">
+          <ApiUnavailable
+            actionLabel={errors("reload")}
+            description={errors("apiUnavailableDescription")}
+            error={normalizedError}
+            requestIdLabel={errors("requestId")}
+            title={errors("apiUnavailableTitle")}
+          />
+        </section>
+      </main>
+    );
+  }
   const serverEnv = getServerEnv();
   const featureRows = [
     { label: t("features.llm"), enabled: features.llm },

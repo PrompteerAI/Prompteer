@@ -1,9 +1,12 @@
 // Locale root layout. It wires next-intl messages into every localized route.
 import type { Metadata } from "next";
+import { hasLocale } from "next-intl";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
+import { notFound } from "next/navigation";
 
 import { AppProviders } from "@/components/app-providers";
+import { routing } from "@/i18n/routing";
 
 import "../globals.css";
 
@@ -25,6 +28,9 @@ export default async function LocaleLayout({
   params,
 }: Props): Promise<React.ReactElement> {
   const { locale } = await params;
+  if (!hasLocale(routing.locales, locale)) {
+    notFound();
+  }
   const messages = await getMessages();
 
   return (

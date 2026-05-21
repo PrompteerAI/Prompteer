@@ -2,21 +2,60 @@
 import { MessageSquareText, Sparkles } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
+import { ApiUnavailable } from "@/components/system/api-unavailable";
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
+import { normalizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
 
 const boardFeedLimit = 5;
 
+type BoardFeed = {
+  posts: Array<{
+    id: string;
+    type: string;
+    author: { display_name: string };
+    title: string;
+    content: string | null;
+    challenge?: { challenge_number: number; title: string } | null;
+  }>;
+  shares: Array<{
+    id: string;
+    author: { display_name: string };
+    challenge: { tag: string; title: string; challenge_number: number };
+    prompt: string | null;
+  }>;
+};
+
 export default async function BoardPage(): Promise<React.ReactElement> {
   const t = await getTranslations("board");
+  const errors = await getTranslations("errors");
   const api = createPrompteerApiClient();
-  const feed = unwrapApiResponse(
-    await api.GET("/api/v1/community/board", {
-      params: { query: { limit: boardFeedLimit } },
-      cache: "no-store",
-    }),
-  );
+  let feed: BoardFeed;
+
+  try {
+    feed = unwrapApiResponse(
+      await api.GET("/api/v1/community/board", {
+        params: { query: { limit: boardFeedLimit } },
+        cache: "no-store",
+      }),
+    );
+  } catch (error) {
+    const normalizedError = await normalizeError(error);
+    return (
+      <main className="min-h-screen bg-zinc-50 px-6 py-8 text-zinc-950">
+        <div className="mx-auto max-w-6xl">
+          <ApiUnavailable
+            actionLabel={errors("reload")}
+            description={errors("apiUnavailableDescription")}
+            error={normalizedError}
+            requestIdLabel={errors("requestId")}
+            title={errors("apiUnavailableTitle")}
+          />
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-zinc-50 px-6 py-8 text-zinc-950">

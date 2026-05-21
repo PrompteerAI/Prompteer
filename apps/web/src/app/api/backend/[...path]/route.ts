@@ -66,6 +66,7 @@ async function forwardToApi(
   request: NextRequest,
   context: RouteContext,
 ): Promise<Response> {
+  const requestId = proxyRequestId(request);
   const session = await auth();
   if (!session?.user?.email) {
     return problemResponse({
@@ -74,6 +75,7 @@ async function forwardToApi(
       detail: "Sign in before calling the API.",
       code: "unauthorized",
       instance: request.nextUrl.pathname,
+      requestId,
     });
   }
 
@@ -81,7 +83,7 @@ async function forwardToApi(
   try {
     upstreamResponse = await fetch(upstreamUrl(request, await context.params), {
       method: request.method,
-      headers: upstreamHeaders(request, session),
+      headers: upstreamHeaders(request, session, requestId),
       body:
         request.method === "GET" || request.method === "HEAD"
           ? undefined
@@ -95,6 +97,7 @@ async function forwardToApi(
       detail: "The API server is unavailable.",
       code: "api_unavailable",
       instance: request.nextUrl.pathname,
+      requestId,
     });
   }
 
@@ -104,6 +107,9 @@ async function forwardToApi(
     if (value) {
       headers.set(header, value);
     }
+  }
+  if (!headers.has("x-request-id")) {
+    headers.set("x-request-id", requestId);
   }
 
   return new Response(upstreamResponse.body, {
@@ -128,7 +134,11 @@ function upstreamUrl(request: NextRequest, params: { path: string[] }): URL {
   return url;
 }
 
-function upstreamHeaders(request: NextRequest, session: Session): Headers {
+function upstreamHeaders(
+  request: NextRequest,
+  session: Session,
+  requestId: string,
+): Headers {
   const headers = new Headers();
   const contentType = request.headers.get("content-type");
   const accept = request.headers.get("accept");
@@ -136,12 +146,17 @@ function upstreamHeaders(request: NextRequest, session: Session): Headers {
     headers.set("content-type", contentType);
   }
   headers.set("accept", accept ?? "application/json");
-  const requestId = request.headers.get("x-request-id");
-  if (requestId) {
-    headers.set("x-request-id", requestId.slice(0, 128));
-  }
+  headers.set("x-request-id", requestId);
   headers.set("authorization", `Bearer ${apiTokenForSession(session)}`);
   return headers;
+}
+
+function proxyRequestId(request: NextRequest): string {
+  const requestId = request.headers.get("x-request-id")?.trim();
+  if (requestId) {
+    return requestId.slice(0, 128);
+  }
+  return crypto.randomUUID();
 }
 
 function problemResponse(input: {
@@ -150,6 +165,7 @@ function problemResponse(input: {
   detail: string;
   code: string;
   instance: string;
+  requestId: string;
 }): Response {
   return Response.json(
     {
@@ -159,11 +175,14 @@ function problemResponse(input: {
       detail: input.detail,
       instance: input.instance,
       code: input.code,
-      request_id: null,
+      request_id: input.requestId,
     },
     {
       status: input.status,
-      headers: { "content-type": "application/problem+json" },
+      headers: {
+        "content-type": "application/problem+json",
+        "x-request-id": input.requestId,
+      },
     },
   );
 }
