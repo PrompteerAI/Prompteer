@@ -121,6 +121,8 @@ jobs:
   integration:
     name: integration
     runs-on: ubuntu-latest
+    env:
+      HTTP_PORT: 8080
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
@@ -134,15 +136,15 @@ jobs:
       - run: make compose-health
       - name: Verify Compose health endpoints
         run: |
-          curl --fail --silent --show-error http://localhost/api/v1/health/live
-          curl --fail --silent --show-error http://localhost/api/v1/health/ready
-          curl --fail --silent --show-error http://localhost/api/v1/health/startup
-          curl --fail --location --silent --show-error http://localhost/
+          curl --fail --silent --show-error http://localhost:${HTTP_PORT}/api/v1/health/live
+          curl --fail --silent --show-error http://localhost:${HTTP_PORT}/api/v1/health/ready
+          curl --fail --silent --show-error http://localhost:${HTTP_PORT}/api/v1/health/startup
+          curl --fail --location --silent --show-error http://localhost:${HTTP_PORT}/
       - run: pnpm --filter @prompteer/web exec playwright install --with-deps chromium
       - name: Run Playwright against Compose
         run: pnpm --filter @prompteer/web test:e2e
         env:
-          PLAYWRIGHT_BASE_URL: http://localhost
+          PLAYWRIGHT_BASE_URL: http://localhost:8080
       - name: Capture Compose logs
         if: always()
         run: |

@@ -36,7 +36,7 @@ Hot-reload development from a fresh clone:
 ```sh
 git clone https://github.com/PrompteerAI/Prompteer.git && cd Prompteer
 cp .env.example .env
-docker compose up -d
+./scripts/compose-up.sh postgres redis
 pnpm dev
 ```
 
@@ -154,10 +154,10 @@ Bootstrap a fresh machine:
 ./scripts/bootstrap.sh
 ```
 
-Run the full local development stack:
+Run the hot-reload local development stack:
 
 ```sh
-docker compose up -d
+./scripts/compose-up.sh postgres redis
 pnpm dev
 ```
 
