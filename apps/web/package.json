@@ -4,12 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "../../scripts/web-dev.sh",
-    "build": "../../scripts/web-build.sh",
-    "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests",
-    "test:e2e": "playwright test"
+    "locales": "node ../../scripts/generate-web-locales.mjs",
+    "dev": "pnpm run locales && ../../scripts/web-dev.sh",
+    "build": "pnpm run locales && ../../scripts/web-build.sh",
+    "lint": "pnpm run locales && eslint .",
+    "typecheck": "pnpm run locales && tsc --noEmit",
+    "test": "pnpm run locales && vitest run --passWithNoTests",
+    "test:e2e": "pnpm run locales && playwright test"
   },
   "dependencies": {
     "@auth/core": "^0.39.1",
