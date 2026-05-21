@@ -39,8 +39,7 @@ export function LegacyBillingPanel({
   );
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const active =
-    session?.payment_status === "paid" || subscription?.status === "active";
+  const checkoutPaid = session?.payment_status === "paid";
   const canStartCheckout =
     paymentsEnabled && isAuthenticated && Boolean(billingEmail) && !isLoading;
 
@@ -129,7 +128,9 @@ export function LegacyBillingPanel({
       <div className="legacy-panel">
         <div className="legacy-card-meta">
           <h2>Checkout session</h2>
-          <span className="legacy-pill">{active ? "paid" : "unpaid"}</span>
+          <span className="legacy-pill">
+            {checkoutPaid ? "paid" : "unpaid"}
+          </span>
         </div>
         <p>
           Local mock sessions complete in-app. Real Stripe sessions return a
@@ -138,7 +139,7 @@ export function LegacyBillingPanel({
         <dl style={{ marginTop: 22 }}>
           <div className="legacy-card-meta">
             <dt>Status</dt>
-            <dd>{session?.status ?? (active ? "active" : "not created")}</dd>
+            <dd>{session?.status ?? "not created"}</dd>
           </div>
           <div className="legacy-card-meta">
             <dt>Session</dt>

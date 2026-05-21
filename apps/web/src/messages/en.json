@@ -190,7 +190,7 @@
       "reference": "Reference",
       "referenceFallback": "Reference {number}",
       "references": "References",
-      "referenceUnavailable": "Preview is unavailable because this stored file path is not exposed as a browser URL yet.",
+      "referenceUnavailable": "Local preview",
       "storedPath": "Stored path",
       "unknownFileType": "Unknown file type",
       "pathUnavailable": "Path unavailable"
@@ -198,7 +198,7 @@
     "image": {
       "eyebrow": "Image",
       "title": "Image prompt challenges",
-      "description": "Review image prompt briefs and their attached reference metadata. Reference paths are shown as stored metadata until media serving is available.",
+      "description": "Review image prompt briefs with deterministic local previews and attached reference metadata.",
       "emptyTitle": "Image challenges",
       "emptyDescription": "No image challenges are available yet. Run the API seed task to create demo data.",
       "openDetail": "View details",
@@ -207,7 +207,7 @@
     "video": {
       "eyebrow": "Video",
       "title": "Video prompt challenges",
-      "description": "Review video prompt briefs and their attached reference metadata. Reference paths are shown as stored metadata until media serving is available.",
+      "description": "Review video prompt briefs with deterministic local previews and attached reference metadata.",
       "emptyTitle": "Video challenges",
       "emptyDescription": "No video challenges are available yet. Run the API seed task to create demo data.",
       "openDetail": "View details",

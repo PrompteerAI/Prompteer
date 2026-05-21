@@ -1,5 +1,7 @@
 """Idempotent demo data and mock email seed routines for local development."""
 
+from datetime import UTC, datetime, timedelta
+
 from alembic import command
 from sqlmodel import Session, select
 
@@ -49,6 +51,8 @@ DEMO_USERS = {
         "plan": "free",
     },
 }
+
+DEMO_CONTENT_CREATED_AT = datetime(2026, 5, 21, 9, 0, tzinfo=UTC)
 
 
 def seed(session: Session) -> None:
@@ -220,18 +224,21 @@ def seed_challenges(session: Session, users_by_email: dict[str, User]) -> None:
         user=free_user,
         challenge=challenge_1,
         prompt="Explain the FizzBuzz rules first, then produce concise Python.",
+        created_at=DEMO_CONTENT_CREATED_AT,
     )
     ensure_share(
         session,
         user=paid_user,
         challenge=challenge_4,
         prompt="Show why stable sorting matters before giving a compact Python example.",
+        created_at=DEMO_CONTENT_CREATED_AT + timedelta(minutes=10),
     )
     ensure_share(
         session,
         user=admin,
         challenge=challenge_5,
         prompt="Compare BFS and DFS, then solve disconnected graph traversal safely.",
+        created_at=DEMO_CONTENT_CREATED_AT + timedelta(minutes=20),
     )
     ensure_post(
         session,
@@ -240,6 +247,7 @@ def seed_challenges(session: Session, users_by_email: dict[str, User]) -> None:
         title="How should I structure PS prompts?",
         content="I am comparing prompts that ask for reasoning before code.",
         post_type=PostType.question,
+        created_at=DEMO_CONTENT_CREATED_AT + timedelta(minutes=1),
     )
     ensure_post(
         session,
@@ -248,6 +256,7 @@ def seed_challenges(session: Session, users_by_email: dict[str, User]) -> None:
         title="Stable sort prompts that avoid over-explaining",
         content="The best runs asked for invariants, examples, and a short implementation.",
         post_type=PostType.share,
+        created_at=DEMO_CONTENT_CREATED_AT + timedelta(minutes=11),
     )
     ensure_post(
         session,
@@ -256,10 +265,18 @@ def seed_challenges(session: Session, users_by_email: dict[str, User]) -> None:
         title="Graph traversal guardrails for prompt reviews",
         content="Cycle safety and disconnected components should be explicit in the prompt.",
         post_type=PostType.question,
+        created_at=DEMO_CONTENT_CREATED_AT + timedelta(minutes=21),
     )
 
 
-def ensure_share(session: Session, *, user: User, challenge: Challenge, prompt: str) -> None:
+def ensure_share(
+    session: Session,
+    *,
+    user: User,
+    challenge: Challenge,
+    prompt: str,
+    created_at: datetime,
+) -> None:
     share = session.exec(
         select(Share).where(Share.user_id == user.id, Share.challenge_id == challenge.id)
     ).one_or_none()
@@ -270,11 +287,15 @@ def ensure_share(session: Session, *, user: User, challenge: Challenge, prompt: 
                 challenge_id=challenge.id,
                 prompt=prompt,
                 is_public=True,
+                created_at=created_at,
+                updated_at=created_at,
             )
         )
     else:
         share.prompt = prompt
         share.is_public = True
+        share.created_at = created_at
+        share.updated_at = created_at
         session.add(share)
 
 
@@ -286,6 +307,7 @@ def ensure_post(
     title: str,
     content: str,
     post_type: PostType,
+    created_at: datetime,
 ) -> None:
     post = session.exec(select(Post).where(Post.title == title)).one_or_none()
     if post is None:
@@ -297,6 +319,8 @@ def ensure_post(
                 tag=challenge.tag,
                 title=title,
                 content=content,
+                created_at=created_at,
+                updated_at=created_at,
             )
         )
     else:
@@ -305,6 +329,8 @@ def ensure_post(
         post.type = post_type
         post.tag = challenge.tag
         post.content = content
+        post.created_at = created_at
+        post.updated_at = created_at
         session.add(post)
 
 

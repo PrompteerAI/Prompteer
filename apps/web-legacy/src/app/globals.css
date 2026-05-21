@@ -133,9 +133,19 @@ button {
   font-weight: 600;
 }
 
+.legacy-nav a {
+  padding: 0 12px;
+}
+
 .legacy-nav a:hover,
 .legacy-icon-link:hover,
 .legacy-icon-button:hover {
+  color: var(--legacy-blue-strong);
+}
+
+.legacy-nav a.active,
+.legacy-nav a[aria-current="page"] {
+  background: #e7f5ff;
   color: var(--legacy-blue-strong);
 }
 
@@ -743,15 +753,53 @@ button {
 
   .legacy-header-inner {
     height: auto;
-    padding: 12px 20px;
+    padding: 12px 20px 10px;
     flex-wrap: wrap;
+    gap: 8px 14px;
+  }
+
+  .legacy-account {
+    min-width: 0;
+    margin-left: auto;
+    gap: 12px;
+  }
+
+  .legacy-account .legacy-icon-link span {
+    max-width: min(42vw, 160px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .legacy-nav {
     order: 3;
-    width: 100%;
+    flex: 0 0 calc(100% + 40px);
+    width: calc(100% + 40px);
+    max-width: calc(100% + 40px);
+    margin: 2px -20px 0;
+    padding: 0 20px 4px;
     justify-content: flex-start;
     overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-gutter: stable;
+    -webkit-overflow-scrolling: touch;
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      #000 0,
+      #000 calc(100% - 28px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      90deg,
+      #000 0,
+      #000 calc(100% - 28px),
+      transparent 100%
+    );
+  }
+
+  .legacy-nav a {
+    flex: 0 0 auto;
+    white-space: nowrap;
   }
 
   .legacy-page,

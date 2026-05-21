@@ -7,6 +7,7 @@ import {
   isMediaChallenge,
   fileNameFromPath,
   referenceMetadata,
+  referencePreview,
   type ChallengeMediaChallenge,
   type ChallengeReference,
 } from "./challenge-media";
@@ -70,19 +71,55 @@ describe("challenge media helpers", () => {
       file_type: "",
     };
 
-    expect(
-      referenceMetadata(reference, {
-        fallbackFileName: "Reference 1",
-        iconLabel: "Video",
-        pathUnavailable: "Path unavailable",
-        unknownFileType: "Unknown file type",
-      }),
-    ).toEqual({
+    const metadata = referenceMetadata(reference, {
+      fallbackFileName: "Reference 1",
+      iconLabel: "Video",
+      pathUnavailable: "Path unavailable",
+      unknownFileType: "Unknown file type",
+    });
+
+    expect(metadata).toMatchObject({
       fileName: "Reference 1",
       filePath: "Path unavailable",
       fileType: "Unknown file type",
       iconLabel: "Video",
       kind: "video",
     });
+    expect(metadata.preview).toMatchObject({
+      subtitle: "Generated local video preview",
+      title: "Reference 1",
+      variant: "generic-video",
+    });
+  });
+
+  it("uses curated deterministic previews for seeded media references", () => {
+    const imageReference: ChallengeReference = {
+      id: "ref-image",
+      kind: "img",
+      file_path: "seed/references/product-hero.png",
+      file_type: "image/png",
+    };
+    const videoReference: ChallengeReference = {
+      id: "ref-video",
+      kind: "video",
+      file_path: "seed/references/launch-teaser.mp4?signature=local",
+      file_type: "video/mp4",
+    };
+
+    expect(referencePreview(imageReference)).toMatchObject({
+      eyebrow: "Image reference",
+      subtitle: "Hero composition with product focus",
+      title: "Product hero",
+      variant: "product-hero",
+    });
+    expect(referencePreview(videoReference)).toMatchObject({
+      eyebrow: "Video reference",
+      subtitle: "16:9 launch teaser storyboard",
+      title: "Launch teaser",
+      variant: "launch-teaser",
+    });
+    expect(referencePreview(imageReference).seed).toBe(
+      referencePreview(imageReference).seed,
+    );
   });
 });

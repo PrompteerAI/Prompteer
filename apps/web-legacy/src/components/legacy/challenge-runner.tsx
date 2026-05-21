@@ -11,6 +11,7 @@ import {
   challengeReferencePreview,
   levelClass,
   levelLabel,
+  normalizeGeneratedRunText,
   type Challenge,
 } from "@/lib/legacy";
 import type { components } from "@prompteer/shared-types";
@@ -44,6 +45,9 @@ export function LegacyChallengeRunner({
     isAuthenticated && llmEnabled && prompt.trim().length >= 10 && !isRunning;
   const helper = useMemo(() => helperText(challenge.tag), [challenge.tag]);
   const primaryReference = referencePreview?.primaryReference ?? null;
+  const outputText = result?.output
+    ? normalizeGeneratedRunText(result.output)
+    : "Run a prompt to receive deterministic feedback from the rebuilt backend.";
 
   async function runPrompt(): Promise<void> {
     if (!canRun) {
@@ -277,8 +281,7 @@ export function LegacyChallengeRunner({
             </div>
           ) : null}
           <div className="legacy-output-area" aria-live="polite">
-            {result?.output ??
-              "Run a prompt to receive deterministic feedback from the rebuilt backend."}
+            {outputText}
           </div>
           {result ? (
             <div className="legacy-panel" style={{ marginTop: 16 }}>

@@ -79,6 +79,10 @@ export function challengeExcerpt(challenge: Challenge): string {
   );
 }
 
+export function normalizeGeneratedRunText(text: string): string {
+  return text.replace(/([a-z0-9][.!?])([A-Z])/g, "$1 $2");
+}
+
 export function challengeReferencePreview(
   challenge: Challenge,
 ): ChallengeReferencePreview | null {

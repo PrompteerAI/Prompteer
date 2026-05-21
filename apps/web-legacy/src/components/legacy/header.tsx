@@ -3,6 +3,7 @@ import { LogIn, Settings, UserRound } from "lucide-react";
 
 import { Link } from "@/i18n/navigation";
 import { authLoginUrl, type GatewaySession } from "@/lib/auth-gateway";
+import { LegacyNavLinks } from "./legacy-nav-links";
 
 interface LegacyHeaderProps {
   locale: string;
@@ -14,18 +15,14 @@ export function LegacyHeader({
   session,
 }: LegacyHeaderProps): React.ReactElement {
   const user = session?.user;
+
   return (
     <header className="legacy-header">
       <nav aria-label="Prompteer navigation" className="legacy-header-inner">
         <Link className="legacy-logo" href="/">
           PROMPTeer
         </Link>
-        <div className="legacy-nav">
-          <Link href="/board">Board</Link>
-          <Link href="/category/coding">Algorithm</Link>
-          <Link href="/category/image">Image</Link>
-          <Link href="/category/video">Video</Link>
-        </div>
+        <LegacyNavLinks />
         <div className="legacy-account">
           {user ? (
             <>

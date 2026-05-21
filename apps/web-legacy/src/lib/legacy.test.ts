@@ -12,6 +12,7 @@ import {
   isBrowserPreviewUrl,
   levelClass,
   levelLabel,
+  normalizeGeneratedRunText,
   type BoardFeed,
   type Challenge,
 } from "./legacy";
@@ -95,6 +96,15 @@ describe("legacy helpers", () => {
     );
     expect(challengeExcerpt({ ...baseChallenge, content: "   " })).toContain(
       "Practice prompt design",
+    );
+  });
+
+  it("separates generated sentence boundaries that arrive joined", () => {
+    expect(
+      normalizeGeneratedRunText("Implementation plan.Explain the tradeoffs."),
+    ).toBe("Implementation plan. Explain the tradeoffs.");
+    expect(normalizeGeneratedRunText("Keep v2.1 untouched.OK")).toBe(
+      "Keep v2.1 untouched. OK",
     );
   });
 

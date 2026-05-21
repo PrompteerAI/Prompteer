@@ -79,7 +79,10 @@ test("seeded user can browse media challenge lists and details", async ({
     page.getByRole("heading", { name: "product-hero.png" }),
   ).toBeVisible();
   await expect(page.getByText("image/png")).toBeVisible();
-  await expect(page.getByText("Preview is unavailable")).toBeVisible();
+  await expect(
+    page.getByText("Hero composition with product focus"),
+  ).toBeVisible();
+  await expect(page.getByText("Local preview", { exact: true })).toBeVisible();
 
   await page
     .getByRole("link", { name: /View details: Product hero image prompt/ })
@@ -88,6 +91,8 @@ test("seeded user can browse media challenge lists and details", async ({
   await expect(
     page.getByRole("heading", { name: "Product hero image prompt" }),
   ).toBeVisible();
+  await expect(page.getByText("Product hero").first()).toBeVisible();
+  await page.locator("summary", { hasText: "Stored path" }).click();
   await expect(
     page.getByText("seed/references/product-hero.png"),
   ).toBeVisible();
@@ -114,6 +119,7 @@ test("seeded user can browse media challenge lists and details", async ({
     page.getByRole("heading", { name: "launch-teaser.mp4" }),
   ).toBeVisible();
   await expect(page.getByText("video/mp4")).toBeVisible();
+  await expect(page.getByText("16:9 launch teaser storyboard")).toBeVisible();
 
   await page
     .getByRole("link", { name: /View details: Launch teaser video prompt/ })
@@ -122,6 +128,8 @@ test("seeded user can browse media challenge lists and details", async ({
   await expect(
     page.getByRole("heading", { name: "Launch teaser video prompt" }),
   ).toBeVisible();
+  await expect(page.getByText("Launch teaser").first()).toBeVisible();
+  await page.locator("summary", { hasText: "Stored path" }).click();
   await expect(
     page.getByText("seed/references/launch-teaser.mp4"),
   ).toBeVisible();
