@@ -2,6 +2,8 @@
 set -euo pipefail
 
 services="${COMPOSE_HEALTH_SERVICES:-postgres redis api worker web nginx}"
+timeout_seconds="${COMPOSE_HEALTH_TIMEOUT:-60}"
+interval_seconds="${COMPOSE_HEALTH_INTERVAL:-2}"
 if command -v python3 >/dev/null; then
   python_bin="python3"
 elif command -v python >/dev/null; then
@@ -11,9 +13,13 @@ else
   exit 127
 fi
 
-compose_ps_json="$(docker compose ps --format json)"
+deadline=$((SECONDS + timeout_seconds))
+last_output=""
 
-PROMPTEER_COMPOSE_PS_PAYLOAD="$compose_ps_json" "$python_bin" - "$services" <<'PY'
+while true; do
+  compose_ps_json="$(docker compose ps --format json)"
+
+  if output="$(PROMPTEER_COMPOSE_PS_PAYLOAD="$compose_ps_json" "$python_bin" - "$services" 2>&1 <<'PY'
 import json
 import os
 import sys
@@ -53,3 +59,16 @@ if failures:
 
 print(f"Compose services healthy: {', '.join(expected_services)}")
 PY
+  )"; then
+    printf '%s\n' "$output"
+    exit 0
+  fi
+
+  last_output="$output"
+  if ((SECONDS >= deadline)); then
+    printf '%s\n' "$last_output" >&2
+    exit 1
+  fi
+
+  sleep "$interval_seconds"
+done

@@ -125,7 +125,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: cp .env.example .env
-      - run: docker compose up -d --build --wait --wait-timeout 300
+      - run: scripts/compose-up.sh --build
       - run: make compose-health
       - name: Verify Compose health endpoints
         run: |

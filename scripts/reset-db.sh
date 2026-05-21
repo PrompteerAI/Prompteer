@@ -10,4 +10,4 @@ load_env_file ".env"
 apply_local_port_env
 
 docker compose down -v
-docker compose up -d --wait --wait-timeout "${COMPOSE_WAIT_TIMEOUT:-300}" postgres redis
+scripts/compose-up.sh postgres redis
