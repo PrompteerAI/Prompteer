@@ -301,8 +301,6 @@ export interface components {
     AuthorRead: {
       /** Display Name */
       display_name: string;
-      /** Email */
-      email: string;
       /** Id */
       id: string;
       /** Plan */

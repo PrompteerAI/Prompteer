@@ -7,10 +7,6 @@
             "title": "Display Name",
             "type": "string"
           },
-          "email": {
-            "title": "Email",
-            "type": "string"
-          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -20,7 +16,7 @@
             "type": "string"
           }
         },
-        "required": ["id", "display_name", "email", "plan"],
+        "required": ["id", "display_name", "plan"],
         "title": "AuthorRead",
         "type": "object"
       },

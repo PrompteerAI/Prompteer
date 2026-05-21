@@ -117,7 +117,9 @@ def test_disabled_payments_route_returns_problem_details(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(settings, "feature_payments_enabled", False)
-    client = TestClient(create_app())
+    app = create_app()
+    app.dependency_overrides[get_current_principal] = override_principal
+    client = TestClient(app)
 
     response = client.post(
         "/api/v1/billing/checkout",

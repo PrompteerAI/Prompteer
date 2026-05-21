@@ -7,7 +7,10 @@ from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from typing import Any
 
+import httpx
+
 from app.integrations.http import request, stream_lines
+from app.integrations.llm.base import LLMProviderError
 
 
 @dataclass(frozen=True)
@@ -18,20 +21,28 @@ class OpenAIClient:
     provider: str = "openai"
 
     async def chat_completion(self, payload: dict[str, Any]) -> dict[str, Any]:
-        response = await request(
-            provider=self.provider,
-            method="POST",
-            url=f"{self.base_url.rstrip('/')}/chat/completions",
-            timeout_seconds=self.timeout_seconds,
-            headers=self.headers(),
-            json_body=payload,
-            request_body_for_logs=payload,
-        )
-        response.raise_for_status()
-        body = response.json()
-        if not isinstance(body, dict):
-            raise TypeError("OpenAI chat completion response was not a JSON object.")
-        return body
+        try:
+            response = await request(
+                provider=self.provider,
+                method="POST",
+                url=f"{self.base_url.rstrip('/')}/chat/completions",
+                timeout_seconds=self.timeout_seconds,
+                headers=self.headers(),
+                json_body=payload,
+                request_body_for_logs=payload,
+            )
+            response.raise_for_status()
+            body = response.json()
+            if not isinstance(body, dict):
+                raise TypeError("OpenAI chat completion response was not a JSON object.")
+            return body
+        except httpx.HTTPStatusError as exc:
+            raise llm_provider_http_error(self.provider, exc.response) from exc
+        except (httpx.TransportError, TypeError, ValueError) as exc:
+            raise LLMProviderError(
+                provider=self.provider,
+                detail=f"{self.provider} provider is unavailable.",
+            ) from exc
 
     async def chat_completion_stream(self, payload: dict[str, Any]) -> AsyncIterator[str]:
         async for line in stream_lines(
@@ -79,20 +90,28 @@ class AnthropicClient:
         )
 
     async def anthropic_message(self, payload: dict[str, Any]) -> dict[str, Any]:
-        response = await request(
-            provider=self.provider,
-            method="POST",
-            url=f"{self.base_url.rstrip('/')}/messages",
-            timeout_seconds=self.timeout_seconds,
-            headers=self.headers(),
-            json_body=payload,
-            request_body_for_logs=payload,
-        )
-        response.raise_for_status()
-        body = response.json()
-        if not isinstance(body, dict):
-            raise TypeError("Anthropic message response was not a JSON object.")
-        return body
+        try:
+            response = await request(
+                provider=self.provider,
+                method="POST",
+                url=f"{self.base_url.rstrip('/')}/messages",
+                timeout_seconds=self.timeout_seconds,
+                headers=self.headers(),
+                json_body=payload,
+                request_body_for_logs=payload,
+            )
+            response.raise_for_status()
+            body = response.json()
+            if not isinstance(body, dict):
+                raise TypeError("Anthropic message response was not a JSON object.")
+            return body
+        except httpx.HTTPStatusError as exc:
+            raise llm_provider_http_error(self.provider, exc.response) from exc
+        except (httpx.TransportError, TypeError, ValueError) as exc:
+            raise LLMProviderError(
+                provider=self.provider,
+                detail=f"{self.provider} provider is unavailable.",
+            ) from exc
 
     async def anthropic_message_stream(self, payload: dict[str, Any]) -> AsyncIterator[str]:
         async for line in stream_lines(
@@ -112,3 +131,27 @@ class AnthropicClient:
             "anthropic-version": self.anthropic_version,
             "Content-Type": "application/json",
         }
+
+
+def llm_provider_http_error(provider: str, response: httpx.Response) -> LLMProviderError:
+    provider_message = provider_error_message(response)
+    detail = f"{provider} provider returned HTTP {response.status_code}."
+    if provider_message:
+        detail = f"{detail} {provider_message}"
+    return LLMProviderError(provider=provider, detail=detail, status_code=response.status_code)
+
+
+def provider_error_message(response: httpx.Response) -> str | None:
+    try:
+        body = response.json()
+    except ValueError:
+        return None
+    if isinstance(body, dict):
+        error = body.get("error")
+        error_message = error.get("message") if isinstance(error, dict) else None
+        if isinstance(error_message, str):
+            return error_message
+        message = body.get("message")
+        if isinstance(message, str):
+            return message
+    return None

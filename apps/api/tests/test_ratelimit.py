@@ -4,7 +4,8 @@ import pytest
 from fastapi.testclient import TestClient
 from starlette.requests import Request
 
-from app.core.ratelimit import limiter, rate_limit_key
+from app.core.config import settings
+from app.core.ratelimit import limiter, rate_limit_key, trusted_proxy_networks
 from app.core.security import Principal
 from app.main import create_app
 from tests.support import reset_limiter_storage
@@ -15,13 +16,16 @@ def reset_limiter() -> None:
     reset_limiter_storage()
 
 
-def request_for_ip(address: str) -> Request:
+def request_for_ip(address: str, *, headers: dict[str, str] | None = None) -> Request:
     return Request(
         {
             "type": "http",
             "method": "GET",
             "path": "/",
-            "headers": [],
+            "headers": [
+                (name.lower().encode("latin-1"), value.encode("latin-1"))
+                for name, value in (headers or {}).items()
+            ],
             "client": (address, 12345),
         }
     )
@@ -42,6 +46,32 @@ def test_rate_limit_key_falls_back_to_remote_ip() -> None:
     request = request_for_ip("203.0.113.11")
 
     assert rate_limit_key(request) == "ip:203.0.113.11"
+
+
+def test_rate_limit_key_uses_forwarded_for_from_trusted_proxy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "rate_limit_trusted_proxy_cidrs", "172.16.0.0/12")
+    trusted_proxy_networks.cache_clear()
+    request = request_for_ip(
+        "172.18.0.12",
+        headers={"x-forwarded-for": "198.51.100.8, 172.18.0.12"},
+    )
+
+    assert rate_limit_key(request) == "ip:198.51.100.8"
+
+
+def test_rate_limit_key_ignores_forwarded_for_from_untrusted_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "rate_limit_trusted_proxy_cidrs", "172.16.0.0/12")
+    trusted_proxy_networks.cache_clear()
+    request = request_for_ip(
+        "203.0.113.12",
+        headers={"x-forwarded-for": "198.51.100.8"},
+    )
+
+    assert rate_limit_key(request) == "ip:203.0.113.12"
 
 
 def test_limiter_is_configured_for_headers_and_redis_storage() -> None:

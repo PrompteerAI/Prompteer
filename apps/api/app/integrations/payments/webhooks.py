@@ -19,7 +19,13 @@ class StripeWebhookSignatureError(ValueError):
 
 
 def stripe_webhook_secret() -> str:
-    return settings.stripe_webhook_secret or MOCK_STRIPE_WEBHOOK_SECRET
+    if settings.stripe_webhook_secret:
+        return settings.stripe_webhook_secret
+    if settings.stripe_secret_key:
+        raise StripeWebhookSignatureError(
+            "STRIPE_WEBHOOK_SECRET is required when STRIPE_SECRET_KEY is set."
+        )
+    return MOCK_STRIPE_WEBHOOK_SECRET
 
 
 def sign_stripe_webhook_payload(

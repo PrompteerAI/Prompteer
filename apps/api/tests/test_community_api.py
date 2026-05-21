@@ -39,11 +39,8 @@ def test_board_feed_returns_seed_posts_and_shares() -> None:
     feed = response.json()
     assert len(feed["posts"]) == 3
     assert len(feed["shares"]) == 3
-    assert {post["author"]["email"] for post in feed["posts"]} == {
-        "admin@prompteer.dev",
-        "paid@prompteer.dev",
-        "free@prompteer.dev",
-    }
+    assert all("email" not in post["author"] for post in feed["posts"])
+    assert all("email" not in share["author"] for share in feed["shares"])
     assert feed["shares"][0]["challenge"]["title"]
 
 

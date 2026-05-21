@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     rate_limit_strategy: str = Field(default="moving-window", alias="RATE_LIMIT_STRATEGY")
     rate_limit_key_prefix: str = Field(default="prompteer", alias="RATE_LIMIT_KEY_PREFIX")
     rate_limit_headers_enabled: bool = Field(default=True, alias="RATE_LIMIT_HEADERS_ENABLED")
+    rate_limit_trusted_proxy_cidrs: str = Field(
+        default="127.0.0.1/32,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16",
+        alias="RATE_LIMIT_TRUSTED_PROXY_CIDRS",
+    )
     general_rate_limit: str = Field(default="60/minute", alias="GENERAL_RATE_LIMIT")
     llm_rate_limit: str = Field(default="10/minute;200/hour", alias="LLM_RATE_LIMIT")
     payments_rate_limit: str = Field(default="5/minute", alias="PAYMENTS_RATE_LIMIT")
@@ -62,6 +66,7 @@ class Settings(BaseSettings):
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
     openai_base_url: str = Field(default="https://api.openai.com/v1", alias="OPENAI_BASE_URL")
     openai_chat_model: str = Field(default="gpt-4.1-mini", alias="OPENAI_CHAT_MODEL")
+    openai_max_completion_tokens: int = Field(default=512, alias="OPENAI_MAX_COMPLETION_TOKENS")
     anthropic_api_key: str = Field(default="", alias="ANTHROPIC_API_KEY")
     anthropic_base_url: str = Field(
         default="https://api.anthropic.com/v1",

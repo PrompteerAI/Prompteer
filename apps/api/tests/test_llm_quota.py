@@ -12,13 +12,20 @@ from sqlmodel import Session, SQLModel, create_engine, select
 # Import model modules so SQLModel metadata is populated for test databases.
 import app.models  # noqa: F401
 from app.api.deps import get_current_principal
+from app.api.v1 import challenges as challenge_routes
 from app.core.config import settings
+from app.core.errors import ProblemException
 from app.core.security import Principal
 from app.db.seed import seed
 from app.db.session import get_session
 from app.main import create_app
 from app.models.domain import Challenge, LLMUsageDay, User
-from app.services.llm_quota import current_usage_date, resolve_user_for_principal
+from app.services.llm_quota import (
+    assert_llm_quota_available,
+    current_usage_date,
+    record_llm_usage,
+    resolve_user_for_principal,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -82,6 +89,87 @@ def test_challenge_run_halts_when_daily_quota_is_exhausted(
     assert body["type"] == "https://prompteer.dev/errors/quota-exceeded"
 
 
+def test_challenge_run_halts_before_provider_when_budget_exceeds_remaining_quota(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "llm_free_daily_token_cap", 1)
+    engine = seeded_engine()
+    app = create_quota_test_app(engine)
+    client = TestClient(app)
+    challenge_id = first_challenge_id(engine)
+    fake_client = CountingLLMClient()
+    monkeypatch.setattr(challenge_routes, "get_llm_client", lambda: fake_client)
+
+    response = client.post(
+        f"/api/v1/challenges/{challenge_id}/run",
+        json={"prompt": "Explain FizzBuzz clearly and write concise Python."},
+    )
+
+    assert response.status_code == 402
+    assert response.json()["code"] == "quota_exceeded"
+    assert fake_client.call_count == 0
+
+
+def test_quota_preflight_accounts_for_requested_token_budget(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "llm_free_daily_token_cap", 1_000)
+    engine = seeded_engine()
+    with Session(engine) as session:
+        user = session.exec(select(User).where(User.email == "free@prompteer.dev")).one()
+        session.add(
+            LLMUsageDay(
+                user_id=user.id,
+                usage_date=current_usage_date(),
+                total_tokens=900,
+                prompt_tokens=500,
+                completion_tokens=400,
+                request_count=3,
+            )
+        )
+        session.commit()
+
+        with pytest.raises(ProblemException) as exc_info:
+            assert_llm_quota_available(session, user, requested_tokens=200)
+
+    assert exc_info.value.code == "quota_exceeded"
+
+
+def test_record_llm_usage_does_not_mutate_when_projected_total_exceeds_cap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "llm_free_daily_token_cap", 100)
+    engine = seeded_engine()
+    with Session(engine) as session:
+        user = session.exec(select(User).where(User.email == "free@prompteer.dev")).one()
+        session.add(
+            LLMUsageDay(
+                user_id=user.id,
+                usage_date=current_usage_date(),
+                total_tokens=90,
+                prompt_tokens=60,
+                completion_tokens=30,
+                request_count=2,
+            )
+        )
+        session.commit()
+
+        with pytest.raises(ProblemException) as exc_info:
+            record_llm_usage(
+                session,
+                user,
+                {"prompt_tokens": 10, "completion_tokens": 10, "total_tokens": 20},
+            )
+
+    assert exc_info.value.code == "quota_exceeded"
+    with Session(engine) as assertion_session:
+        user = assertion_session.exec(select(User).where(User.email == "free@prompteer.dev")).one()
+        usage = assertion_session.get(LLMUsageDay, (user.id, current_usage_date()))
+    assert usage is not None
+    assert usage.total_tokens == 90
+    assert usage.request_count == 2
+
+
 def test_resolve_user_for_principal_matches_email_case_insensitively() -> None:
     engine = seeded_engine()
 
@@ -133,3 +221,20 @@ async def override_free_principal() -> Principal:
 def first_challenge_id(engine: Engine) -> str:
     with Session(engine) as session:
         return session.exec(select(Challenge.id).where(Challenge.challenge_number == 1)).one()
+
+
+class CountingLLMClient:
+    provider = "mock"
+
+    def __init__(self) -> None:
+        self.call_count = 0
+
+    async def chat_completion(self, payload: dict[str, object]) -> dict[str, object]:
+        self.call_count += 1
+        return {
+            "choices": [{"message": {"content": "Should not be called."}}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+        }
+
+    async def anthropic_message(self, payload: dict[str, object]) -> dict[str, object]:
+        raise AssertionError(f"Unexpected Anthropic call: {payload}")

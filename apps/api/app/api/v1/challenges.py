@@ -7,13 +7,14 @@ from sqlmodel import Session, col, select
 
 from app.api.deps import get_current_principal
 from app.core.config import settings
+from app.core.errors import ProblemException
 from app.core.feature_flags import require_feature_enabled
 from app.core.ratelimit import GENERAL_RATE_LIMIT, LLM_RATE_LIMIT, limiter
 from app.core.security import Principal
 from app.core.time import ensure_utc
 from app.db.session import get_session
 from app.integrations.llm import get_llm_client
-from app.integrations.llm.base import LLMClient
+from app.integrations.llm.base import LLMClient, LLMProviderError
 from app.models.domain import Challenge, ChallengeTag, Share, utc_now
 from app.schemas.challenge import (
     ChallengeRead,
@@ -78,13 +79,28 @@ async def run_challenge_prompt(
     require_feature_enabled("llm")
     challenge = load_challenge(session, challenge_id)
     user = resolve_user_for_principal(session, principal)
-    assert_llm_quota_available(session, user)
-    llm_client = get_llm_client()
-    llm_result = await run_feedback_prompt(
-        llm_client,
-        challenge=challenge,
-        prompt=run_request.prompt,
+    assert_llm_quota_available(
+        session,
+        user,
+        requested_tokens=estimated_prompt_run_tokens(
+            challenge=challenge,
+            prompt=run_request.prompt,
+        ),
     )
+    llm_client = get_llm_client()
+    try:
+        llm_result = await run_feedback_prompt(
+            llm_client,
+            challenge=challenge,
+            prompt=run_request.prompt,
+        )
+    except LLMProviderError as exc:
+        raise ProblemException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            title="LLM Provider Error",
+            detail=exc.detail,
+            code="llm_provider_error",
+        ) from exc
     record_llm_usage(session, user, llm_result["usage"])
     share = create_prompt_share(
         session,
@@ -128,6 +144,7 @@ async def run_feedback_prompt(
     response = await llm_client.chat_completion(
         {
             "model": chat_model_for_provider(llm_client.provider),
+            "max_completion_tokens": settings.openai_max_completion_tokens,
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_content},
@@ -147,6 +164,21 @@ def challenge_prompt_content(*, challenge: Challenge, prompt: str) -> str:
         f"Instructions: {challenge.content or 'No extra instructions.'}\n"
         f"Submitted prompt: {prompt}"
     )
+
+
+def estimated_prompt_run_tokens(*, challenge: Challenge, prompt: str) -> int:
+    prompt_budget = estimate_text_tokens(
+        SYSTEM_PROMPT,
+        challenge.title,
+        challenge.content or "",
+        prompt,
+    )
+    return prompt_budget + max(settings.openai_max_completion_tokens, ANTHROPIC_MAX_TOKENS)
+
+
+def estimate_text_tokens(*parts: str) -> int:
+    character_count = sum(len(part) for part in parts)
+    return max(1, (character_count + 3) // 4)
 
 
 def chat_model_for_provider(provider: str) -> str:

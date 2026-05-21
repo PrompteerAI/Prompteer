@@ -6,7 +6,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Header, HTTPException, Path, Request, Response, status
 from sqlmodel import Session
 
-from app.api.deps import get_current_principal, get_optional_principal
+from app.api.deps import get_current_principal
 from app.core.config import settings
 from app.core.feature_flags import dev_routes_enabled, require_feature_enabled
 from app.core.ratelimit import GENERAL_RATE_LIMIT, PAYMENTS_RATE_LIMIT, limiter
@@ -23,7 +23,7 @@ from app.schemas.billing import (
     StripeWebhookRead,
 )
 from app.services.billing import StripeWebhookResult, apply_stripe_webhook_event
-from app.services.llm_quota import resolve_user_for_principal
+from app.services.llm_quota import normalized_email, resolve_user_for_principal
 
 router = APIRouter(prefix="/billing", tags=["billing"])
 
@@ -50,12 +50,14 @@ async def create_checkout(
     request: Request,
     response: Response,
     checkout_request: CheckoutCreateRequest,
-    principal: Annotated[Principal | None, Depends(get_optional_principal)],
+    principal: Annotated[Principal, Depends(get_current_principal)],
+    db_session: Annotated[Session, Depends(get_session)],
 ) -> CheckoutSessionRead:
-    del request, response, principal
+    del request, response
     require_feature_enabled("payments")
+    user = resolve_user_for_principal(db_session, principal)
     client = get_payments_client()
-    session = await client.create_checkout_session(checkout_payload(checkout_request))
+    session = await client.create_checkout_session(checkout_payload(checkout_request, user=user))
     return checkout_session_to_read(session, provider=client.provider)
 
 
@@ -65,15 +67,18 @@ async def retrieve_checkout(
     request: Request,
     response: Response,
     session_id: Annotated[str, Path(min_length=8)],
-    principal: Annotated[Principal | None, Depends(get_optional_principal)],
+    principal: Annotated[Principal, Depends(get_current_principal)],
+    db_session: Annotated[Session, Depends(get_session)],
 ) -> CheckoutSessionRead:
-    del request, response, principal
+    del request, response
     require_feature_enabled("payments")
+    user = resolve_user_for_principal(db_session, principal)
     client = get_payments_client()
     try:
         session = await client.retrieve_checkout_session(session_id)
     except MockStripeError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    require_checkout_owner(session, user)
     return checkout_session_to_read(session, provider=client.provider)
 
 
@@ -83,15 +88,19 @@ async def complete_mock_checkout(
     request: Request,
     response: Response,
     session_id: Annotated[str, Path(min_length=8)],
-    principal: Annotated[Principal | None, Depends(get_optional_principal)],
+    principal: Annotated[Principal, Depends(get_current_principal)],
     db_session: Annotated[Session, Depends(get_session)],
 ) -> CheckoutSessionRead:
-    del request, response, principal
+    del request, response
     require_feature_enabled("payments")
+    user = resolve_user_for_principal(db_session, principal)
     if not dev_routes_enabled() or settings.stripe_secret_key:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     try:
-        result = await MockStripeClient().complete_checkout_session(session_id)
+        mock_client = MockStripeClient()
+        session = await mock_client.retrieve_checkout_session(session_id)
+        require_checkout_owner(session, user)
+        result = await mock_client.complete_checkout_session(session_id)
     except MockStripeError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     checkout_session = result["session"]
@@ -147,13 +156,14 @@ def stripe_event_payload(event: dict[str, object]) -> str:
     return json.dumps(event, separators=(",", ":"), sort_keys=True)
 
 
-def checkout_payload(request: CheckoutCreateRequest) -> dict[str, Any]:
+def checkout_payload(request: CheckoutCreateRequest, *, user: User) -> dict[str, Any]:
     return {
         "mode": "subscription",
         "success_url": f"{settings.app_url}/en/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
         "cancel_url": f"{settings.app_url}/en/billing",
-        "customer_email": request.customer_email,
-        "metadata": {"plan": request.plan},
+        "customer_email": user.email,
+        "client_reference_id": user.id,
+        "metadata": {"plan": request.plan, "user_id": user.id},
         "line_items": [
             {
                 "quantity": 1,
@@ -166,6 +176,16 @@ def checkout_payload(request: CheckoutCreateRequest) -> dict[str, Any]:
             }
         ],
     }
+
+
+def require_checkout_owner(session: dict[str, Any], user: User) -> None:
+    customer_email = session.get("customer_email")
+    if isinstance(customer_email, str) and normalized_email(customer_email) == user.email:
+        return
+    client_reference_id = session.get("client_reference_id")
+    if isinstance(client_reference_id, str) and client_reference_id == user.id:
+        return
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such checkout.session.")
 
 
 def checkout_session_to_read(session: dict[str, Any], *, provider: str) -> CheckoutSessionRead:

@@ -10,7 +10,6 @@ from app.models.domain import ChallengeLevel, ChallengeTag, PostType
 class AuthorRead(BaseModel):
     id: str
     display_name: str
-    email: str
     plan: str
 
 

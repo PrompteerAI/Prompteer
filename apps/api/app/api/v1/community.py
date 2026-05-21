@@ -126,7 +126,6 @@ def author_to_read(user: User) -> AuthorRead:
     return AuthorRead(
         id=user.id,
         display_name=user.display_name,
-        email=user.email,
         plan=user.plan,
     )
 

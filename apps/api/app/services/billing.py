@@ -104,6 +104,14 @@ def mark_customer_paid(
             processed=False,
             customer_email=normalized_customer_email,
         )
+    if not checkout_session_matches_user(checkout_session, user):
+        return StripeWebhookResult(
+            event_id=event_id,
+            event_type=event_type,
+            processed=False,
+            customer_email=normalized_customer_email,
+            user_id=user.id,
+        )
 
     user.plan = "paid"
     user.updated_at = utc_now()
@@ -115,3 +123,19 @@ def mark_customer_paid(
         customer_email=normalized_customer_email,
         user_id=user.id,
     )
+
+
+def checkout_session_matches_user(checkout_session: dict[str, Any], user: User) -> bool:
+    client_reference_id = checkout_session.get("client_reference_id")
+    if (
+        isinstance(client_reference_id, str)
+        and client_reference_id
+        and client_reference_id != user.id
+    ):
+        return False
+    metadata = checkout_session.get("metadata")
+    if isinstance(metadata, dict):
+        metadata_user_id = metadata.get("user_id")
+        if isinstance(metadata_user_id, str) and metadata_user_id and metadata_user_id != user.id:
+            return False
+    return True

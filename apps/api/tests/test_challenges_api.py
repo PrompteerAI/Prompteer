@@ -19,6 +19,7 @@ from app.core.config import settings
 from app.core.security import Principal
 from app.db.seed import seed
 from app.db.session import get_session
+from app.integrations.llm.base import LLMProviderError
 from app.main import create_app
 from app.models.domain import Challenge, Share
 from tests.support import reset_limiter_storage
@@ -199,6 +200,7 @@ def test_challenge_run_uses_configured_openai_model(monkeypatch: pytest.MonkeyPa
     }
     assert fake_client.payload is not None
     assert fake_client.payload["model"] == "gpt-4.1-mini"
+    assert fake_client.payload["max_completion_tokens"] == 512
 
 
 def test_challenge_run_supports_real_anthropic_provider(
@@ -232,6 +234,28 @@ def test_challenge_run_supports_real_anthropic_provider(
     assert fake_client.payload["model"] == "claude-sonnet-4-20250514"
     assert fake_client.payload["max_tokens"] == 512
     assert fake_client.payload["messages"][0]["role"] == "user"
+
+
+def test_challenge_run_returns_problem_details_for_provider_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, _engine, challenge_id = create_seeded_challenge_client()
+    monkeypatch.setattr(challenge_routes, "get_llm_client", lambda: FailingOpenAIClient())
+
+    response = client.post(
+        f"/api/v1/challenges/{challenge_id}/run",
+        json={
+            "prompt": "Explain FizzBuzz clearly and write compact Python.",
+            "publish_to_board": False,
+        },
+    )
+
+    assert response.status_code == 502
+    assert response.headers["content-type"].startswith("application/problem+json")
+    problem = response.json()
+    assert problem["code"] == "llm_provider_error"
+    assert problem["title"] == "LLM Provider Error"
+    assert "provider unavailable" in problem["detail"]
 
 
 def test_challenge_run_requires_authentication() -> None:
@@ -418,3 +442,13 @@ class CapturingAnthropicClient:
             "stop_sequence": None,
             "usage": {"input_tokens": 13, "output_tokens": 5},
         }
+
+
+class FailingOpenAIClient:
+    provider = "openai"
+
+    async def chat_completion(self, payload: dict[str, Any]) -> dict[str, Any]:
+        raise LLMProviderError(provider=self.provider, detail="provider unavailable")
+
+    async def anthropic_message(self, payload: dict[str, Any]) -> dict[str, Any]:
+        raise AssertionError(f"Unexpected Anthropic call: {payload}")

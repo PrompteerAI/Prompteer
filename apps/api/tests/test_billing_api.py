@@ -18,6 +18,10 @@ from app.core.security import Principal
 from app.db.seed import seed
 from app.db.session import get_session
 from app.integrations.payments.mock import STORE, MockStripeClient
+from app.integrations.payments.webhooks import (
+    MOCK_STRIPE_WEBHOOK_SECRET,
+    sign_stripe_webhook_payload,
+)
 from app.main import create_app
 from app.models.domain import StripeWebhookEvent, User
 from tests.support import reset_limiter_storage
@@ -28,6 +32,7 @@ def reset_store(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "env", "development")
     monkeypatch.setattr(settings, "enable_dev_routes", True)
     monkeypatch.setattr(settings, "stripe_secret_key", "")
+    monkeypatch.setattr(settings, "stripe_webhook_secret", "")
     reset_limiter_storage()
     STORE.reset()
 
@@ -59,6 +64,39 @@ def test_billing_checkout_create_retrieve_and_complete() -> None:
     assert completed["id"] == session["id"]
     assert completed["status"] == "complete"
     assert completed["payment_status"] == "paid"
+
+
+def test_billing_checkout_requires_authentication() -> None:
+    app = create_billing_test_app()
+    app.dependency_overrides.pop(get_current_principal, None)
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/v1/billing/checkout",
+        json={"customer_email": "paid@prompteer.dev"},
+    )
+
+    assert response.status_code == 401
+
+
+def test_checkout_sessions_are_user_scoped() -> None:
+    app = create_billing_test_app()
+    client = TestClient(app)
+    create_response = client.post(
+        "/api/v1/billing/checkout",
+        json={"customer_email": "admin@prompteer.dev"},
+    )
+    assert create_response.status_code == 200
+    session_id = create_response.json()["id"]
+    assert create_response.json()["customer_email"] == "paid@prompteer.dev"
+
+    app.dependency_overrides[get_current_principal] = override_admin_principal
+
+    retrieve_response = client.get(f"/api/v1/billing/checkout/{session_id}")
+    complete_response = client.post(f"/api/v1/billing/checkout/{session_id}/complete")
+
+    assert retrieve_response.status_code == 404
+    assert complete_response.status_code == 404
 
 
 def test_mock_checkout_completion_updates_user_plan() -> None:
@@ -218,6 +256,33 @@ def test_stripe_webhook_rejects_invalid_signature() -> None:
     assert response.json()["code"] == "bad_request"
 
 
+def test_real_stripe_mode_requires_webhook_secret(monkeypatch: pytest.MonkeyPatch) -> None:
+    client = TestClient(create_billing_test_app())
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_live_test")
+    monkeypatch.setattr(settings, "stripe_webhook_secret", "")
+    event = {
+        "id": "evt_missing_real_secret",
+        "object": "event",
+        "type": "checkout.session.completed",
+        "data": {"object": {"customer_email": "paid@prompteer.dev"}},
+    }
+    payload = json.dumps(event, separators=(",", ":"), sort_keys=True)
+    signature = sign_stripe_webhook_payload(payload, MOCK_STRIPE_WEBHOOK_SECRET)
+
+    response = client.post(
+        "/api/v1/billing/webhooks/stripe",
+        content=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Stripe-Signature": signature,
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.headers["content-type"].startswith("application/problem+json")
+    assert "STRIPE_WEBHOOK_SECRET is required" in response.json()["detail"]
+
+
 def test_stripe_webhook_rejects_non_utf8_payload() -> None:
     client = TestClient(create_billing_test_app())
 
@@ -268,8 +333,45 @@ def test_stripe_webhook_matches_customer_email_case_insensitively() -> None:
     assert paid_user.plan == "paid"
 
 
+def test_stripe_webhook_rejects_mismatched_user_metadata() -> None:
+    app = create_billing_test_app(initial_paid_plan="free")
+    client = TestClient(app)
+    event = {
+        "id": "evt_mismatched_user_metadata",
+        "object": "event",
+        "type": "checkout.session.completed",
+        "data": {
+            "object": {
+                "customer_email": "paid@prompteer.dev",
+                "metadata": {"user_id": "00000000-0000-4000-8000-000000000001"},
+            }
+        },
+    }
+    payload = json.dumps(event, separators=(",", ":"), sort_keys=True)
+    signature = MockStripeClient().sign_webhook_payload(payload)
+
+    response = client.post(
+        "/api/v1/billing/webhooks/stripe",
+        content=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Stripe-Signature": signature,
+        },
+    )
+
+    assert response.status_code == 200
+    webhook = response.json()
+    assert webhook["processed"] is False
+    assert webhook["customer_email"] == "paid@prompteer.dev"
+    with Session(app.state.test_engine) as assertion_session:
+        paid_user = assertion_session.exec(
+            select(User).where(User.email == "paid@prompteer.dev")
+        ).one()
+    assert paid_user.plan == "free"
+
+
 def test_billing_checkout_create_is_rate_limited() -> None:
-    client = TestClient(create_app())
+    client = TestClient(create_billing_test_app())
 
     for _ in range(5):
         response = client.post(
@@ -310,4 +412,20 @@ def create_billing_test_app(*, initial_paid_plan: str = "paid") -> FastAPI:
     app = create_app()
     app.state.test_engine = engine
     app.dependency_overrides[get_session] = override_session
+    app.dependency_overrides[get_current_principal] = override_paid_principal
     return app
+
+
+async def override_paid_principal() -> Principal:
+    return Principal(
+        subject="mock-google-oauth2|paid",
+        email="paid@prompteer.dev",
+    )
+
+
+async def override_admin_principal() -> Principal:
+    return Principal(
+        subject="mock-google-oauth2|admin",
+        email="admin@prompteer.dev",
+        is_admin=True,
+    )

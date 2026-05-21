@@ -43,14 +43,21 @@ def normalized_email(email: str) -> str:
     return email.strip().lower()
 
 
-def assert_llm_quota_available(session: Session, user: User) -> None:
+def assert_llm_quota_available(
+    session: Session,
+    user: User,
+    *,
+    requested_tokens: int = 0,
+) -> None:
     cap = daily_token_cap(user)
     if cap is None:
         return
 
     usage = session.get(LLMUsageDay, (user.id, current_usage_date()))
-    if usage is not None and usage.total_tokens >= cap:
-        raise quota_exceeded(user=user, cap=cap, used=usage.total_tokens)
+    used_tokens = usage.total_tokens if usage is not None else 0
+    projected_tokens = used_tokens + max(0, requested_tokens)
+    if used_tokens >= cap or projected_tokens > cap:
+        raise quota_exceeded(user=user, cap=cap, used=max(used_tokens, projected_tokens))
 
 
 def record_llm_usage(session: Session, user: User, usage: dict[str, Any]) -> LLMUsageDay:
@@ -63,18 +70,19 @@ def record_llm_usage(session: Session, user: User, usage: dict[str, Any]) -> LLM
     completion_tokens = non_negative_int(usage.get("completion_tokens"))
     total_tokens = non_negative_int(usage.get("total_tokens"))
 
+    cap = daily_token_cap(user)
+    projected_total_tokens = usage_row.total_tokens + total_tokens
+    if cap is not None and projected_total_tokens > cap:
+        raise quota_exceeded(user=user, cap=cap, used=projected_total_tokens)
+
     usage_row.prompt_tokens += prompt_tokens
     usage_row.completion_tokens += completion_tokens
-    usage_row.total_tokens += total_tokens
+    usage_row.total_tokens = projected_total_tokens
     usage_row.request_count += 1
     usage_row.updated_at = utc_now()
     session.add(usage_row)
     session.commit()
     session.refresh(usage_row)
-
-    cap = daily_token_cap(user)
-    if cap is not None and usage_row.total_tokens > cap:
-        raise quota_exceeded(user=user, cap=cap, used=usage_row.total_tokens)
 
     return usage_row
 
