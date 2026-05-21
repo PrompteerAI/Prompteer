@@ -72,6 +72,20 @@ class LLMUsageDay(SQLModel, table=True):
     )
 
 
+class StripeWebhookEvent(SQLModel, table=True):
+    __tablename__ = "stripe_webhook_events"
+
+    event_id: str = Field(primary_key=True, max_length=255)
+    event_type: str = Field(index=True, max_length=255)
+    processed: bool = Field(default=False)
+    customer_email: str | None = Field(default=None, max_length=320)
+    user_id: str | None = Field(default=None, foreign_key="users.id", index=True)
+    received_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+    )
+
+
 class Profile(SQLModel, table=True):
     __tablename__ = "profiles"
 

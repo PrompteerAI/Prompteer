@@ -165,7 +165,13 @@ def require_mock_routes() -> None:
 async def parse_request_payload(request: Request) -> dict[str, Any]:
     content_type = request.headers.get("content-type", "")
     if "application/json" in content_type:
-        json_payload = await request.json()
+        try:
+            json_payload = await request.json()
+        except json.JSONDecodeError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Malformed JSON payload.",
+            ) from exc
         if not isinstance(json_payload, dict):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

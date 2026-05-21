@@ -5,9 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
-from app.models.domain import User, utc_now
+from app.models.domain import StripeWebhookEvent, User, utc_now
 
 
 @dataclass(frozen=True)
@@ -22,16 +23,61 @@ class StripeWebhookResult:
 def apply_stripe_webhook_event(db_session: Session, event: dict[str, Any]) -> StripeWebhookResult:
     event_id = str(event.get("id", ""))
     event_type = str(event.get("type", ""))
+    existing_event = db_session.get(StripeWebhookEvent, event_id)
+    if existing_event is not None:
+        return webhook_event_to_result(existing_event, duplicate=True)
+
     if event_type != "checkout.session.completed":
-        return StripeWebhookResult(event_id=event_id, event_type=event_type, processed=False)
+        result = StripeWebhookResult(event_id=event_id, event_type=event_type, processed=False)
+        return record_stripe_webhook_event(db_session, result)
 
     data = event.get("data")
     checkout_session = data.get("object") if isinstance(data, dict) else None
     if not isinstance(checkout_session, dict):
-        return StripeWebhookResult(event_id=event_id, event_type=event_type, processed=False)
+        result = StripeWebhookResult(event_id=event_id, event_type=event_type, processed=False)
+        return record_stripe_webhook_event(db_session, result)
 
-    return mark_customer_paid(
+    result = mark_customer_paid(
         db_session, event_id=event_id, event_type=event_type, checkout_session=checkout_session
+    )
+    return record_stripe_webhook_event(db_session, result)
+
+
+def record_stripe_webhook_event(
+    db_session: Session,
+    result: StripeWebhookResult,
+) -> StripeWebhookResult:
+    db_session.add(
+        StripeWebhookEvent(
+            event_id=result.event_id,
+            event_type=result.event_type,
+            processed=result.processed,
+            customer_email=result.customer_email,
+            user_id=result.user_id,
+        )
+    )
+    try:
+        db_session.commit()
+    except IntegrityError:
+        db_session.rollback()
+        existing_event = db_session.get(StripeWebhookEvent, result.event_id)
+        if existing_event is not None:
+            return webhook_event_to_result(existing_event, duplicate=True)
+        raise
+    return result
+
+
+def webhook_event_to_result(
+    event: StripeWebhookEvent,
+    *,
+    duplicate: bool,
+) -> StripeWebhookResult:
+    return StripeWebhookResult(
+        event_id=event.event_id,
+        event_type=event.event_type,
+        processed=False if duplicate else event.processed,
+        customer_email=event.customer_email,
+        user_id=event.user_id,
     )
 
 
@@ -62,7 +108,6 @@ def mark_customer_paid(
     user.plan = "paid"
     user.updated_at = utc_now()
     db_session.add(user)
-    db_session.commit()
     return StripeWebhookResult(
         event_id=event_id,
         event_type=event_type,

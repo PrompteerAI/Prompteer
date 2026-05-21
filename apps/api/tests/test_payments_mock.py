@@ -117,6 +117,20 @@ def test_mock_stripe_routes_accept_form_payload_and_complete_checkout() -> None:
     assert completed["webhook_signature"].startswith("t=")
 
 
+def test_mock_stripe_route_rejects_malformed_json_payload() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/v1/checkout/sessions",
+        content="{",
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 400
+    assert response.headers["content-type"].startswith("application/problem+json")
+    assert response.json()["detail"] == "Malformed JSON payload."
+
+
 def test_mock_stripe_expire_route() -> None:
     client = TestClient(create_app())
 

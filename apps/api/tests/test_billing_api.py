@@ -17,7 +17,7 @@ from app.db.seed import seed
 from app.db.session import get_session
 from app.integrations.payments.mock import STORE, MockStripeClient
 from app.main import create_app
-from app.models.domain import User
+from app.models.domain import StripeWebhookEvent, User
 from tests.support import reset_limiter_storage
 
 
@@ -115,6 +115,52 @@ def test_stripe_webhook_updates_user_plan() -> None:
         paid_user = assertion_session.exec(
             select(User).where(User.email == "paid@prompteer.dev")
         ).one()
+    assert paid_user.plan == "paid"
+
+
+def test_stripe_webhook_delivery_is_idempotent() -> None:
+    app = create_billing_test_app(initial_paid_plan="free")
+    client = TestClient(app)
+
+    create_response = client.post(
+        "/api/v1/billing/checkout",
+        json={"customer_email": "paid@prompteer.dev"},
+    )
+    assert create_response.status_code == 200
+    completion = asyncio.run(
+        MockStripeClient().complete_checkout_session(create_response.json()["id"])
+    )
+    payload = json.dumps(completion["event"], separators=(",", ":"), sort_keys=True)
+    signature = MockStripeClient().sign_webhook_payload(payload)
+
+    first_response = client.post(
+        "/api/v1/billing/webhooks/stripe",
+        content=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Stripe-Signature": signature,
+        },
+    )
+    second_response = client.post(
+        "/api/v1/billing/webhooks/stripe",
+        content=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Stripe-Signature": signature,
+        },
+    )
+
+    assert first_response.status_code == 200
+    assert first_response.json()["processed"] is True
+    assert second_response.status_code == 200
+    assert second_response.json()["processed"] is False
+    with Session(app.state.test_engine) as assertion_session:
+        webhook_events = assertion_session.exec(select(StripeWebhookEvent)).all()
+        paid_user = assertion_session.exec(
+            select(User).where(User.email == "paid@prompteer.dev")
+        ).one()
+    assert len(webhook_events) == 1
+    assert webhook_events[0].event_id == completion["event"]["id"]
     assert paid_user.plan == "paid"
 
 
