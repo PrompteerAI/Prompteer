@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap dev lint typecheck test format build verify env-check types types-check backup-restore-check e2e verify-ui tree api-dev api-lint api-test seed reset reset-db logs
+.PHONY: help bootstrap dev lint typecheck test format build verify env-check types types-check backup-restore-check compose-deps compose-health e2e verify-ui tree api-dev api-lint api-test seed reset reset-db logs
 
 help: ## Show available Makefile targets.
 	@awk 'BEGIN {FS = ":.*##"; printf "Available targets:\n"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -22,7 +22,8 @@ typecheck: ## Run TypeScript and Python type checks.
 
 test: ## Run JavaScript and Python tests.
 	pnpm test
-	cd apps/api && uv run pytest -q
+	$(MAKE) compose-deps
+	scripts/api-test.sh -q
 
 format: ## Format JavaScript, TypeScript, Markdown, and Python files.
 	pnpm format
@@ -55,23 +56,33 @@ types-check: ## Verify generated OpenAPI artifacts are committed.
 backup-restore-check: ## Verify PostgreSQL backup and restore scripts against throwaway databases.
 	scripts/verify-backup-restore.sh
 
-e2e: ## Run Playwright end-to-end tests against local dev servers.
-	env -u NO_COLOR CI=1 pnpm --filter @prompteer/web test:e2e
+compose-deps: ## Start Docker Compose dependencies required by local tests.
+	scripts/compose-up.sh redis
 
-verify-ui: ## Capture desktop/mobile screenshots against running dev servers.
-	node scripts/verify-ui.mjs
+compose-health: ## Assert every Docker Compose service is running and healthy.
+	scripts/check-compose-health.sh
+
+e2e: ## Run Playwright end-to-end tests against Docker Compose.
+	scripts/compose-up.sh --build
+	$(MAKE) compose-health
+	env -u NO_COLOR CI=1 PLAYWRIGHT_BASE_URL=$${PLAYWRIGHT_BASE_URL:-http://localhost} pnpm --filter @prompteer/web test:e2e
+
+verify-ui: ## Capture desktop/mobile screenshots against Docker Compose.
+	scripts/compose-up.sh --build
+	$(MAKE) compose-health
+	env PROMPTEER_WEB_URL=$${PROMPTEER_WEB_URL:-http://localhost/en} node scripts/verify-ui.mjs
 
 tree: ## Show the source-oriented repository tree without generated artifacts.
 	scripts/tree-project.sh
 
 api-dev: ## Start the FastAPI development server.
-	cd apps/api && uv run fastapi dev app/main.py
+	scripts/api-dev.sh
 
 api-lint: ## Run Ruff against the API.
 	cd apps/api && uv run ruff check .
 
 api-test: ## Run API tests.
-	cd apps/api && uv run pytest
+	scripts/api-test.sh
 
 seed: ## Seed idempotent local demo data.
 	cd apps/api && uv run python -m app.db.seed

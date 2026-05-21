@@ -1,4 +1,4 @@
-"""Tests for rate-limit keying, headers, fallback behavior, and 429 responses."""
+"""Tests for rate-limit keying, headers, Redis storage, and 429 responses."""
 
 import pytest
 from fastapi.testclient import TestClient
@@ -44,9 +44,9 @@ def test_rate_limit_key_falls_back_to_remote_ip() -> None:
     assert rate_limit_key(request) == "ip:203.0.113.11"
 
 
-def test_limiter_is_configured_for_headers_and_fallback() -> None:
+def test_limiter_is_configured_for_headers_and_redis_storage() -> None:
     assert limiter._headers_enabled is True
-    assert limiter._in_memory_fallback_enabled is True
+    assert limiter._in_memory_fallback_enabled is False
     assert limiter._key_prefix == "prompteer"
     assert limiter._storage_uri is not None
     assert limiter._storage_uri.startswith("redis://")

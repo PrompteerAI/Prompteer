@@ -17,6 +17,7 @@ from pydantic import BaseModel, EmailStr, Field, ValidationError, field_validato
 from starlette import status
 from starlette.responses import Response
 
+from app.core.config import settings
 from app.core.errors import ProblemException
 from app.core.feature_flags import dev_routes_enabled, require_feature_enabled
 from app.core.ratelimit import EMAIL_RATE_LIMIT, limiter
@@ -25,6 +26,8 @@ router = APIRouter(tags=["mock-sendgrid"])
 
 
 def default_mailbox_dir() -> Path:
+    if settings.mock_mailbox_dir:
+        return Path(settings.mock_mailbox_dir)
     return Path(__file__).resolve().parents[5] / ".mock" / "email"
 
 

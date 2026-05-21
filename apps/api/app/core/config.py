@@ -29,10 +29,6 @@ class Settings(BaseSettings):
     rate_limit_strategy: str = Field(default="moving-window", alias="RATE_LIMIT_STRATEGY")
     rate_limit_key_prefix: str = Field(default="prompteer", alias="RATE_LIMIT_KEY_PREFIX")
     rate_limit_headers_enabled: bool = Field(default=True, alias="RATE_LIMIT_HEADERS_ENABLED")
-    rate_limit_in_memory_fallback_enabled: bool = Field(
-        default=True,
-        alias="RATE_LIMIT_IN_MEMORY_FALLBACK_ENABLED",
-    )
     general_rate_limit: str = Field(default="60/minute", alias="GENERAL_RATE_LIMIT")
     llm_rate_limit: str = Field(default="10/minute;200/hour", alias="LLM_RATE_LIMIT")
     payments_rate_limit: str = Field(default="5/minute", alias="PAYMENTS_RATE_LIMIT")
@@ -77,6 +73,7 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str = Field(default="", alias="STRIPE_WEBHOOK_SECRET")
     sendgrid_api_key: str = Field(default="", alias="SENDGRID_API_KEY")
     sendgrid_from_email: str = Field(default="no-reply@prompteer.dev", alias="SENDGRID_FROM_EMAIL")
+    mock_mailbox_dir: str = Field(default="", alias="MOCK_MAILBOX_DIR")
     feature_llm_enabled: bool = Field(default=True, alias="FEATURE_LLM_ENABLED")
     feature_payments_enabled: bool = Field(default=True, alias="FEATURE_PAYMENTS_ENABLED")
     feature_email_enabled: bool = Field(default=True, alias="FEATURE_EMAIL_ENABLED")

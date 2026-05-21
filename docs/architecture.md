@@ -29,7 +29,9 @@ flowchart LR
 
 - `docker compose up -d` starts the full stack behind nginx at `http://localhost`.
 - The Compose web and API containers stay on the Docker network without publishing host ports 3000 or 8000.
-- `pnpm dev` starts hot-reload Next.js and FastAPI dev servers on `http://localhost:3000` and `http://localhost:8000` for native development.
+- The API container is supervised by Gunicorn with `uvicorn_worker.UvicornWorker`; `API_UVICORN_WORKERS` controls the number of Uvicorn worker processes and defaults to `1`, bounded by `API_UVICORN_WORKERS_MAX`.
+- `pnpm dev` starts hot-reload Next.js and FastAPI dev servers on `WEB_PORT` and `API_PORT`, which default to `3000` and `8000`.
+- Compose publishes nginx, PostgreSQL, and Redis through `HTTP_PORT`, `POSTGRES_PORT`, and `REDIS_PORT`, which default to `80`, `5432`, and `6379`.
 - Server-rendered web reads call the API through `API_INTERNAL_URL`.
 - Browser mutations call the same-origin Next.js `/api/backend/*` proxy, which attaches a short-lived Auth.js RS256 bearer token before forwarding to FastAPI.
 - External providers are selected by environment variables. Empty credentials select schema-faithful mocks.
@@ -51,7 +53,7 @@ The Next.js app is the SSO surface. Auth.js signs JWT sessions with RS256 throug
 
 FastAPI caches the Auth.js JWKS for five minutes to avoid a web-app round trip on every authenticated API request. If a bearer token references an unknown `kid`, the API refreshes the JWKS once immediately so normal key rotation does not wait for cache expiry.
 
-When Google credentials are blank, Auth.js uses the local mock OIDC provider. In native dev the mock issuer and endpoints are `http://localhost:8000`. In Compose the issuer is the public nginx origin `http://localhost`, while discovery publishes container-internal token, userinfo, and JWKS endpoints so server-to-server Auth.js calls do not leave the Docker network.
+When Google credentials are blank, Auth.js uses the local mock OIDC provider. In hot-reload dev the mock issuer and endpoints are derived from `API_PORT`. In Compose the issuer is the public nginx origin `http://localhost`, while discovery publishes container-internal token, userinfo, and JWKS endpoints so server-to-server Auth.js calls do not leave the Docker network.
 
 ## Error model
 
@@ -73,7 +75,9 @@ readiness when dev routes are disabled and no real provider credentials are
 configured. Compose requires both readiness and startup probes to pass for the API
 and nginx health checks so dependency loss, unreachable local mocks, or migration
 drift turns the local stack unhealthy instead of only proving the process is
-still alive.
+still alive. CI also runs `make compose-health`, which parses
+`docker compose ps --format json` and requires every expected service to be
+`running` and `healthy`.
 
 ## API types
 
@@ -81,7 +85,7 @@ still alive.
 
 ## Rate limits
 
-FastAPI uses `slowapi` for request rate limiting. Local Compose config points SlowAPI at Redis so counters are shared across API workers, with in-memory fallback for local resilience and tests. Cost-sensitive routes have explicit configurable limits: LLM prompt runs and provider-compatible LLM mocks default to `10/minute;200/hour`, payment and checkout routes default to `5/minute`, and SendGrid-compatible mail send defaults to `5/minute;20/day`. General challenge and community reads default to `60/minute`. Keys are scoped by authenticated principal when a route resolves one, otherwise by client IP.
+FastAPI uses `slowapi` for request rate limiting. Local Compose config points SlowAPI at Redis so counters are shared across API workers; Redis is a required dependency rather than an in-process fallback. Cost-sensitive routes have explicit configurable limits: LLM prompt runs and provider-compatible LLM mocks default to `10/minute;200/hour`, payment and checkout routes default to `5/minute`, and SendGrid-compatible mail send defaults to `5/minute;20/day`. General challenge and community reads default to `60/minute`. Keys are scoped by authenticated principal when a route resolves one, otherwise by client IP.
 
 LLM token quotas are stored in `llm_usage_days` by UTC date. Free users default to 50,000 tokens/day, paid users default to 500,000 tokens/day, and admins are uncapped while still being auditable through usage rows. Quota exhaustion returns RFC 9457 Problem Details with `code: "quota_exceeded"`.
 

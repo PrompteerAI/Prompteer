@@ -9,8 +9,6 @@ from fastapi.testclient import TestClient
 
 from app.core.config import settings
 from app.integrations.google_oauth.mock import (
-    ACCESS_TOKENS,
-    AUTH_CODES,
     DEV_PUBLIC_KEY,
     MOCK_GOOGLE_CLIENT_ID,
     MOCK_GOOGLE_CLIENT_SECRET,
@@ -27,8 +25,6 @@ def enable_mock_google(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "google_client_secret", "")
     monkeypatch.setattr(settings, "auth_mock_google_issuer", "http://localhost:8000")
     monkeypatch.setattr(settings, "auth_mock_google_server_base_url", "")
-    AUTH_CODES.clear()
-    ACCESS_TOKENS.clear()
 
 
 def test_openid_discovery_and_jwks_shape() -> None:

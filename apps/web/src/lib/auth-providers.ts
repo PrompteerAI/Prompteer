@@ -12,6 +12,7 @@ type GoogleProviderEnv = Pick<
   ServerEnv,
   | "AUTH_MOCK_GOOGLE_DISCOVERY_URL"
   | "AUTH_MOCK_GOOGLE_ISSUER"
+  | "AUTH_MOCK_GOOGLE_SERVER_BASE_URL"
   | "GOOGLE_CLIENT_ID"
   | "GOOGLE_CLIENT_SECRET"
 >;
@@ -51,6 +52,7 @@ function mockGoogleProvider(
   serverEnv: GoogleProviderEnv,
 ): OAuthConfig<GoogleOidcProfile> {
   const issuer = serverEnv.AUTH_MOCK_GOOGLE_ISSUER.replace(/\/+$/, "");
+  const serverBaseUrl = mockGoogleServerBaseUrl(serverEnv, issuer);
 
   return {
     id: "google",
@@ -58,6 +60,12 @@ function mockGoogleProvider(
     type: "oidc",
     issuer,
     wellKnown: mockGoogleWellKnown(serverEnv, issuer),
+    authorization: {
+      url: `${issuer}/o/oauth2/v2/auth`,
+      params: { scope: "openid email profile" },
+    },
+    token: `${serverBaseUrl}/token`,
+    userinfo: `${serverBaseUrl}/v3/userinfo`,
     clientId: MOCK_GOOGLE_CLIENT_ID,
     clientSecret: MOCK_GOOGLE_CLIENT_SECRET,
     checks: ["pkce", "state", "nonce"],
@@ -84,4 +92,22 @@ function mockGoogleWellKnown(
     serverEnv.AUTH_MOCK_GOOGLE_DISCOVERY_URL ??
     `${issuer}/.well-known/openid-configuration`
   ).replace(/\/+$/, "");
+}
+
+function mockGoogleServerBaseUrl(
+  serverEnv: GoogleProviderEnv,
+  issuer: string,
+): string {
+  if (serverEnv.AUTH_MOCK_GOOGLE_SERVER_BASE_URL) {
+    return serverEnv.AUTH_MOCK_GOOGLE_SERVER_BASE_URL.replace(/\/+$/, "");
+  }
+
+  if (serverEnv.AUTH_MOCK_GOOGLE_DISCOVERY_URL) {
+    return serverEnv.AUTH_MOCK_GOOGLE_DISCOVERY_URL.replace(
+      /\/\.well-known\/openid-configuration\/?$/,
+      "",
+    );
+  }
+
+  return issuer;
 }

@@ -7,7 +7,7 @@ Source:
 - https://www.twilio.com/docs/sendgrid/ui/account-and-settings/api-keys
 - https://www.twilio.com/docs/sendgrid/api-reference/mail-send/mail-send
 
-Prompteer uses `SENDGRID_API_KEY` for real email delivery. Empty values select the mock email client, which writes captured messages under `.mock/email/` and exposes them through dev-only API routes.
+Prompteer uses `SENDGRID_API_KEY` for real email delivery. Empty values select the mock email client, which writes captured messages under `.mock/email/` by default and exposes them through dev-only API routes. `MOCK_MAILBOX_DIR` can override the capture directory; Compose sets it to a writable in-container path.
 
 ## Current Mock Behavior
 

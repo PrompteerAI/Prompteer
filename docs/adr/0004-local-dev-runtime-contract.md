@@ -11,7 +11,7 @@ The rebuild contract says a contributor should be able to copy `.env.example`, s
 
 ## Decision
 
-`docker compose up -d` starts local infrastructure dependencies such as PostgreSQL and Redis. `pnpm dev` starts both application processes: FastAPI on port 8000 and Next.js on port 3000.
+`docker compose up -d` starts local infrastructure dependencies such as PostgreSQL and Redis. `pnpm dev` starts both application processes: FastAPI on `API_PORT` and Next.js on `WEB_PORT`, defaulting to ports 8000 and 3000.
 
 The root script uses a small shell wrapper instead of adding another JavaScript process manager dependency.
 

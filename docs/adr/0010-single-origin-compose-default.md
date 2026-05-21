@@ -6,11 +6,11 @@ Accepted on 2026-05-21.
 
 ## Context
 
-The local contract has two needs that are easy to put in conflict: `docker compose up -d` should expose a working app at `http://localhost`, and `pnpm dev` should still be able to bind the usual hot-reload ports `3000` and `8000`. Mock Google OAuth also needs a browser-reachable authorization URL and container-internal token, userinfo, and JWKS URLs.
+The local contract has two needs that are easy to put in conflict: `docker compose up -d` should expose a working app at `http://localhost`, and `pnpm dev` should still be able to bind hot-reload web/API ports, defaulting to `3000` and `8000`. Mock Google OAuth also needs a browser-reachable authorization URL and container-internal token, userinfo, and JWKS URLs.
 
 ## Decision
 
-Make the root Compose file start the full stack by default behind nginx on port 80. The web and API containers stay on the Compose network only, so local dev servers can still use ports 3000 and 8000. The mock Google issuer remains the public single-origin URL while discovery can publish internal server-to-server endpoints for Auth.js token exchange and userinfo/JWKS calls.
+Make the root Compose file start the full stack by default behind nginx on `HTTP_PORT`, defaulting to port 80. The web and API containers stay on the Compose network only, so local dev servers can still use `WEB_PORT` and `API_PORT`. PostgreSQL and Redis publish through `POSTGRES_PORT` and `REDIS_PORT` for local tools and tests. The mock Google issuer remains the public single-origin URL while discovery can publish internal server-to-server endpoints for Auth.js token exchange and userinfo/JWKS calls.
 
 ## Consequences
 

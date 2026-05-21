@@ -9,7 +9,7 @@ Sources:
 
 Prompteer uses Google OAuth through Auth.js. Empty `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` select the local mock OpenID Connect provider at `AUTH_MOCK_GOOGLE_ISSUER`.
 
-Native dev uses one base URL, usually `http://localhost:8000`, for the issuer and every endpoint. Compose uses nginx as the public issuer at `http://localhost` and sets `AUTH_MOCK_GOOGLE_SERVER_BASE_URL=http://api:8000` so discovery can publish internal token, userinfo, and JWKS endpoints for Auth.js server-to-server calls.
+Hot-reload dev derives the mock issuer and endpoints from `API_PORT`, usually `http://localhost:8000`. Compose uses nginx as the public issuer at `http://localhost` and sets `AUTH_MOCK_GOOGLE_SERVER_BASE_URL=http://api:8000` so discovery can publish internal token, userinfo, and JWKS endpoints for Auth.js server-to-server calls.
 
 ## Local mock
 

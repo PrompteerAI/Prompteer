@@ -52,6 +52,15 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -113,7 +122,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: cp .env.example .env
       - run: docker compose up -d --build --wait --wait-timeout 300
-      - run: docker compose ps
+      - run: make compose-health
       - name: Verify Compose health endpoints
         run: |
           curl --fail --silent --show-error http://localhost/api/v1/health/live
@@ -124,7 +133,6 @@ jobs:
       - name: Run Playwright against Compose
         run: pnpm --filter @prompteer/web test:e2e
         env:
-          PLAYWRIGHT_USE_EXTERNAL_SERVER: "true"
           PLAYWRIGHT_BASE_URL: http://localhost
       - name: Capture Compose logs
         if: always()

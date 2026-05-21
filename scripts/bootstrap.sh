@@ -21,10 +21,14 @@ if [[ ! -f .env ]]; then
   printf 'Created .env from .env.example\n'
 fi
 
+# shellcheck source=scripts/lib/load-env.sh
+source scripts/lib/load-env.sh
+load_env_file ".env"
+
 pnpm install
 uv sync --project apps/api --dev
 
-docker compose up -d --build --wait --wait-timeout "${COMPOSE_WAIT_TIMEOUT:-300}"
+scripts/compose-up.sh --build
 
 (
   cd apps/api
@@ -34,4 +38,4 @@ docker compose up -d --build --wait --wait-timeout "${COMPOSE_WAIT_TIMEOUT:-300}
 
 printf '\nPrompteer is ready.\n'
 printf 'Containerized app: http://localhost\n'
-printf 'Hot-reload dev:    pnpm dev, then http://localhost:3000\n'
+printf 'Hot-reload dev:    pnpm dev, then http://localhost:%s\n' "${WEB_PORT:-3000}"

@@ -1,5 +1,6 @@
 """JWT principal validation against Auth.js-issued RS256 API tokens."""
 
+import asyncio
 from dataclasses import dataclass
 from time import monotonic
 from typing import Any
@@ -10,6 +11,8 @@ import jwt
 from app.core.config import settings
 
 JWKS_CACHE_SECONDS = 300.0
+JWKS_FETCH_ATTEMPTS = 2
+JWKS_FETCH_TIMEOUT_SECONDS = 5.0
 NO_MATCHING_KID_ERROR = "No JWKS key matched the JWT kid."
 
 
@@ -78,10 +81,21 @@ def clear_jwks_cache() -> None:
 
 
 async def fetch_jwks(jwks_url: str) -> dict[str, Any]:
-    async with httpx.AsyncClient(timeout=5.0) as client:
-        response = await client.get(jwks_url)
-        response.raise_for_status()
-        body = response.json()
+    body: Any = None
+    for attempt in range(1, JWKS_FETCH_ATTEMPTS + 1):
+        try:
+            async with httpx.AsyncClient(timeout=JWKS_FETCH_TIMEOUT_SECONDS) as client:
+                response = await client.get(jwks_url)
+                response.raise_for_status()
+                body = response.json()
+        except httpx.TransportError as exc:
+            if attempt < JWKS_FETCH_ATTEMPTS:
+                await asyncio.sleep(0.2 * attempt)
+                continue
+            raise AuthTokenError("JWKS endpoint was unreachable.") from exc
+        except httpx.HTTPStatusError as exc:
+            raise AuthTokenError("JWKS endpoint returned an error.") from exc
+        break
     if not isinstance(body, dict) or not isinstance(body.get("keys"), list):
         raise AuthTokenError("JWKS endpoint did not return a key set.")
     return body

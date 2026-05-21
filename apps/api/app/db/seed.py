@@ -59,15 +59,29 @@ def seed_users(session: Session) -> dict[str, User]:
         if user is None:
             user = User(email=email, **data)
             session.add(user)
-            session.add(
-                Profile(
-                    user_id=user.id,
-                    introduction=f"Demo account for {data['display_name']}.",
-                    interests={"prompt_engineer": True, "ps": email == "free@prompteer.dev"},
-                )
-            )
+            session.flush()
+        ensure_profile(session, user=user, email=email, display_name=str(data["display_name"]))
         users[email] = user
     return users
+
+
+def ensure_profile(session: Session, *, user: User, email: str, display_name: str) -> None:
+    profile = session.get(Profile, user.id)
+    introduction = f"Demo account for {display_name}."
+    interests = {"prompt_engineer": True, "ps": email == "free@prompteer.dev"}
+    if profile is None:
+        session.add(
+            Profile(
+                user_id=user.id,
+                introduction=introduction,
+                interests=interests,
+            )
+        )
+        return
+
+    profile.introduction = introduction
+    profile.interests = interests
+    session.add(profile)
 
 
 def seed_challenges(session: Session, users_by_email: dict[str, User]) -> None:

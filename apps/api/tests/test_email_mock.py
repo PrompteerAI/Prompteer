@@ -46,6 +46,16 @@ async def test_mock_sendgrid_captures_eml(tmp_path: Path) -> None:
     assert message_text.count("Welcome to Prompteer") == 1
 
 
+def test_default_mailbox_dir_uses_env_override(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(settings, "mock_mailbox_dir", str(tmp_path / "mailbox"))
+
+    assert email_mock.default_mailbox_dir() == tmp_path / "mailbox"
+
+    monkeypatch.setattr(settings, "mock_mailbox_dir", "")
+
+
 def test_mock_sendgrid_http_route_and_mailbox_detail(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -22,9 +22,10 @@ RUN useradd --create-home --uid 10001 prompteer
 
 COPY --from=builder --chown=prompteer:prompteer /app/apps/api/.venv ./.venv
 COPY --chown=prompteer:prompteer apps/api/app ./app
+COPY --chown=prompteer:prompteer --chmod=0755 apps/api/scripts/start.sh ./scripts/start.sh
 COPY --chown=prompteer:prompteer apps/api/alembic.ini ./alembic.ini
 
 USER prompteer
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/live', timeout=2)"
-CMD ["fastapi", "run", "app/main.py", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["./scripts/start.sh"]

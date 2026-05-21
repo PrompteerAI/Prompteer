@@ -11,14 +11,13 @@ normal OIDC issuer in local development when real Google credentials are absent.
 from __future__ import annotations
 
 import base64
-import secrets
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
 from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 
 import jwt
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPublicKey
 from fastapi import APIRouter, Form, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
@@ -29,7 +28,9 @@ from app.core.feature_flags import dev_routes_enabled
 MOCK_GOOGLE_CLIENT_ID = "mock-google-client"
 MOCK_GOOGLE_CLIENT_SECRET = "mock-google-secret"
 MOCK_GOOGLE_KEY_ID = "prompteer-dev-google-oauth"
+MOCK_GOOGLE_TOKEN_SECRET = "prompteer-dev-google-oauth-state"
 ACCESS_TOKEN_SECONDS = 3600
+AUTH_CODE_SECONDS = 300
 
 
 @dataclass(frozen=True)
@@ -82,11 +83,41 @@ MOCK_USERS: dict[str, MockGoogleUser] = {
 
 DEFAULT_MOCK_EMAIL = "free@prompteer.dev"
 
-DEV_PRIVATE_KEY: RSAPrivateKey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+# Dev-only deterministic key. Keeping it stable makes the mock OIDC provider safe
+# across multiple Gunicorn/Uvicorn worker processes.
+DEV_PRIVATE_KEY_PEM = b"""-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQD5NTen4/48CaNr
+B0FCTll7r2Ii8UuQQAREGIlK9JZZxS2QlS9/WpZ5sbmLwABsZvUiGFqdL7IQZ3f2
+SFgGgNe8KdEqqy+xPHysTod0R4EbM6m84uOi5q36Z4L5PxzJp3uwqDtMdTLWq4O1
+r8NhjCunjeYtY5Eh8lCaoL4MdAhF31Reca0YRizuiuTdfeQ3AAa29zatxwPSSgIS
+QJC9SeKwXuO0KPzJHGHqn9uwV0OkH7SMpDxJawA/Gn2RAqN6nef/3lSKEtvetF7G
+dAPV3LEcvkvqK8r+b6W7d3+gh+6qUGhwchjNOQOyLz1bVmyWueKt1QEz1LfM8Te0
+mEEWnc0PAgMBAAECggEAYHSepBb00hwQ6l4WfimBLQRHAatPSffdLtYoXaCpiPlu
+l2WGys4vK88EN/kKsOpwus+eUvShAQRrRCHgIDRCTAwLb25uuTTmNHL4rqL2b6bh
+bcCLxwNuF1t1MC+jXtG6aDfVK9S45qngArSS9PCh/OpJSwwconz9gbvxkzRd91yj
+7mQLIYYLF/sP5dNWRBETJVWtxNVj8f7JbMRy2x/3negFl+JXXM2mXtwzirGNzSSu
+Kngvdl6nY+6AR9twpJlDf9b6OZsX2Nr2nff8yyUI7dUeYtUzB6k4wBUTC1wn7lGW
+bQAuGIXrSNFxfXe4GrzSaofmZsYbNk5PRVLsBULlQQKBgQD9aZ75oAZtnWhbbkla
+sX6K3mSatxKfyZFqQhxllw7umedTStyAnYDAn21Y5++5Q5mkQ9O7oPeDrd0FxwZ8
+9WTE+KPwop3cSbBCOURcwdtmYO3Er7pm0kCTFoieNcsjGuED1vSnhENJr5JVB2QC
+YKzR5wO9CK+x5fKSPpjX4ezrEQKBgQD7wJsjUP+dbUpsMsKnw49B7roZYo8U+kL2
+r0g99zEtOzoG0IXgjnYdi1uputl/SemFBRyzIkNuAic+Hkc7VIoD31a1XOW20Udf
+IXm+BDj1xLH8pFrtZfg1C7G1yzo6kfu1RWUwm1UpLdISBRgVXv78PD9nV+N2xRbu
+u/7fYlv2HwKBgQDMdMc7CA2nqvRjsFumvMYoLL5mxYZVPUABx005+eKmR64H2cKG
+Uo1q3DZRIPCdPRldGwxducV5jHFjE+z8LNEcyq8am1laPmnjRGkPnajytQmhQ1bV
+VpWbFvcrDqPSswERJAFIlsHjVbBuwgPCl1VYFVdC0RtQIQLRU4flxfZswQKBgQCB
+firOWaWBpmu3h8yUWoTflxnmYMnUMn4rQTHZncKPz30jcDLMtLqQq9P0VAX38V7K
+azy974vblAP3cb+WBwAOydxh4WzPQoqBpkhmsulRkWEz4J5cqiynrGI2blh/NAPS
+0+UewWdmjQkW98PRilGCEMNUNuLrfqkzF0QcRw2iZQKBgDtjTiL2xaJhi+SkMaYf
+HpFc0dwm+oB2u9bSV0r7VD/lxCJxJpwMwwUboEU1t1zWO//S9oVvlfKPi17s1fI/
+dYANaX4VHOLAYodYFmAE81pj7fdUrv/KrPtq4UWVtSXf8mxeUo96OyfnODQhI2VS
+DMqVf3DMtFbz7gd8PEUqPyZb
+-----END PRIVATE KEY-----"""
+loaded_private_key = serialization.load_pem_private_key(DEV_PRIVATE_KEY_PEM, password=None)
+if not isinstance(loaded_private_key, RSAPrivateKey):
+    raise TypeError("Mock Google OAuth private key must be an RSA private key.")
+DEV_PRIVATE_KEY: RSAPrivateKey = loaded_private_key
 DEV_PUBLIC_KEY: RSAPublicKey = DEV_PRIVATE_KEY.public_key()
-
-AUTH_CODES: dict[str, AuthorizationCode] = {}
-ACCESS_TOKENS: dict[str, str] = {}
 
 router = APIRouter(tags=["mock-google-oauth"])
 
@@ -213,6 +244,110 @@ def validate_client(
     return client_id
 
 
+def encode_mock_state(payload: dict[str, Any], *, lifetime_seconds: int) -> str:
+    now = datetime.now(tz=UTC)
+    return str(
+        jwt.encode(
+            {
+                **payload,
+                "iat": int(now.timestamp()),
+                "exp": int((now + timedelta(seconds=lifetime_seconds)).timestamp()),
+            },
+            MOCK_GOOGLE_TOKEN_SECRET,
+            algorithm="HS256",
+        )
+    )
+
+
+def decode_mock_state(
+    token: str,
+    *,
+    expected_type: str,
+    invalid_status_code: int,
+    invalid_detail: str,
+) -> dict[str, Any]:
+    try:
+        payload = jwt.decode(
+            token,
+            MOCK_GOOGLE_TOKEN_SECRET,
+            algorithms=["HS256"],
+            options={"require": ["exp", "iat", "mock_type"]},
+        )
+    except jwt.PyJWTError as exc:
+        raise HTTPException(status_code=invalid_status_code, detail=invalid_detail) from exc
+    if not isinstance(payload, dict) or payload.get("mock_type") != expected_type:
+        raise HTTPException(status_code=invalid_status_code, detail=invalid_detail)
+    return payload
+
+
+def payload_str(payload: dict[str, Any], key: str, *, detail: str) -> str:
+    value = payload.get(key)
+    if not isinstance(value, str):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+    return value
+
+
+def encode_authorization_code(authorization_code: AuthorizationCode) -> str:
+    payload: dict[str, Any] = {
+        "mock_type": "authorization_code",
+        "email": authorization_code.email,
+        "client_id": authorization_code.client_id,
+        "redirect_uri": authorization_code.redirect_uri,
+        "scope": authorization_code.scope,
+    }
+    if authorization_code.nonce is not None:
+        payload["nonce"] = authorization_code.nonce
+    return encode_mock_state(payload, lifetime_seconds=AUTH_CODE_SECONDS)
+
+
+def decode_authorization_code(code: str) -> AuthorizationCode:
+    payload = decode_mock_state(
+        code,
+        expected_type="authorization_code",
+        invalid_status_code=status.HTTP_400_BAD_REQUEST,
+        invalid_detail="Invalid code.",
+    )
+    email = payload_str(payload, "email", detail="Invalid code.")
+    if email not in MOCK_USERS:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid code.")
+    nonce = payload.get("nonce")
+    if nonce is not None and not isinstance(nonce, str):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid code.")
+    return AuthorizationCode(
+        email=email,
+        client_id=payload_str(payload, "client_id", detail="Invalid code."),
+        redirect_uri=payload_str(payload, "redirect_uri", detail="Invalid code."),
+        scope=payload_str(payload, "scope", detail="Invalid code."),
+        nonce=nonce,
+    )
+
+
+def issue_access_token(user: MockGoogleUser) -> str:
+    return "ya29." + encode_mock_state(
+        {"mock_type": "access_token", "email": user.email},
+        lifetime_seconds=ACCESS_TOKEN_SECONDS,
+    )
+
+
+def access_token_email(access_token: str) -> str:
+    if not access_token.startswith("ya29."):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid access token."
+        )
+    payload = decode_mock_state(
+        access_token.removeprefix("ya29."),
+        expected_type="access_token",
+        invalid_status_code=status.HTTP_401_UNAUTHORIZED,
+        invalid_detail="Invalid access token.",
+    )
+    email = payload.get("email")
+    if not isinstance(email, str) or email not in MOCK_USERS:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid access token."
+        )
+    return email
+
+
 def sign_id_token(*, user: MockGoogleUser, client_id: str, nonce: str | None) -> str:
     now = datetime.now(tz=UTC)
     payload: dict[str, Any] = {
@@ -292,13 +427,14 @@ async def authorize(
             detail="Unsupported OAuth authorization request.",
         )
     user = select_user(login_hint)
-    code = secrets.token_urlsafe(32)
-    AUTH_CODES[code] = AuthorizationCode(
-        email=user.email,
-        client_id=client_id,
-        redirect_uri=redirect_uri,
-        scope=scope,
-        nonce=nonce,
+    code = encode_authorization_code(
+        AuthorizationCode(
+            email=user.email,
+            client_id=client_id,
+            redirect_uri=redirect_uri,
+            scope=scope,
+            nonce=nonce,
+        )
     )
     query = {"code": code}
     if state is not None:
@@ -322,9 +458,7 @@ async def token(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Unsupported grant_type.",
         )
-    authorization_code = AUTH_CODES.pop(code, None)
-    if authorization_code is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid code.")
+    authorization_code = decode_authorization_code(code)
     if not redirect_uris_match(authorization_code.redirect_uri, redirect_uri):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -333,12 +467,15 @@ async def token(
     if authorization_code.client_id != authenticated_client_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid client_id.")
     user = MOCK_USERS[authorization_code.email]
-    access_token = f"ya29.{secrets.token_urlsafe(32)}"
-    ACCESS_TOKENS[access_token] = user.email
+    access_token = issue_access_token(user)
     return {
         "access_token": access_token,
         "expires_in": ACCESS_TOKEN_SECONDS,
-        "refresh_token": f"1//{secrets.token_urlsafe(32)}",
+        "refresh_token": "1//"
+        + encode_mock_state(
+            {"mock_type": "refresh_token", "email": user.email},
+            lifetime_seconds=ACCESS_TOKEN_SECONDS,
+        ),
         "scope": authorization_code.scope,
         "token_type": "Bearer",
         "id_token": sign_id_token(
@@ -354,12 +491,12 @@ async def userinfo(request: Request) -> dict[str, str | bool]:
     require_mock_enabled()
     authorization = request.headers.get("authorization", "")
     scheme, _, access_token = authorization.partition(" ")
-    if scheme.lower() != "bearer" or access_token not in ACCESS_TOKENS:
+    if scheme.lower() != "bearer":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid access token.",
         )
-    return userinfo_payload(MOCK_USERS[ACCESS_TOKENS[access_token]])
+    return userinfo_payload(MOCK_USERS[access_token_email(access_token)])
 
 
 @router.get("/oauth2/v3/certs")

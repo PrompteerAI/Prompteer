@@ -9,7 +9,7 @@ const webRequire = createRequire(
 const { chromium } = webRequire("@playwright/test");
 
 const configuredUrl = new URL(
-  process.env.PROMPTEER_WEB_URL ?? "http://localhost:3000/en",
+  process.env.PROMPTEER_WEB_URL ?? "http://localhost/en",
 );
 const origin = configuredUrl.origin;
 const outDir = new URL("../.verify/screenshots/", import.meta.url);

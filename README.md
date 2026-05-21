@@ -145,15 +145,21 @@ Run frontend and backend independently:
 
 ```sh
 pnpm --filter @prompteer/web dev
-cd apps/api && uv run fastapi dev app/main.py --port 8000
+make api-dev
 ```
+
+Hot-reload ports are configured in `.env` with `WEB_PORT=3000` and
+`API_PORT=8000`. Compose host ports are configured with `HTTP_PORT=80`,
+`POSTGRES_PORT=5432`, and `REDIS_PORT=6379`. The dev scripts derive `APP_URL`,
+`AUTH_URL`, JWKS, and mock Google issuer URLs from the hot-reload ports so a
+local port change stays consistent.
 
 Run tests:
 
 ```sh
 pnpm test
 cd apps/api && uv run pytest
-pnpm --filter @prompteer/web test:e2e
+make e2e
 ```
 
 Run lint, typecheck, and formatting:
@@ -171,7 +177,7 @@ Run the full local verification suite:
 make verify
 ```
 
-Capture desktop and mobile UI screenshots against running dev servers:
+Capture desktop and mobile UI screenshots against Docker Compose:
 
 ```sh
 make verify-ui

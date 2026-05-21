@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bash -lc 'set -a; [ -f ../../.env ] && . ../../.env; set +a; echo \"Prompteer web: http://localhost:3000\"; if [ -z \"${GOOGLE_CLIENT_ID:-}\" ] || [ -z \"${GOOGLE_CLIENT_SECRET:-}\" ]; then echo \"Mock Google OAuth is ON\"; fi; next dev --port 3000'",
-    "build": "bash -lc 'set -a; [ -f ../../.env ] && . ../../.env; set +a; next build'",
+    "dev": "../../scripts/web-dev.sh",
+    "build": "../../scripts/web-build.sh",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",

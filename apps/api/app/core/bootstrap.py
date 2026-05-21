@@ -50,6 +50,10 @@ def run_development_bootstrap() -> None:
     seed_mock_emails()
 
 
+def main() -> None:
+    asyncio.run(bootstrap_development_state())
+
+
 def integration_modes() -> dict[str, str]:
     return {
         "llm": "real" if settings.openai_api_key or settings.anthropic_api_key else "mock",
@@ -59,3 +63,7 @@ def integration_modes() -> dict[str, str]:
         "stripe": "real" if settings.stripe_secret_key else "mock",
         "email": "real" if settings.sendgrid_api_key else "mock",
     }
+
+
+if __name__ == "__main__":
+    main()

@@ -6,7 +6,7 @@
   "packageManager": "pnpm@10.12.1",
   "scripts": {
     "prepare": "husky || true",
-    "dev": "bash -lc 'set -a; [ -f .env ] && . ./.env; set +a; echo \"Prompteer dev: web=http://localhost:3000 api=http://localhost:8000\"; if [ -z \"${GOOGLE_CLIENT_ID:-}\" ] || [ -z \"${GOOGLE_CLIENT_SECRET:-}\" ]; then echo \"Mock Google OAuth is ON\"; fi; trap \"kill 0\" INT TERM EXIT; (cd apps/api && uv run fastapi dev app/main.py --port 8000) & pnpm --filter @prompteer/web dev & wait'",
+    "dev": "scripts/dev.sh",
     "build": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
