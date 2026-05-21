@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap dev lint typecheck test format build verify env-check types types-check backup-restore-check compose-deps compose-health e2e verify-ui tree api-dev api-lint api-test seed reset reset-db logs
+.PHONY: help bootstrap dev lint typecheck test format build verify env-check types types-check migration-check backup-restore-check compose-deps compose-health e2e verify-ui tree api-dev api-lint api-test seed reset reset-db logs
 
 help: ## Show available Makefile targets.
 	@awk 'BEGIN {FS = ":.*##"; printf "Available targets:\n"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -52,6 +52,9 @@ types: ## Generate OpenAPI and TypeScript API types.
 
 types-check: ## Verify generated OpenAPI artifacts are committed.
 	scripts/check-openapi-types.sh
+
+migration-check: ## Verify Alembic upgrade/downgrade against a throwaway PostgreSQL database.
+	scripts/verify-migrations.sh
 
 backup-restore-check: ## Verify PostgreSQL backup and restore scripts against throwaway databases.
 	scripts/verify-backup-restore.sh

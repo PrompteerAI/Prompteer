@@ -4,6 +4,7 @@ from sqlmodel import Session, SQLModel, create_engine, select
 
 from app.core.config import settings
 from app.integrations.email.mock import MockSendGridClient
+from app.integrations.payments.mock import seed_completed_checkout_session
 from app.models.domain import (
     Challenge,
     ChallengeLevel,
@@ -48,6 +49,7 @@ DEMO_USERS = {
 
 def seed(session: Session) -> None:
     users_by_email = seed_users(session)
+    seed_mock_checkouts(users_by_email)
     seed_challenges(session, users_by_email)
     session.commit()
 
@@ -82,6 +84,36 @@ def ensure_profile(session: Session, *, user: User, email: str, display_name: st
     profile.introduction = introduction
     profile.interests = interests
     session.add(profile)
+
+
+def seed_mock_checkouts(users_by_email: dict[str, User]) -> None:
+    for email, data in DEMO_USERS.items():
+        if data["plan"] != "paid":
+            continue
+        seed_completed_checkout_session(
+            {
+                "mode": "subscription",
+                "success_url": f"{settings.app_url}/en/billing/success",
+                "cancel_url": f"{settings.app_url}/en/billing",
+                "customer_email": email,
+                "metadata": {
+                    "plan": "pro",
+                    "seed_user_id": users_by_email[email].id,
+                },
+                "line_items": [
+                    {
+                        "quantity": 1,
+                        "price_data": {
+                            "currency": "usd",
+                            "unit_amount": 1200,
+                            "recurring": {"interval": "month"},
+                            "product_data": {"name": "Prompteer Pro"},
+                        },
+                    }
+                ],
+            },
+            seed_key=email,
+        )
 
 
 def seed_challenges(session: Session, users_by_email: dict[str, User]) -> None:

@@ -74,6 +74,10 @@ jobs:
       - run: cd apps/api && uv run ruff format --check .
       - run: cd apps/api && uv run mypy app tests
       - run: cd apps/api && uv run pytest
+      - run: make migration-check
+        env:
+          MAINTENANCE_DATABASE_URL: postgresql://prompteer:prompteer@localhost:5432/postgres
+          MIGRATION_DATABASE_URL: postgresql://prompteer:prompteer@localhost:5432/prompteer_migration_check
       - run: make backup-restore-check
         env:
           MAINTENANCE_DATABASE_URL: postgresql://prompteer:prompteer@localhost:5432/postgres

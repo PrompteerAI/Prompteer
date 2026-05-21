@@ -26,7 +26,7 @@ Production skips this path entirely. `make seed` remains available as an explici
 
 ## Consequences
 
-The default local command path creates demo users, challenges, board posts, shares, and mock emails automatically. Developers can still disable startup seeding with `AUTO_SEED_ON_STARTUP=false`.
+The default local command path creates demo users, challenges, board posts, shares, pre-completed mock Stripe checkouts for paid demo users, and mock emails automatically. Developers can still disable startup seeding with `AUTO_SEED_ON_STARTUP=false`.
 
 The schema source of truth remains Alembic. Local startup invokes Alembic; it does not directly create tables from metadata outside the migration system.
 

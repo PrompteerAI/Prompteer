@@ -30,6 +30,7 @@ from app.integrations.payments.webhooks import (
 )
 
 MOCK_CHECKOUT_BASE_URL = "https://checkout.stripe.com/c/pay"
+SEED_CHECKOUT_CREATED = 1_800_000_000
 FORM_KEY_PATTERN = re.compile(r"[^\[\]]+")
 
 router = APIRouter(tags=["mock-stripe"])
@@ -78,20 +79,7 @@ class MockStripeClient:
 
     async def complete_checkout_session(self, session_id: str) -> dict[str, Any]:
         session = self.get_session(session_id)
-        if session["status"] == "expired":
-            raise MockStripeError("Expired Checkout Sessions cannot be completed.")
-        session["status"] = "complete"
-        session["payment_status"] = "paid"
-        session["url"] = None
-        digest = stable_digest(session)
-        session["customer"] = session["customer"] or f"cus_mock_{digest[:24]}"
-        if session["mode"] == "subscription":
-            session["subscription"] = session["subscription"] or f"sub_mock_{digest[:24]}"
-        elif session["mode"] == "payment":
-            session["payment_intent"] = session["payment_intent"] or f"pi_mock_{digest[:24]}"
-        event = build_checkout_completed_event(session)
-        self.store.events[str(event["id"])] = event
-        return {"session": session, "event": event}
+        return complete_checkout_session_in_store(session, store=self.store)
 
     def get_session(self, session_id: str) -> dict[str, Any]:
         session = self.store.sessions.get(session_id)
@@ -302,6 +290,44 @@ def build_checkout_session(payload: dict[str, Any]) -> dict[str, Any]:
         "ui_mode": payload.get("ui_mode", "hosted"),
         "url": f"{MOCK_CHECKOUT_BASE_URL}/{session_id}#mock",
     }
+
+
+def seed_completed_checkout_session(
+    payload: dict[str, Any],
+    *,
+    seed_key: str,
+    store: MockStripeStore = STORE,
+) -> dict[str, Any]:
+    session = build_checkout_session(payload)
+    digest = sha256(f"seed-checkout:{seed_key}".encode()).hexdigest()
+    session_id = f"cs_test_seed_{digest[:24]}"
+    session["id"] = session_id
+    session["created"] = SEED_CHECKOUT_CREATED
+    session["expires_at"] = SEED_CHECKOUT_CREATED + 86_400
+    session["url"] = f"{MOCK_CHECKOUT_BASE_URL}/{session_id}#mock"
+    store.sessions[session_id] = session
+    return complete_checkout_session_in_store(session, store=store)
+
+
+def complete_checkout_session_in_store(
+    session: dict[str, Any],
+    *,
+    store: MockStripeStore,
+) -> dict[str, Any]:
+    if session["status"] == "expired":
+        raise MockStripeError("Expired Checkout Sessions cannot be completed.")
+    session["status"] = "complete"
+    session["payment_status"] = "paid"
+    session["url"] = None
+    digest = stable_digest(session)
+    session["customer"] = session["customer"] or f"cus_mock_{digest[:24]}"
+    if session["mode"] == "subscription":
+        session["subscription"] = session["subscription"] or f"sub_mock_{digest[:24]}"
+    elif session["mode"] == "payment":
+        session["payment_intent"] = session["payment_intent"] or f"pi_mock_{digest[:24]}"
+    event = build_checkout_completed_event(session)
+    store.events[str(event["id"])] = event
+    return {"session": session, "event": event}
 
 
 def checkout_amount(payload: dict[str, Any]) -> tuple[int | None, str | None]:
