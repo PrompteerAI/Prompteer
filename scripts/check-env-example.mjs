@@ -15,12 +15,19 @@ const SCAN_FILES = [
   "apps/web/next.config.ts",
   "apps/web/playwright.config.ts",
   "apps/api/scripts/start.sh",
+  "apps/api/Dockerfile",
+  "apps/web/Dockerfile",
+  ".github/workflows/ci.yaml",
+  ".github/workflows/build.yaml",
+  ".github/workflows/e2e.yaml",
   "scripts/backup-db.sh",
   "scripts/bootstrap.sh",
   "scripts/check-compose-health.sh",
   "scripts/check-openapi-types.sh",
   "scripts/compose-up.sh",
   "scripts/dev.sh",
+  "scripts/lib/load-env.sh",
+  "scripts/reset-db.sh",
   "scripts/api-dev.sh",
   "scripts/api-test.sh",
   "scripts/web-dev.sh",
@@ -39,11 +46,17 @@ const SYSTEM_ENV_KEYS = new Set([
   "FORCE_COLOR",
   "GITHUB_ENV",
   "GITHUB_SHA",
+  "GITHUB_STEP_SUMMARY",
   "HOSTNAME",
   "NEXT_RUNTIME",
   "NODE_ENV",
   "NO_COLOR",
+  "PATH",
   "PWD",
+  "BASE_SHA",
+  "DEFAULT_DATABASE_URL",
+  "HEAD_SHA",
+  "SHORT_SHA",
 ]);
 
 function readText(path) {
@@ -86,6 +99,7 @@ function referencedKeys(path) {
       source,
       /(?<!\$)\$\{([A-Z][A-Z0-9_]*)(?::[-=?][^}]*)?\}/g,
     ),
+    ...collectMatches(source, /(?<![\w$])\$([A-Z][A-Z0-9_]*)\b/g),
   ]);
 
   if (keys.has("")) {

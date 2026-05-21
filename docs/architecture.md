@@ -27,7 +27,10 @@ flowchart LR
 
 ## Local topology
 
-- `docker compose up -d` starts the full stack behind nginx at `http://localhost`.
+- `docker compose up -d` starts the full stack behind nginx at `http://localhost`
+  by default, or `http://localhost:<HTTP_PORT>` when the nginx host port is
+  changed in `.env`. Compose injects the same public origin into Auth.js, API
+  JWT issuer checks, and mock OAuth settings.
 - The Compose web and API containers stay on the Docker network without publishing host ports 3000 or 8000.
 - The API container is supervised by Gunicorn with `uvicorn_worker.UvicornWorker`; `API_UVICORN_WORKERS` controls the number of Uvicorn worker processes and defaults to `1`, bounded by `API_UVICORN_WORKERS_MAX`.
 - `pnpm dev` starts hot-reload Next.js and FastAPI dev servers on `WEB_PORT` and `API_PORT`, which default to `3000` and `8000`.

@@ -9,6 +9,7 @@ node_modules
 **/node_modules
 .next
 **/.next
+apps/web/src/i18n/locales.generated.ts
 .turbo
 **/.turbo
 .venv
@@ -23,9 +24,12 @@ __pycache__
 **/.mypy_cache
 .coverage
 coverage
+**/coverage
 coverage.xml
 playwright-report
+**/playwright-report
 test-results
+**/test-results
 .mock
 .verify
 backups

@@ -20,7 +20,7 @@ cp .env.example .env
 docker compose up -d
 ```
 
-Open `http://localhost`. The default Compose stack serves the app through nginx as one origin, with `/` routed to the web app and `/api/` routed to FastAPI.
+Open `http://localhost`. The default Compose stack serves the app through nginx as one origin, with `/` routed to the web app and `/api/` routed to FastAPI. If `HTTP_PORT` is changed in `.env`, open `http://localhost:<HTTP_PORT>`.
 
 ## Screenshots & Demo
 
@@ -150,9 +150,10 @@ make api-dev
 
 Hot-reload ports are configured in `.env` with `WEB_PORT=3000` and
 `API_PORT=8000`. Compose host ports are configured with `HTTP_PORT=80`,
-`POSTGRES_PORT=5432`, and `REDIS_PORT=6379`. The dev scripts derive `APP_URL`,
-`AUTH_URL`, JWKS, and mock Google issuer URLs from the hot-reload ports so a
-local port change stays consistent.
+`POSTGRES_PORT=5432`, and `REDIS_PORT=6379`. Compose injects `HTTP_PORT` into
+the containerized public origin used by Auth.js, API JWT issuer checks, and mock
+OAuth. The dev scripts derive `APP_URL`, `AUTH_URL`, JWKS, and mock Google
+issuer URLs from the hot-reload ports so a local port change stays consistent.
 
 Run tests:
 

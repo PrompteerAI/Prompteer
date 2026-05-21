@@ -24,6 +24,7 @@ fi
 # shellcheck source=scripts/lib/load-env.sh
 source scripts/lib/load-env.sh
 load_env_file ".env"
+apply_local_port_env
 
 pnpm install
 uv sync --project apps/api --dev
@@ -37,5 +38,5 @@ scripts/compose-up.sh --build
 )
 
 printf '\nPrompteer is ready.\n'
-printf 'Containerized app: http://localhost\n'
+printf 'Containerized app: %s\n' "$(compose_http_origin)"
 printf 'Hot-reload dev:    pnpm dev, then http://localhost:%s\n' "${WEB_PORT:-3000}"

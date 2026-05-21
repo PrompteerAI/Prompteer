@@ -7,5 +7,6 @@ cd "$repo_root"
 # shellcheck source=scripts/lib/load-env.sh
 source scripts/lib/load-env.sh
 load_env_file ".env"
+apply_local_port_env
 
 docker compose up -d --wait --wait-timeout "${COMPOSE_WAIT_TIMEOUT:-300}" "$@"

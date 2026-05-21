@@ -42,6 +42,7 @@ require_tcp_port() {
 apply_local_port_env() {
   local web_port="${WEB_PORT:-3000}"
   local api_port="${API_PORT:-8000}"
+  local http_port="${HTTP_PORT:-80}"
   local postgres_port="${POSTGRES_PORT:-5432}"
   local redis_port="${REDIS_PORT:-6379}"
   local postgres_user="${POSTGRES_USER:-prompteer}"
@@ -52,11 +53,13 @@ apply_local_port_env() {
 
   require_tcp_port "WEB_PORT" "$web_port"
   require_tcp_port "API_PORT" "$api_port"
+  require_tcp_port "HTTP_PORT" "$http_port"
   require_tcp_port "POSTGRES_PORT" "$postgres_port"
   require_tcp_port "REDIS_PORT" "$redis_port"
 
   export WEB_PORT="$web_port"
   export API_PORT="$api_port"
+  export HTTP_PORT="$http_port"
   export POSTGRES_PORT="$postgres_port"
   export REDIS_PORT="$redis_port"
 
@@ -77,4 +80,16 @@ apply_local_port_env() {
   if [[ "${RATE_LIMIT_STORAGE_URL:-$default_redis_url}" == "$default_redis_url" ]]; then
     export RATE_LIMIT_STORAGE_URL="$REDIS_URL"
   fi
+}
+
+compose_http_origin() {
+  local http_port="${HTTP_PORT:-80}"
+  require_tcp_port "HTTP_PORT" "$http_port"
+
+  if [[ "$http_port" == "80" ]]; then
+    printf 'http://localhost\n'
+    return
+  fi
+
+  printf 'http://localhost:%s\n' "$http_port"
 }

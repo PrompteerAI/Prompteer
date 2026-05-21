@@ -6,7 +6,9 @@ The root `compose.yaml` starts the full stack by default behind nginx:
 docker compose up -d
 ```
 
-Open `http://localhost` for the containerized app.
+Open `http://localhost` for the containerized app. If `HTTP_PORT` is changed in
+`.env`, open `http://localhost:<HTTP_PORT>`; Compose also injects that port into
+Auth.js, API JWT issuer checks, and the mock OAuth public issuer.
 
 For native hot-reload development, keep Compose running and start the dev servers:
 
