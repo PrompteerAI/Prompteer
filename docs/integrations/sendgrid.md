@@ -30,7 +30,11 @@ required unless `template_id` is provided, and `subject` can be omitted when a
 template supplies it. Captured template emails include the template id and dynamic
 template data in the `.eml` body so local debugging remains useful.
 
-Accepted messages are written as `.eml` files under `.mock/email/`. The mock also exposes the upstream-shaped Mail Send endpoint locally:
+Accepted messages are written as `.eml` files under the configured mock mailbox
+directory. Native dev defaults to `.mock/email/`; Docker Compose sets
+`MOCK_MAILBOX_DIR` to a writable in-container path and exposes those messages
+through the dev mailbox routes. The mock also exposes the upstream-shaped Mail
+Send endpoint locally:
 
 ```http
 POST /v3/mail/send

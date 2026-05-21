@@ -13,12 +13,20 @@ updates:
         dependency-type: development
         patterns:
           - "*"
-  - package-ecosystem: pip
+  - package-ecosystem: uv
     directory: /apps/api
     schedule:
       interval: weekly
     groups:
       python-dependencies:
+        patterns:
+          - "*"
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      pre-commit-hooks:
         patterns:
           - "*"
   - package-ecosystem: github-actions
@@ -43,5 +51,13 @@ updates:
       interval: monthly
     groups:
       api-base-images:
+        patterns:
+          - "*"
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      compose-images:
         patterns:
           - "*"
