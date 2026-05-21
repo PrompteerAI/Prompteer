@@ -34,6 +34,7 @@ class Settings(BaseSettings):
         alias="RATE_LIMIT_TRUSTED_PROXY_CIDRS",
     )
     general_rate_limit: str = Field(default="60/minute", alias="GENERAL_RATE_LIMIT")
+    auth_attempt_rate_limit: str = Field(default="120/minute", alias="AUTH_ATTEMPT_RATE_LIMIT")
     llm_rate_limit: str = Field(default="10/minute;200/hour", alias="LLM_RATE_LIMIT")
     payments_rate_limit: str = Field(default="5/minute", alias="PAYMENTS_RATE_LIMIT")
     email_rate_limit: str = Field(default="5/minute;20/day", alias="EMAIL_RATE_LIMIT")

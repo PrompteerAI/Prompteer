@@ -3,15 +3,17 @@
 import json
 from typing import Annotated, Any
 
+import structlog
 from fastapi import APIRouter, Depends, Header, HTTPException, Path, Request, Response, status
 from sqlmodel import Session
 
 from app.api.deps import get_current_principal
 from app.core.config import settings
-from app.core.feature_flags import dev_routes_enabled, require_feature_enabled
+from app.core.feature_flags import dev_routes_enabled, feature_enabled, require_feature_enabled
 from app.core.ratelimit import GENERAL_RATE_LIMIT, PAYMENTS_RATE_LIMIT, limiter
 from app.core.security import Principal
 from app.db.session import get_session
+from app.integrations.email import get_email_client
 from app.integrations.payments import get_payments_client
 from app.integrations.payments.mock import MockStripeClient, MockStripeError
 from app.integrations.payments.webhooks import StripeWebhookSignatureError, construct_stripe_event
@@ -26,6 +28,7 @@ from app.services.billing import StripeWebhookResult, apply_stripe_webhook_event
 from app.services.llm_quota import normalized_email, resolve_user_for_principal
 
 router = APIRouter(prefix="/billing", tags=["billing"])
+logger = structlog.get_logger(__name__)
 
 PRO_MONTHLY_PRICE_CENTS = 1200
 
@@ -104,7 +107,8 @@ async def complete_mock_checkout(
     except MockStripeError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     checkout_session = result["session"]
-    process_mock_checkout_webhook(db_session, result["event"])
+    webhook_result = process_mock_checkout_webhook(db_session, result["event"])
+    await send_checkout_receipt_email(checkout_session, webhook_result=webhook_result)
     return checkout_session_to_read(checkout_session, provider="mock")
 
 
@@ -154,6 +158,73 @@ def handle_stripe_webhook_payload(
 
 def stripe_event_payload(event: dict[str, object]) -> str:
     return json.dumps(event, separators=(",", ":"), sort_keys=True)
+
+
+async def send_checkout_receipt_email(
+    checkout_session: dict[str, Any],
+    *,
+    webhook_result: StripeWebhookResult,
+) -> None:
+    if (
+        not webhook_result.processed
+        or not webhook_result.customer_email
+        or not feature_enabled("email")
+    ):
+        return
+    try:
+        await get_email_client().send(
+            checkout_receipt_payload(
+                checkout_session,
+                customer_email=webhook_result.customer_email,
+                event_id=webhook_result.event_id,
+                event_type=webhook_result.event_type,
+            )
+        )
+    except Exception as exc:
+        logger.warning(
+            "checkout_receipt_email_failed",
+            event_id=webhook_result.event_id,
+            checkout_session_id=checkout_session.get("id"),
+            exc_info=exc,
+        )
+
+
+def checkout_receipt_payload(
+    checkout_session: dict[str, Any],
+    *,
+    customer_email: str,
+    event_id: str,
+    event_type: str,
+) -> dict[str, Any]:
+    amount = checkout_session.get("amount_total")
+    currency = checkout_session.get("currency")
+    amount_text = format_checkout_amount(amount, currency)
+    session_id = str(checkout_session.get("id", "unknown"))
+    return {
+        "personalizations": [{"to": [{"email": customer_email}]}],
+        "from": {"email": settings.sendgrid_from_email},
+        "subject": "Prompteer Pro receipt",
+        "content": [
+            {
+                "type": "text/plain",
+                "value": (
+                    "Your Prompteer Pro checkout is complete.\n\n"
+                    f"Checkout session: {session_id}\n"
+                    f"Stripe event: {event_id}\n"
+                    f"Event type: {event_type}\n"
+                    f"Amount: {amount_text}\n"
+                    f"Status: {checkout_session.get('status')}\n"
+                    f"Payment status: {checkout_session.get('payment_status')}\n"
+                ),
+            }
+        ],
+    }
+
+
+def format_checkout_amount(amount: Any, currency: Any) -> str:
+    if isinstance(amount, int) and isinstance(currency, str) and currency:
+        return f"{amount / 100:.2f} {currency.upper()}"
+    return "unknown"
 
 
 def checkout_payload(request: CheckoutCreateRequest, *, user: User) -> dict[str, Any]:

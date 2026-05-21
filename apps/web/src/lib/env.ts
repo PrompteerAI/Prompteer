@@ -43,6 +43,36 @@ const optionalEnvString = z.preprocess(
   z.string().optional(),
 );
 
+const rawOrDefault = (
+  value: string | undefined,
+  defaultValue: string,
+): string => {
+  if (value === undefined || value.trim() === "") {
+    return defaultValue;
+  }
+  return value;
+};
+
+const runtimeEnvFrom = (
+  rawEnv: RawEnv,
+): "development" | "test" | "production" => {
+  const explicitEnv = rawEnv.ENV?.trim();
+  if (
+    explicitEnv === "development" ||
+    explicitEnv === "test" ||
+    explicitEnv === "production"
+  ) {
+    return explicitEnv;
+  }
+  if (rawEnv.NODE_ENV === "production") {
+    return "production";
+  }
+  if (rawEnv.NODE_ENV === "test") {
+    return "test";
+  }
+  return "development";
+};
+
 const envBoolean = (defaultValue: boolean) =>
   z.preprocess((value) => {
     if (value === undefined || value === null) {
@@ -78,7 +108,7 @@ export const publicEnvSchema = z.object({
 });
 
 const serverEnvObjectSchema = publicEnvSchema.extend({
-  ENV: z.enum(["development", "test", "production"]).default("development"),
+  ENV: z.enum(["development", "test", "production"]),
   APP_VERSION: envString("0.1.0"),
   APP_URL: envUrl("http://localhost:3000"),
   API_INTERNAL_URL: envUrl("http://localhost:8000/api/v1"),
@@ -107,6 +137,13 @@ export const serverEnvSchema = serverEnvObjectSchema.superRefine(
           "AUTH_SECRET must be set to a non-default value in production.",
       });
     }
+    if (env.ENV === "production" && !env.AUTH_JWT_PRIVATE_KEY) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["AUTH_JWT_PRIVATE_KEY"],
+        message: "AUTH_JWT_PRIVATE_KEY is required in production.",
+      });
+    }
   },
 );
 
@@ -125,8 +162,10 @@ export function parsePublicEnv(rawEnv: RawEnv): PublicEnv {
 }
 
 export function parseServerEnv(rawEnv: RawEnv): ServerEnv {
+  const runtimeEnv = runtimeEnvFrom(rawEnv);
+  const defaultDevRouteFlag = runtimeEnv === "production" ? "false" : "true";
   return serverEnvSchema.parse({
-    ENV: rawEnv.ENV,
+    ENV: runtimeEnv,
     APP_VERSION: rawEnv.APP_VERSION,
     APP_URL: rawEnv.APP_URL,
     NEXT_PUBLIC_API_URL: rawEnv.NEXT_PUBLIC_API_URL,
@@ -145,8 +184,14 @@ export function parseServerEnv(rawEnv: RawEnv): ServerEnv {
     AUTH_JWT_KEY_ID: rawEnv.AUTH_JWT_KEY_ID,
     GOOGLE_CLIENT_ID: rawEnv.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: rawEnv.GOOGLE_CLIENT_SECRET,
-    AUTH_ALLOW_SEED_LOGIN: rawEnv.AUTH_ALLOW_SEED_LOGIN,
-    ENABLE_DEV_ROUTES: rawEnv.ENABLE_DEV_ROUTES,
+    AUTH_ALLOW_SEED_LOGIN: rawOrDefault(
+      rawEnv.AUTH_ALLOW_SEED_LOGIN,
+      defaultDevRouteFlag,
+    ),
+    ENABLE_DEV_ROUTES: rawOrDefault(
+      rawEnv.ENABLE_DEV_ROUTES,
+      defaultDevRouteFlag,
+    ),
   });
 }
 

@@ -72,12 +72,12 @@ compose-health: ## Assert every Docker Compose service is running and healthy.
 e2e: ## Run Playwright end-to-end tests against Docker Compose.
 	scripts/compose-up.sh --build
 	$(MAKE) compose-health
-	env -u NO_COLOR CI=1 PLAYWRIGHT_BASE_URL=$${PLAYWRIGHT_BASE_URL:-http://localhost} pnpm --filter @prompteer/web test:e2e
+	bash -lc 'source scripts/lib/load-env.sh; load_env_file ".env"; apply_compose_verification_env; env -u NO_COLOR CI=1 PLAYWRIGHT_BASE_URL="$$PLAYWRIGHT_BASE_URL" pnpm --filter @prompteer/web test:e2e'
 
 verify-ui: ## Capture desktop/mobile screenshots against Docker Compose.
 	scripts/compose-up.sh --build
 	$(MAKE) compose-health
-	env PROMPTEER_WEB_URL=$${PROMPTEER_WEB_URL:-http://localhost/en} node scripts/verify-ui.mjs
+	bash -lc 'source scripts/lib/load-env.sh; load_env_file ".env"; apply_compose_verification_env; env PROMPTEER_WEB_URL="$$PROMPTEER_WEB_URL" node scripts/verify-ui.mjs'
 
 tree: ## Show the source-oriented repository tree without generated artifacts.
 	scripts/tree-project.sh

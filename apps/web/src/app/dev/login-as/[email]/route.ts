@@ -1,6 +1,7 @@
 // Development-only seeded-user login route for Playwright and local demos.
 import { defaultLocalePath } from "@/i18n/paths";
 import { getSeedUser, seedLoginEnabled, signIn } from "@/lib/auth";
+import { devRoutesEnabled } from "@/server/dev-routes";
 
 interface DevLoginAsRouteContext {
   params: Promise<{
@@ -14,7 +15,11 @@ export async function GET(
 ): Promise<Response> {
   const { email } = await context.params;
   const decodedEmail = decodeURIComponent(email).toLowerCase();
-  if (!seedLoginEnabled() || !getSeedUser(decodedEmail)) {
+  if (
+    !devRoutesEnabled() ||
+    !seedLoginEnabled() ||
+    !getSeedUser(decodedEmail)
+  ) {
     return new Response("Not found", { status: 404 });
   }
 

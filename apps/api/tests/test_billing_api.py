@@ -3,6 +3,7 @@
 import asyncio
 import json
 from collections.abc import Generator
+from pathlib import Path
 
 import pytest
 from fastapi import FastAPI
@@ -17,6 +18,7 @@ from app.core.config import settings
 from app.core.security import Principal
 from app.db.seed import seed
 from app.db.session import get_session
+from app.integrations.email import mock as email_mock
 from app.integrations.payments.mock import STORE, MockStripeClient
 from app.integrations.payments.webhooks import (
     MOCK_STRIPE_WEBHOOK_SECRET,
@@ -119,6 +121,36 @@ def test_mock_checkout_completion_updates_user_plan() -> None:
             select(User).where(User.email == "paid@prompteer.dev")
         ).one()
     assert paid_user.plan == "paid"
+
+
+def test_mock_checkout_completion_captures_receipt_email(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    mailbox_dir = tmp_path / "mailbox"
+    monkeypatch.setattr(settings, "mock_mailbox_dir", str(mailbox_dir))
+    monkeypatch.setattr(email_mock, "default_mailbox_dir", lambda: mailbox_dir)
+    app = create_billing_test_app(initial_paid_plan="free")
+    client = TestClient(app)
+
+    create_response = client.post(
+        "/api/v1/billing/checkout",
+        json={"customer_email": "paid@prompteer.dev"},
+    )
+    assert create_response.status_code == 200
+    session_id = create_response.json()["id"]
+
+    complete_response = client.post(f"/api/v1/billing/checkout/{session_id}/complete")
+
+    assert complete_response.status_code == 200
+    receipts = [
+        path.read_text(encoding="utf-8")
+        for path in sorted(mailbox_dir.glob("*paid@prompteer.dev.eml"))
+    ]
+    receipt_text = next(text for text in receipts if "Subject: Prompteer Pro receipt" in text)
+    assert "Subject: Prompteer Pro receipt" in receipt_text
+    assert session_id in receipt_text
+    assert "checkout.session.completed" in receipt_text
 
 
 def test_billing_subscription_reflects_current_user_plan_after_checkout() -> None:
@@ -308,7 +340,13 @@ def test_stripe_webhook_matches_customer_email_case_insensitively() -> None:
         "id": "evt_case_insensitive",
         "object": "event",
         "type": "checkout.session.completed",
-        "data": {"object": {"customer_email": "PAID@PROMPTEER.DEV"}},
+        "data": {
+            "object": {
+                "customer_email": "PAID@PROMPTEER.DEV",
+                "client_reference_id": "00000000-0000-4000-8000-000000000002",
+                "metadata": {"user_id": "00000000-0000-4000-8000-000000000002"},
+            }
+        },
     }
     payload = json.dumps(event, separators=(",", ":"), sort_keys=True)
     signature = MockStripeClient().sign_webhook_payload(payload)
@@ -331,6 +369,38 @@ def test_stripe_webhook_matches_customer_email_case_insensitively() -> None:
             select(User).where(User.email == "paid@prompteer.dev")
         ).one()
     assert paid_user.plan == "paid"
+
+
+def test_stripe_webhook_rejects_email_only_checkout_session() -> None:
+    app = create_billing_test_app(initial_paid_plan="free")
+    client = TestClient(app)
+    event = {
+        "id": "evt_email_only",
+        "object": "event",
+        "type": "checkout.session.completed",
+        "data": {"object": {"customer_email": "paid@prompteer.dev"}},
+    }
+    payload = json.dumps(event, separators=(",", ":"), sort_keys=True)
+    signature = MockStripeClient().sign_webhook_payload(payload)
+
+    response = client.post(
+        "/api/v1/billing/webhooks/stripe",
+        content=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Stripe-Signature": signature,
+        },
+    )
+
+    assert response.status_code == 200
+    webhook = response.json()
+    assert webhook["processed"] is False
+    assert webhook["customer_email"] == "paid@prompteer.dev"
+    with Session(app.state.test_engine) as assertion_session:
+        paid_user = assertion_session.exec(
+            select(User).where(User.email == "paid@prompteer.dev")
+        ).one()
+    assert paid_user.plan == "free"
 
 
 def test_stripe_webhook_rejects_mismatched_user_metadata() -> None:

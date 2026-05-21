@@ -13,6 +13,14 @@ require_command() {
   local command_name="$1"
   if ! command -v "$command_name" >/dev/null 2>&1; then
     printf 'Missing required command: %s\n' "$command_name" >&2
+    case "$command_name" in
+      pnpm)
+        printf 'Install Node 22, then run: corepack enable\n' >&2
+        ;;
+      uv)
+        printf 'Install uv: https://docs.astral.sh/uv/getting-started/installation/\n' >&2
+        ;;
+    esac
     exit 127
   fi
 }

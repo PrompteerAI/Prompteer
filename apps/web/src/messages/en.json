@@ -87,6 +87,23 @@
       "completed": "Subscription active for {email}. The mock session completed with a Stripe-compatible <event>checkout.session.completed</event> event.",
       "persistedActive": "Subscription active for {email}. This state is loaded from the persisted billing record."
     },
+    "success": {
+      "back": "Back to billing",
+      "completeTitle": "Checkout complete",
+      "completeDescription": "Subscription payment is confirmed for {email}. Billing state may take a moment to reconcile if the Stripe webhook is still in flight.",
+      "pendingTitle": "Checkout pending",
+      "pendingDescription": "Stripe returned this session, but payment has not been confirmed yet. Refresh billing after the webhook arrives.",
+      "missingTitle": "Checkout session missing",
+      "missingDescription": "Stripe did not provide a checkout session id. Return to billing and start checkout again.",
+      "errorTitle": "Checkout could not be verified",
+      "errorDescription": "The billing API could not verify this checkout session. Request id: {requestId}.",
+      "unknownRequest": "unavailable",
+      "unknownAmount": "Unknown",
+      "session": "Session",
+      "amount": "Amount",
+      "status": "Status",
+      "paymentStatus": "Payment status"
+    },
     "errors": {
       "disabled": "Payments are disabled for this environment.",
       "rateLimited": "Checkout is temporarily rate limited. Wait a moment, then try again.",

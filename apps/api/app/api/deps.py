@@ -4,6 +4,7 @@ from typing import Annotated
 
 from fastapi import Header, HTTPException, Request, status
 
+from app.core.ratelimit import enforce_auth_attempt_rate_limit
 from app.core.security import AuthTokenError, Principal, verify_bearer_token
 
 
@@ -11,6 +12,7 @@ async def get_current_principal(
     request: Request,
     authorization: Annotated[str | None, Header()] = None,
 ) -> Principal:
+    enforce_auth_attempt_rate_limit(request)
     scheme, _, token = (authorization or "").partition(" ")
     if scheme.lower() != "bearer" or not token:
         raise HTTPException(

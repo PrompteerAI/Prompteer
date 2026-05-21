@@ -35,6 +35,7 @@ class ProblemException(Exception):
         detail: str,
         code: str,
         errors: list[dict[str, Any]] | None = None,
+        headers: Mapping[str, str] | None = None,
     ) -> None:
         super().__init__(detail)
         self.status_code = status_code
@@ -42,6 +43,7 @@ class ProblemException(Exception):
         self.detail = detail
         self.code = code
         self.errors = errors
+        self.headers = headers
 
 
 def request_id_for(request: Request) -> str | None:
@@ -85,6 +87,7 @@ async def problem_exception_handler(request: Request, exc: ProblemException) -> 
         detail=exc.detail,
         code=exc.code,
         errors=exc.errors,
+        headers=exc.headers,
     )
 
 

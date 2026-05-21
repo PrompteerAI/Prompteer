@@ -147,6 +147,35 @@ async def test_verify_bearer_token_refetches_jwks_on_unknown_kid(
 
 
 @pytest.mark.asyncio
+async def test_verify_bearer_token_backs_off_repeated_unknown_kid_refreshes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    private_key: RSAPrivateKey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    unknown_private_key: RSAPrivateKey = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048,
+    )
+    calls: list[str] = []
+
+    async def fake_fetch_jwks(jwks_url: str) -> dict[str, Any]:
+        calls.append(jwks_url)
+        return {"keys": [public_jwk(private_key.public_key(), kid="stable-key")]}
+
+    monkeypatch.setattr(security, "fetch_jwks", fake_fetch_jwks)
+    await verify_bearer_token(sign_test_token(private_key, kid="stable-key"))
+
+    with pytest.raises(AuthTokenError, match=security.NO_MATCHING_KID_ERROR):
+        await verify_bearer_token(sign_test_token(unknown_private_key, kid="random-key-1"))
+    with pytest.raises(AuthTokenError, match=security.NO_MATCHING_KID_ERROR):
+        await verify_bearer_token(sign_test_token(unknown_private_key, kid="random-key-2"))
+
+    assert calls == [
+        "http://localhost:3000/api/auth/jwks",
+        "http://localhost:3000/api/auth/jwks",
+    ]
+
+
+@pytest.mark.asyncio
 async def test_fetch_jwks_retries_transient_transport_errors(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

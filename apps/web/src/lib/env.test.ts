@@ -47,6 +47,7 @@ describe("parseServerEnv", () => {
 
     expect(parsed.APP_VERSION).toBe("0.1.0");
     expect(parsed.ENABLE_DEV_ROUTES).toBe(true);
+    expect(parsed.AUTH_ALLOW_SEED_LOGIN).toBe(true);
   });
 
   it("preserves escaped newlines in configured JWT private keys", () => {
@@ -80,14 +81,36 @@ describe("parseServerEnv", () => {
     ).toThrow(/AUTH_SECRET/);
   });
 
-  it("accepts a non-default auth secret in production", () => {
+  it("rejects missing JWT private keys in production", () => {
+    expect(() =>
+      parseServerEnv({
+        ENV: "production",
+        AUTH_SECRET: "replace-with-a-real-32-byte-random-secret",
+      }),
+    ).toThrow(/AUTH_JWT_PRIVATE_KEY/);
+  });
+
+  it("defaults to production when NODE_ENV is production", () => {
+    expect(() =>
+      parseServerEnv({
+        NODE_ENV: "production",
+        AUTH_SECRET: "replace-with-a-real-32-byte-random-secret",
+      }),
+    ).toThrow(/AUTH_JWT_PRIVATE_KEY/);
+  });
+
+  it("defaults dev-only affordances off in production", () => {
     const parsed = parseServerEnv({
       ENV: "production",
       AUTH_SECRET: "replace-with-a-real-32-byte-random-secret",
+      AUTH_JWT_PRIVATE_KEY:
+        "-----BEGIN PRIVATE KEY-----\\nfake-key-for-parser-only\\n-----END PRIVATE KEY-----",
     });
 
     expect(parsed.AUTH_SECRET).toBe(
       "replace-with-a-real-32-byte-random-secret",
     );
+    expect(parsed.AUTH_ALLOW_SEED_LOGIN).toBe(false);
+    expect(parsed.ENABLE_DEV_ROUTES).toBe(false);
   });
 });

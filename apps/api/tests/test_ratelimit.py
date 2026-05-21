@@ -61,6 +61,19 @@ def test_rate_limit_key_uses_forwarded_for_from_trusted_proxy(
     assert rate_limit_key(request) == "ip:198.51.100.8"
 
 
+def test_rate_limit_key_ignores_spoofed_forwarded_for_prefix(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "rate_limit_trusted_proxy_cidrs", "172.16.0.0/12")
+    trusted_proxy_networks.cache_clear()
+    request = request_for_ip(
+        "172.18.0.12",
+        headers={"x-forwarded-for": "198.51.100.250, 203.0.113.42"},
+    )
+
+    assert rate_limit_key(request) == "ip:203.0.113.42"
+
+
 def test_rate_limit_key_ignores_forwarded_for_from_untrusted_client(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -80,6 +93,22 @@ def test_limiter_is_configured_for_headers_and_redis_storage() -> None:
     assert limiter._key_prefix == "prompteer"
     assert limiter._storage_uri is not None
     assert limiter._storage_uri.startswith("redis://")
+
+
+def test_auth_dependency_attempts_are_rate_limited_before_jwt_validation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "auth_attempt_rate_limit", "2/minute")
+    client = TestClient(create_app())
+
+    assert client.get("/api/v1/billing/subscription").status_code == 401
+    assert client.get("/api/v1/billing/subscription").status_code == 401
+    limited = client.get("/api/v1/billing/subscription")
+
+    assert limited.status_code == 429
+    assert limited.headers["content-type"].startswith("application/problem+json")
+    assert "retry-after" in limited.headers
+    assert limited.json()["code"] == "rate_limited"
 
 
 def test_llm_rate_limit_returns_problem_details_with_retry_after() -> None:

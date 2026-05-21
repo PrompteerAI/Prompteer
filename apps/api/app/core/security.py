@@ -11,6 +11,7 @@ import jwt
 from app.core.config import settings
 
 JWKS_CACHE_SECONDS = 300.0
+JWKS_UNKNOWN_KID_REFRESH_BACKOFF_SECONDS = 5.0
 JWKS_FETCH_ATTEMPTS = 2
 JWKS_FETCH_TIMEOUT_SECONDS = 5.0
 NO_MATCHING_KID_ERROR = "No JWKS key matched the JWT kid."
@@ -35,22 +36,26 @@ class JwksCacheEntry:
 
 
 _jwks_cache: JwksCacheEntry | None = None
+_last_unknown_kid_refresh_at: dict[str, float] = {}
 
 
 async def verify_bearer_token(token: str) -> Principal:
+    jwks_url = settings.auth_jwks_url
     try:
         return verify_jwt_with_jwks(
             token,
-            await get_cached_jwks(settings.auth_jwks_url),
+            await get_cached_jwks(jwks_url),
             issuer=settings.auth_jwt_issuer.rstrip("/"),
             audience=settings.auth_jwt_audience,
         )
     except AuthTokenError as exc:
         if str(exc) != NO_MATCHING_KID_ERROR:
             raise
+    if not should_refresh_unknown_kid(jwks_url):
+        raise AuthTokenError(NO_MATCHING_KID_ERROR)
     return verify_jwt_with_jwks(
         token,
-        await get_cached_jwks(settings.auth_jwks_url, force_refresh=True),
+        await get_cached_jwks(jwks_url, force_refresh=True),
         issuer=settings.auth_jwt_issuer.rstrip("/"),
         audience=settings.auth_jwt_audience,
     )
@@ -78,6 +83,19 @@ async def get_cached_jwks(jwks_url: str, *, force_refresh: bool = False) -> dict
 def clear_jwks_cache() -> None:
     global _jwks_cache
     _jwks_cache = None
+    _last_unknown_kid_refresh_at.clear()
+
+
+def should_refresh_unknown_kid(jwks_url: str) -> bool:
+    now = monotonic()
+    last_refresh_at = _last_unknown_kid_refresh_at.get(jwks_url)
+    if (
+        last_refresh_at is not None
+        and now - last_refresh_at < JWKS_UNKNOWN_KID_REFRESH_BACKOFF_SECONDS
+    ):
+        return False
+    _last_unknown_kid_refresh_at[jwks_url] = now
+    return True
 
 
 async def fetch_jwks(jwks_url: str) -> dict[str, Any]:

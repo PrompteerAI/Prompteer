@@ -101,6 +101,7 @@ def seed_mock_checkouts(users_by_email: dict[str, User]) -> None:
                 "customer_email": email,
                 "metadata": {
                     "plan": "pro",
+                    "user_id": users_by_email[email].id,
                     "seed_user_id": users_by_email[email].id,
                 },
                 "line_items": [

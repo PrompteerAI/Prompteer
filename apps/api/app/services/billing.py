@@ -133,9 +133,14 @@ def checkout_session_matches_user(checkout_session: dict[str, Any], user: User) 
         and client_reference_id != user.id
     ):
         return False
+    if isinstance(client_reference_id, str) and client_reference_id == user.id:
+        return True
+
     metadata = checkout_session.get("metadata")
     if isinstance(metadata, dict):
         metadata_user_id = metadata.get("user_id")
         if isinstance(metadata_user_id, str) and metadata_user_id and metadata_user_id != user.id:
             return False
-    return True
+        if isinstance(metadata_user_id, str) and metadata_user_id == user.id:
+            return True
+    return False

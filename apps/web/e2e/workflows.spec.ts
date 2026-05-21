@@ -50,6 +50,18 @@ test("paid demo user can complete mock checkout", async ({ page }) => {
     page.getByText(/Subscription active for paid@prompteer.dev/),
   ).toBeVisible();
   await expect(page.getByText("checkout.session.completed")).toBeVisible();
+
+  const sessionId = await page
+    .getByText(/cs_test_/)
+    .first()
+    .textContent();
+  expect(sessionId).toContain("cs_test_");
+  await page.goto(`/en/billing/success?session_id=${sessionId}`);
+
+  await expect(
+    page.getByRole("heading", { name: "Checkout complete" }),
+  ).toBeVisible();
+  await expect(page.getByText(sessionId ?? "")).toBeVisible();
 });
 
 test("billing checkout uses the active session email", async ({ page }) => {

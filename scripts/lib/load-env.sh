@@ -94,3 +94,15 @@ compose_http_origin() {
 
   printf 'http://localhost:%s\n' "$http_port"
 }
+
+apply_compose_verification_env() {
+  local origin
+  origin="$(compose_http_origin)"
+
+  if [[ -z "${PLAYWRIGHT_BASE_URL:-}" || "${PLAYWRIGHT_BASE_URL:-}" == "http://localhost" ]]; then
+    export PLAYWRIGHT_BASE_URL="$origin"
+  fi
+  if [[ -z "${PROMPTEER_WEB_URL:-}" || "${PROMPTEER_WEB_URL:-}" == "http://localhost/en" ]]; then
+    export PROMPTEER_WEB_URL="${origin}/en"
+  fi
+}

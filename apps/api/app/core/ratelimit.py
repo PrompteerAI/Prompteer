@@ -2,12 +2,17 @@
 
 from functools import lru_cache
 from ipaddress import IPv4Network, IPv6Network, ip_address, ip_network
+from math import ceil
+from time import time
 
+from limits import parse as parse_rate_limit
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+from starlette import status
 from starlette.requests import Request
 
 from app.core.config import settings
+from app.core.errors import ProblemException
 from app.core.security import Principal
 
 
@@ -31,9 +36,13 @@ def forwarded_for_address(request: Request) -> str | None:
     forwarded_for = request.headers.get("x-forwarded-for")
     if not forwarded_for:
         return None
-    for candidate in forwarded_for.split(","):
-        candidate = candidate.strip()
-        if is_valid_ip_address(candidate):
+    valid_hops = [
+        candidate.strip()
+        for candidate in forwarded_for.split(",")
+        if is_valid_ip_address(candidate.strip())
+    ]
+    for candidate in reversed(valid_hops):
+        if not is_trusted_proxy(candidate):
             return candidate
     return None
 
@@ -65,6 +74,26 @@ def is_valid_ip_address(address: str) -> bool:
     return True
 
 
+def enforce_auth_attempt_rate_limit(request: Request) -> None:
+    """Throttle auth dependency work before JWT/JWKS validation can spend resources."""
+    if not limiter.enabled:
+        return
+    limit = parse_rate_limit(settings.auth_attempt_rate_limit)
+    key = f"auth:{rate_limit_ip(request)}"
+    allowed = limiter.limiter.hit(limit, key)
+    if allowed:
+        return
+    window = limiter.limiter.get_window_stats(limit, key)
+    retry_after = max(1, ceil(window.reset_time - time()))
+    raise ProblemException(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        title="Too Many Requests",
+        detail="Too many authentication attempts. Wait a moment, then try again.",
+        code="rate_limited",
+        headers={"Retry-After": str(retry_after)},
+    )
+
+
 limiter = Limiter(
     key_func=rate_limit_key,
     enabled=settings.rate_limit_enabled,
@@ -77,6 +106,7 @@ limiter = Limiter(
 )
 
 GENERAL_RATE_LIMIT = settings.general_rate_limit
+AUTH_ATTEMPT_RATE_LIMIT = settings.auth_attempt_rate_limit
 LLM_RATE_LIMIT = settings.llm_rate_limit
 PAYMENTS_RATE_LIMIT = settings.payments_rate_limit
 EMAIL_RATE_LIMIT = settings.email_rate_limit
