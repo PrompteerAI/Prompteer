@@ -2,14 +2,11 @@
 // present, otherwise routes login through the local mock OIDC server.
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import Google from "next-auth/providers/google";
-import type { OAuthConfig, Provider } from "next-auth/providers";
+import type { Provider } from "next-auth/providers";
 
+import { googleProvider } from "@/lib/auth-providers";
 import { getServerEnv } from "@/lib/env";
 import { decodeAuthJwt, encodeAuthJwt } from "@/server/auth-jwt";
-
-const MOCK_GOOGLE_CLIENT_ID = "mock-google-client";
-const MOCK_GOOGLE_CLIENT_SECRET = "mock-google-secret";
 
 interface SeedUser {
   id: string;
@@ -38,64 +35,6 @@ const SEED_USERS: Record<string, SeedUser> = {
     role: "user",
   },
 };
-
-interface GoogleOidcProfile {
-  sub: string;
-  email?: string;
-  email_verified?: boolean;
-  name?: string;
-  picture?: string;
-}
-
-function mockGoogleIssuer(): string {
-  return getServerEnv().AUTH_MOCK_GOOGLE_ISSUER.replace(/\/+$/, "");
-}
-
-function mockGoogleWellKnown(issuer: string): string {
-  return (
-    getServerEnv().AUTH_MOCK_GOOGLE_DISCOVERY_URL ??
-    `${issuer}/.well-known/openid-configuration`
-  ).replace(/\/+$/, "");
-}
-
-function mockGoogleProvider(): OAuthConfig<GoogleOidcProfile> {
-  const issuer = mockGoogleIssuer();
-
-  return {
-    id: "google",
-    name: "Google",
-    type: "oidc",
-    issuer,
-    wellKnown: mockGoogleWellKnown(issuer),
-    clientId: MOCK_GOOGLE_CLIENT_ID,
-    clientSecret: MOCK_GOOGLE_CLIENT_SECRET,
-    checks: ["pkce", "state", "nonce"],
-    idToken: false,
-    client: {
-      token_endpoint_auth_method: "client_secret_basic",
-    },
-    profile(profile) {
-      return {
-        id: profile.sub,
-        email: profile.email,
-        name: profile.name,
-        image: profile.picture,
-      };
-    },
-  };
-}
-
-function googleProvider(): Provider {
-  const serverEnv = getServerEnv();
-  if (serverEnv.GOOGLE_CLIENT_ID && serverEnv.GOOGLE_CLIENT_SECRET) {
-    return Google({
-      clientId: serverEnv.GOOGLE_CLIENT_ID,
-      clientSecret: serverEnv.GOOGLE_CLIENT_SECRET,
-    });
-  }
-
-  return mockGoogleProvider();
-}
 
 export function seedLoginEnabled(): boolean {
   const serverEnv = getServerEnv();
