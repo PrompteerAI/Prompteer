@@ -10,6 +10,7 @@ from collections.abc import Sequence
 from alembic import op
 from sqlmodel import SQLModel
 
+# Import model modules so the initial migration creates every SQLModel table.
 import app.models  # noqa: F401
 
 revision: str = "bd1c81512fff"
