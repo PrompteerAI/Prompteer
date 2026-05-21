@@ -72,10 +72,13 @@ for PostgreSQL, Redis, and selected integration readiness, and
 `/api/v1/health/startup` for Alembic head matching. Integration readiness reports
 each provider's `mode`, `status`, and diagnostic `detail`; mock integrations fail
 readiness when dev routes are disabled and no real provider credentials are
-configured. Compose requires both readiness and startup probes to pass for the API
-and nginx health checks so dependency loss, unreachable local mocks, or migration
-drift turns the local stack unhealthy instead of only proving the process is
-still alive. CI also runs `make compose-health`, which parses
+configured. Real integrations perform low-cost upstream reachability checks:
+Google OIDC discovery plus JWKS, OpenAI model retrieve, Anthropic token count,
+Stripe balance retrieve, and SendGrid scope retrieve. Compose requires both
+readiness and startup probes to pass for the API and nginx health checks so
+dependency loss, unreachable local mocks, unavailable real providers, or
+migration drift turns the local stack unhealthy instead of only proving the
+process is still alive. CI also runs `make compose-health`, which parses
 `docker compose ps --format json` and requires every expected service to be
 `running` and `healthy`.
 
