@@ -1,31 +1,18 @@
 // Community board page for seeded questions and public prompt shares.
-import { MessageSquareText, Sparkles } from "lucide-react";
+import { ArrowRight, MessageSquareText, Sparkles } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 import { ApiUnavailable } from "@/components/system/api-unavailable";
+import { Link } from "@/i18n/navigation";
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
 import { normalizeError } from "@/lib/errors";
+import type { components } from "@prompteer/shared-types";
 
 export const dynamic = "force-dynamic";
 
 const boardFeedLimit = 5;
 
-type BoardFeed = {
-  posts: Array<{
-    id: string;
-    type: string;
-    author: { display_name: string };
-    title: string;
-    content: string | null;
-    challenge?: { challenge_number: number; title: string } | null;
-  }>;
-  shares: Array<{
-    id: string;
-    author: { display_name: string };
-    challenge: { tag: string; title: string; challenge_number: number };
-    prompt: string | null;
-  }>;
-};
+type BoardFeed = components["schemas"]["BoardFeedRead"];
 
 export default async function BoardPage(): Promise<React.ReactElement> {
   const t = await getTranslations("board");
@@ -81,8 +68,10 @@ export default async function BoardPage(): Promise<React.ReactElement> {
             </div>
             <div className="grid gap-3">
               {feed.posts.map((post) => (
-                <article
-                  className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm"
+                <Link
+                  aria-label={t("openPost", { title: post.title })}
+                  className="group rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition hover:border-emerald-300 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+                  href={`/board/posts/${post.id}`}
                   key={post.id}
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -97,7 +86,7 @@ export default async function BoardPage(): Promise<React.ReactElement> {
                     {post.title}
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-zinc-600">
-                    {post.content}
+                    {excerpt(post.content) ?? t("emptyContent")}
                   </p>
                   {post.challenge ? (
                     <p className="mt-4 text-xs font-medium uppercase text-emerald-700">
@@ -107,7 +96,14 @@ export default async function BoardPage(): Promise<React.ReactElement> {
                       {post.challenge.title}
                     </p>
                   ) : null}
-                </article>
+                  <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-emerald-700">
+                    {t("readMore")}
+                    <ArrowRight
+                      aria-hidden="true"
+                      className="h-4 w-4 transition group-hover:translate-x-0.5"
+                    />
+                  </span>
+                </Link>
               ))}
             </div>
           </div>
@@ -122,8 +118,12 @@ export default async function BoardPage(): Promise<React.ReactElement> {
             </div>
             <div className="grid gap-3">
               {feed.shares.map((share) => (
-                <article
-                  className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm"
+                <Link
+                  aria-label={t("openShare", {
+                    title: share.challenge.title,
+                  })}
+                  className="group rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition hover:border-emerald-300 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+                  href={`/board/shares/${share.id}`}
                   key={share.id}
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -138,14 +138,21 @@ export default async function BoardPage(): Promise<React.ReactElement> {
                     {share.challenge.title}
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-zinc-600">
-                    {share.prompt}
+                    {excerpt(share.prompt) ?? t("emptyContent")}
                   </p>
                   <p className="mt-4 text-xs font-medium uppercase text-emerald-700">
                     {t("challengeLabel", {
                       number: share.challenge.challenge_number,
                     })}
                   </p>
-                </article>
+                  <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-emerald-700">
+                    {t("readMore")}
+                    <ArrowRight
+                      aria-hidden="true"
+                      className="h-4 w-4 transition group-hover:translate-x-0.5"
+                    />
+                  </span>
+                </Link>
               ))}
             </div>
           </div>
@@ -153,4 +160,11 @@ export default async function BoardPage(): Promise<React.ReactElement> {
       </div>
     </main>
   );
+}
+
+function excerpt(value: string | null): string | null {
+  if (!value) {
+    return null;
+  }
+  return value.length > 220 ? `${value.slice(0, 217)}...` : value;
 }

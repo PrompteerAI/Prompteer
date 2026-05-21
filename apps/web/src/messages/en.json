@@ -120,7 +120,24 @@
     "questions": "Questions and notes",
     "shares": "Public prompt shares",
     "challengePrefix": "#{number}",
-    "challengeLabel": "Challenge #{number}"
+    "challengeLabel": "Challenge #{number}",
+    "emptyContent": "No content provided.",
+    "readMore": "Read details",
+    "openPost": "Read question: {title}",
+    "openShare": "Read prompt share: {title}",
+    "detail": {
+      "back": "Back to board",
+      "postEyebrow": "Question detail",
+      "shareEyebrow": "Prompt share detail",
+      "author": "Author",
+      "createdAt": "Created",
+      "tag": "Tag",
+      "visibility": "Visibility",
+      "public": "Public",
+      "private": "Private",
+      "prompt": "Submitted prompt",
+      "emptyContent": "No content provided."
+    }
   },
   "coding": {
     "eyebrow": "Coding",

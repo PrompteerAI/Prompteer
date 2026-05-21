@@ -56,6 +56,10 @@ pnpm dev
 | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | ![Mock mailbox showing captured SendGrid messages](docs/screenshots/07-mailbox.png) | ![Profile settings page with account details and logout](docs/screenshots/08-settings.png) |
 
+| Board prompt share detail                                                | Board question detail                                               |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| ![Board prompt share detail](docs/screenshots/17-board-share-detail.png) | ![Board question detail](docs/screenshots/18-board-post-detail.png) |
+
 The verified local demo covers seed login, prompt execution through the LLM mock, Stripe-shaped checkout completion, review board reads, profile settings, logout, and captured SendGrid email viewing.
 
 Legacy-design preview:
