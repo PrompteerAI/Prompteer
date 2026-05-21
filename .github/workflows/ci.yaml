@@ -36,6 +36,10 @@ jobs:
   backend:
     name: backend
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql+psycopg://prompteer:prompteer@localhost:5432/postgres
+      REDIS_URL: redis://localhost:6379/0
+      RATE_LIMIT_STORAGE_URL: redis://localhost:6379/0
     services:
       postgres:
         image: postgres:16
@@ -65,7 +69,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
         with:
-          enable-cache: true
+          enable-cache: false
       - run: |
           sudo apt-get update
           sudo apt-get install --yes postgresql-client
@@ -171,7 +175,7 @@ jobs:
           cache: pnpm
       - uses: astral-sh/setup-uv@v5
         with:
-          enable-cache: true
+          enable-cache: false
       - run: cp .env.example .env
       - run: scripts/compose-up.sh postgres redis
       - name: Start pnpm dev from fresh checkout
