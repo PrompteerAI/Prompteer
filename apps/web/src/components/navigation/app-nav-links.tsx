@@ -19,12 +19,13 @@ export function AppNavLinks({ items }: AppNavLinksProps): React.ReactElement {
   return (
     <div className="-mx-1 flex max-w-full gap-1 overflow-x-auto pb-1 sm:mx-0 sm:overflow-visible sm:pb-0">
       {items.map((item) => {
-        const current = isCurrentPath(pathname, item.href);
+        const visualCurrent = isCurrentPath(pathname, item.href);
+        const pageCurrent = isExactPath(pathname, item.href);
         return (
           <Link
-            aria-current={current ? "page" : undefined}
+            aria-current={pageCurrent ? "page" : undefined}
             className={
-              current
+              visualCurrent
                 ? "inline-flex min-h-9 shrink-0 items-center rounded-md bg-zinc-950 px-2.5 text-sm font-medium text-white transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950 sm:min-h-11 sm:px-3"
                 : "inline-flex min-h-9 shrink-0 items-center rounded-md px-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950 sm:min-h-11 sm:px-3"
             }
@@ -44,7 +45,14 @@ function isCurrentPath(pathname: string, href: AppRoute): boolean {
   if (href === "/") {
     return routePath === "/";
   }
+  if (href === "/challenges/coding") {
+    return routePath.startsWith("/challenges/");
+  }
   return routePath === href || routePath.startsWith(`${href}/`);
+}
+
+function isExactPath(pathname: string, href: AppRoute): boolean {
+  return unlocalizedPath(pathname) === href;
 }
 
 function unlocalizedPath(pathname: string): string {

@@ -1,37 +1,29 @@
-// Coding challenge page for running prompts against seeded problem-solving tasks.
+// Read-only video challenge list sourced from the API challenge tag filter.
 import { getTranslations } from "next-intl/server";
 
-import {
-  CodingChallengeRunner,
-  type Challenge,
-} from "@/components/challenges/coding-challenge-runner";
 import { ChallengeTypeNav } from "@/components/challenges/challenge-type-nav";
+import { MediaChallengeList } from "@/components/challenges/media-challenge-list";
 import { ApiUnavailable } from "@/components/system/api-unavailable";
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
+import { isMediaChallenge, type Challenge } from "@/lib/challenge-media";
 import { normalizeError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
 
-export default async function CodingChallengesPage(): Promise<React.ReactElement> {
-  const t = await getTranslations("coding");
+export default async function VideoChallengesPage(): Promise<React.ReactElement> {
+  const t = await getTranslations("mediaChallenges.video");
+  const sharedT = await getTranslations("mediaChallenges.shared");
   const challengeTypesT = await getTranslations("challengeTypes");
   const errors = await getTranslations("errors");
   const api = createPrompteerApiClient();
   let challenges: Challenge[];
-  let features: { llm: boolean };
 
   try {
-    const [challengesResult, featuresResult] = await Promise.all([
-      api.GET("/api/v1/challenges", {
-        params: { query: { tag: "ps" } },
-        cache: "no-store",
-      }),
-      api.GET("/api/v1/config/features", {
-        cache: "no-store",
-      }),
-    ]);
+    const challengesResult = await api.GET("/api/v1/challenges", {
+      params: { query: { tag: "video" } },
+      cache: "no-store",
+    });
     challenges = unwrapApiResponse(challengesResult) satisfies Challenge[];
-    features = unwrapApiResponse(featuresResult);
   } catch (error) {
     const normalizedError = await normalizeError(error);
     return (
@@ -62,7 +54,7 @@ export default async function CodingChallengesPage(): Promise<React.ReactElement
           </p>
         </div>
         <ChallengeTypeNav
-          active="coding"
+          active="video"
           labels={{
             coding: challengeTypesT("coding"),
             image: challengeTypesT("image"),
@@ -70,9 +62,29 @@ export default async function CodingChallengesPage(): Promise<React.ReactElement
           }}
           navLabel={challengeTypesT("navLabel")}
         />
-        <CodingChallengeRunner
-          challenges={challenges}
-          llmEnabled={features.llm}
+        <MediaChallengeList
+          challenges={challenges.filter((challenge) =>
+            isMediaChallenge(challenge, "video"),
+          )}
+          copy={{
+            emptyTitle: t("emptyTitle"),
+            emptyDescription: t("emptyDescription"),
+            fallbackReferenceName: (number) =>
+              sharedT("referenceFallback", { number }),
+            levelLabel: sharedT("level"),
+            kindLabel: challengeTypesT("video"),
+            noContent: sharedT("noContent"),
+            noReferences: sharedT("noReferences"),
+            openLabel: t("openDetail"),
+            pathUnavailable: sharedT("pathUnavailable"),
+            referenceLabel: sharedT("reference"),
+            referenceUnavailable: sharedT("referenceUnavailable"),
+            referencesLabel: sharedT("references"),
+            fileTypeLabel: sharedT("fileType"),
+            pathLabel: sharedT("storedPath"),
+            unknownFileType: sharedT("unknownFileType"),
+          }}
+          kind="video"
         />
       </div>
     </main>

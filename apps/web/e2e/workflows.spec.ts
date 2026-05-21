@@ -52,6 +52,81 @@ test("seeded user can run a coding prompt", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("seeded user can browse media challenge lists and details", async ({
+  page,
+}) => {
+  await loginAs(page);
+
+  await page.goto("/en/challenges/coding");
+  await page.getByRole("link", { name: "Image" }).click();
+  await expect(page).toHaveURL(/\/en\/challenges\/image$/);
+  await expect(
+    page.getByRole("link", { name: "Challenges" }),
+  ).not.toHaveAttribute("aria-current", "page");
+  const challengeTypeNav = page.getByRole("navigation", {
+    name: "Challenge types",
+  });
+  await expect(
+    challengeTypeNav.getByRole("link", { exact: true, name: "Image" }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(
+    page.getByRole("heading", { name: "Image prompt challenges" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Product hero image prompt" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "product-hero.png" }),
+  ).toBeVisible();
+  await expect(page.getByText("image/png")).toBeVisible();
+  await expect(page.getByText("Preview is unavailable")).toBeVisible();
+
+  await page
+    .getByRole("link", { name: /View details: Product hero image prompt/ })
+    .click();
+  await expect(page).toHaveURL(/\/en\/challenges\/image\/[^/]+$/);
+  await expect(
+    page.getByRole("heading", { name: "Product hero image prompt" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("seed/references/product-hero.png"),
+  ).toBeVisible();
+
+  await page.getByRole("link", { name: "Back to image challenges" }).click();
+  await expect(page).toHaveURL(/\/en\/challenges\/image$/);
+
+  await challengeTypeNav
+    .getByRole("link", { exact: true, name: "Video" })
+    .click();
+  await expect(page).toHaveURL(/\/en\/challenges\/video$/);
+  await expect(
+    page
+      .getByRole("navigation", { name: "Challenge types" })
+      .getByRole("link", { exact: true, name: "Video" }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(
+    page.getByRole("heading", { name: "Video prompt challenges" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Launch teaser video prompt" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "launch-teaser.mp4" }),
+  ).toBeVisible();
+  await expect(page.getByText("video/mp4")).toBeVisible();
+
+  await page
+    .getByRole("link", { name: /View details: Launch teaser video prompt/ })
+    .click();
+  await expect(page).toHaveURL(/\/en\/challenges\/video\/[^/]+$/);
+  await expect(
+    page.getByRole("heading", { name: "Launch teaser video prompt" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("seed/references/launch-teaser.mp4"),
+  ).toBeVisible();
+});
+
 test("paid demo user can complete mock checkout", async ({ page }) => {
   await loginAs(page, "paid@prompteer.dev");
 

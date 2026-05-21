@@ -15,6 +15,12 @@
     "billing": "Billing",
     "profile": "Profile"
   },
+  "challengeTypes": {
+    "navLabel": "Challenge types",
+    "coding": "Coding",
+    "image": "Image",
+    "video": "Video"
+  },
   "home": {
     "brand": "Prompteer",
     "title": "Prompt challenge workspace",
@@ -171,6 +177,41 @@
         "unauthorized": "Sign in before running a prompt.",
         "failed": "The prompt run failed. Check that the API server and seed data are running."
       }
+    }
+  },
+  "mediaChallenges": {
+    "shared": {
+      "challengeNumber": "Challenge",
+      "fileType": "File type",
+      "level": "Level",
+      "noContent": "No challenge brief is available yet.",
+      "noReferences": "No reference files are attached to this challenge yet.",
+      "promptBrief": "Prompt brief",
+      "reference": "Reference",
+      "referenceFallback": "Reference {number}",
+      "references": "References",
+      "referenceUnavailable": "Preview is unavailable because this stored file path is not exposed as a browser URL yet.",
+      "storedPath": "Stored path",
+      "unknownFileType": "Unknown file type",
+      "pathUnavailable": "Path unavailable"
+    },
+    "image": {
+      "eyebrow": "Image",
+      "title": "Image prompt challenges",
+      "description": "Review image prompt briefs and their attached reference metadata. Reference paths are shown as stored metadata until media serving is available.",
+      "emptyTitle": "Image challenges",
+      "emptyDescription": "No image challenges are available yet. Run the API seed task to create demo data.",
+      "openDetail": "View details",
+      "backToList": "Back to image challenges"
+    },
+    "video": {
+      "eyebrow": "Video",
+      "title": "Video prompt challenges",
+      "description": "Review video prompt briefs and their attached reference metadata. Reference paths are shown as stored metadata until media serving is available.",
+      "emptyTitle": "Video challenges",
+      "emptyDescription": "No video challenges are available yet. Run the API seed task to create demo data.",
+      "openDetail": "View details",
+      "backToList": "Back to video challenges"
     }
   },
   "profile": {

@@ -9,6 +9,8 @@ export type AppRoute =
   | "/login"
   | "/profile"
   | "/challenges/coding"
+  | "/challenges/image"
+  | "/challenges/video"
   | "/board"
   | "/billing";
 
