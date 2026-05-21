@@ -157,6 +157,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/community/posts/{post_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read Post */
+    get: operations["read_post_api_v1_community_posts__post_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/community/shares/{share_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read Share */
+    get: operations["read_share_api_v1_community_shares__share_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/config/features": {
     parameters: {
       query?: never;
@@ -859,6 +893,68 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["BoardFeedRead"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  read_post_api_v1_community_posts__post_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        post_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PostRead"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  read_share_api_v1_community_shares__share_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        share_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ShareRead"];
         };
       };
       /** @description Validation Error */

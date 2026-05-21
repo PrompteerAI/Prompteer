@@ -3,7 +3,7 @@
 from datetime import date as LocalDate
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Request, Response
+from fastapi import APIRouter, Depends, Query, Request, Response, status
 from sqlmodel import Session, col, select
 
 from app.core.errors import ProblemException
@@ -21,6 +21,30 @@ from app.schemas.community import (
 )
 
 router = APIRouter(prefix="/community", tags=["community"])
+
+
+@router.get("/posts/{post_id}")
+@limiter.limit(GENERAL_RATE_LIMIT)
+async def read_post(
+    request: Request,
+    response: Response,
+    post_id: str,
+    session: Annotated[Session, Depends(get_session)],
+) -> PostRead:
+    del request, response
+    return post_to_read(session, load_post(session, post_id))
+
+
+@router.get("/shares/{share_id}")
+@limiter.limit(GENERAL_RATE_LIMIT)
+async def read_share(
+    request: Request,
+    response: Response,
+    share_id: str,
+    session: Annotated[Session, Depends(get_session)],
+) -> ShareRead:
+    del request, response
+    return share_to_read(session, load_public_share(session, share_id))
 
 
 @router.get("/board")
@@ -83,6 +107,30 @@ def build_date_window(local_date: LocalDate | None, timezone_name: str) -> DateW
         start_at=start_at,
         end_at=end_at,
     )
+
+
+def load_post(session: Session, post_id: str) -> Post:
+    post = session.get(Post, post_id)
+    if post is None:
+        raise ProblemException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            title="Post Not Found",
+            detail="Community post not found.",
+            code="post_not_found",
+        )
+    return post
+
+
+def load_public_share(session: Session, share_id: str) -> Share:
+    share = session.get(Share, share_id)
+    if share is None or not share.is_public:
+        raise ProblemException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            title="Share Not Found",
+            detail="Community share not found.",
+            code="share_not_found",
+        )
+    return share
 
 
 def post_to_read(session: Session, post: Post) -> PostRead:
