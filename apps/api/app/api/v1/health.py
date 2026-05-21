@@ -36,29 +36,40 @@ class IntegrationCheck(TypedDict):
     detail: str
 
 
+class DependencyCheck(TypedDict):
+    status: Literal["ok", "fail"]
+    detail: str
+
+
 @router.get("/live")
 async def live() -> dict[str, str]:
     return {"status": "ok"}
 
 
-async def check_database() -> str:
+async def check_database() -> DependencyCheck:
     try:
         with engine.connect() as connection:
             connection.execute(text("SELECT 1"))
-    except SQLAlchemyError:
-        return "fail"
-    return "ok"
+    except SQLAlchemyError as exc:
+        return {
+            "status": "fail",
+            "detail": f"database query failed: {type(exc).__name__}.",
+        }
+    return {"status": "ok", "detail": "database query succeeded."}
 
 
-async def check_redis() -> str:
+async def check_redis() -> DependencyCheck:
     client = Redis.from_url(settings.redis_url, socket_connect_timeout=1, socket_timeout=1)
     try:
         await cast(Awaitable[bool], client.ping())
-    except Exception:
-        return "fail"
+    except Exception as exc:
+        return {
+            "status": "fail",
+            "detail": f"Redis ping failed: {type(exc).__name__}.",
+        }
     finally:
         await client.aclose()
-    return "ok"
+    return {"status": "ok", "detail": "Redis ping succeeded."}
 
 
 async def check_integrations() -> dict[str, IntegrationCheck]:
@@ -148,6 +159,16 @@ async def check_stripe_integration(
     )
     if base_check is not None:
         return base_check
+    if not settings.stripe_secret_key:
+        return integration_fail(
+            mode=mode,
+            detail="real Stripe mode selected without STRIPE_SECRET_KEY.",
+        )
+    if not settings.stripe_webhook_secret:
+        return integration_fail(
+            mode=mode,
+            detail="STRIPE_WEBHOOK_SECRET is required when STRIPE_SECRET_KEY is set.",
+        )
     return await check_stripe_reachable(mode=mode)
 
 
@@ -446,9 +467,11 @@ async def ready() -> JSONResponse:
 
 def all_checks_pass(checks: dict[str, Any]) -> bool:
     for value in checks.values():
-        if value == "fail":
+        if isinstance(value, dict) and value.get("status") == "fail":
             return False
         if isinstance(value, dict) and not all_checks_pass(value):
+            return False
+        if value == "fail":
             return False
     return True
 

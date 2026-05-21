@@ -1,13 +1,22 @@
 """Tests for rate-limit keying, headers, storage, and 429 responses."""
 
+from collections.abc import Generator
+
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.pool import StaticPool
+from sqlmodel import Session, SQLModel, create_engine, select
 from starlette.requests import Request
 
+import app.models  # noqa: F401
+from app.api.deps import get_current_principal
 from app.core.config import settings
 from app.core.ratelimit import limiter, rate_limit_key, trusted_proxy_networks
 from app.core.security import Principal
+from app.db.seed import seed
+from app.db.session import get_session
 from app.main import create_app
+from app.models.domain import Challenge
 from tests.support import reset_limiter_storage
 
 
@@ -127,3 +136,73 @@ def test_llm_rate_limit_returns_problem_details_with_retry_after() -> None:
     assert limited.headers["content-type"].startswith("application/problem+json")
     assert "retry-after" in limited.headers
     assert limited.json()["code"] == "rate_limited"
+
+
+def test_free_user_challenge_run_llm_rate_limit_returns_problem_details() -> None:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    SQLModel.metadata.create_all(engine)
+    with Session(engine) as seed_session:
+        seed(seed_session)
+        challenge_id = seed_session.exec(
+            select(Challenge.id).where(Challenge.challenge_number == 1)
+        ).one()
+
+    def override_session() -> Generator[Session, None, None]:
+        with Session(engine) as session:
+            yield session
+
+    async def override_free_principal(request: Request) -> Principal:
+        principal = Principal(
+            subject="mock-google-oauth2|free",
+            email="free@prompteer.dev",
+            is_admin=False,
+        )
+        request.state.principal = principal
+        return principal
+
+    app = create_app()
+    app.dependency_overrides[get_session] = override_session
+    app.dependency_overrides[get_current_principal] = override_free_principal
+    client = TestClient(app)
+
+    for run_index in range(10):
+        response = client.post(
+            f"/api/v1/challenges/{challenge_id}/run",
+            json={
+                "prompt": (
+                    "Explain FizzBuzz clearly and write a compact Python solution "
+                    f"for free user attempt {run_index}."
+                ),
+                "publish_to_board": False,
+            },
+        )
+        assert response.status_code == 200
+
+    limited = client.post(
+        f"/api/v1/challenges/{challenge_id}/run",
+        json={
+            "prompt": (
+                "Explain FizzBuzz clearly and write a compact Python solution "
+                "after the free user limit."
+            ),
+            "publish_to_board": False,
+        },
+    )
+
+    assert limited.status_code == 429
+    assert limited.headers["content-type"].startswith("application/problem+json")
+    retry_after = limited.headers.get("retry-after")
+    assert retry_after is not None
+    assert retry_after.isdecimal()
+    assert int(retry_after) > 0
+    problem = limited.json()
+    assert problem["type"] == "https://prompteer.dev/errors/rate-limited"
+    assert problem["title"] == "Too Many Requests"
+    assert problem["status"] == 429
+    assert problem["instance"] == f"/api/v1/challenges/{challenge_id}/run"
+    assert problem["code"] == "rate_limited"
+    assert problem["request_id"] is not None

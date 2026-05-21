@@ -47,6 +47,43 @@ async def test_mock_sendgrid_captures_eml(tmp_path: Path) -> None:
     assert message_text.count("Welcome to Prompteer") == 1
 
 
+def test_mock_sendgrid_logs_capture_metadata_without_body(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[tuple[str, dict[str, object]]] = []
+
+    class FakeLogger:
+        def info(self, event: str, **kwargs: object) -> None:
+            events.append((event, kwargs))
+
+    monkeypatch.setattr(email_mock, "logger", FakeLogger())
+    client = MockSendGridClient(mailbox_dir=tmp_path)
+
+    written_to = client.capture_payload(
+        {
+            "personalizations": [{"to": [{"email": "free@prompteer.dev"}]}],
+            "from": {"email": "no-reply@prompteer.dev"},
+            "subject": "Welcome to Prompteer",
+            "content": [{"type": "text/plain", "value": "Do not log this body."}],
+        },
+        filename_prefix="capture-test",
+    )
+
+    assert written_to == [tmp_path / "capture-test-free@prompteer.dev.eml"]
+    assert events == [
+        (
+            "mock_email_captured",
+            {
+                "recipient": "free@prompteer.dev",
+                "subject": "Welcome to Prompteer",
+                "capture_path": str(tmp_path / "capture-test-free@prompteer.dev.eml"),
+            },
+        )
+    ]
+    assert "Do not log this body." not in json.dumps(events)
+
+
 @pytest.mark.asyncio
 async def test_mock_sendgrid_allows_dynamic_template_without_subject_or_content(
     tmp_path: Path,

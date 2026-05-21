@@ -1,5 +1,7 @@
 """Tests for liveness, readiness, startup, and integration status endpoints."""
 
+from typing import Literal
+
 import httpx
 import pytest
 import respx
@@ -12,6 +14,13 @@ from app.core.migrations import MigrationState
 from app.main import app
 
 
+def dependency_check(
+    status: Literal["ok", "fail"],
+    detail: str | None = None,
+) -> health.DependencyCheck:
+    return {"status": status, "detail": detail or f"test dependency {status}."}
+
+
 @pytest.fixture(autouse=True)
 def reset_health_settings(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "env", "development")
@@ -21,6 +30,7 @@ def reset_health_settings(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "openai_api_key", "")
     monkeypatch.setattr(settings, "anthropic_api_key", "")
     monkeypatch.setattr(settings, "stripe_secret_key", "")
+    monkeypatch.setattr(settings, "stripe_webhook_secret", "")
     monkeypatch.setattr(settings, "sendgrid_api_key", "")
     monkeypatch.setattr(settings, "feature_llm_enabled", True)
     monkeypatch.setattr(settings, "feature_payments_enabled", True)
@@ -29,8 +39,8 @@ def reset_health_settings(monkeypatch: MonkeyPatch) -> None:
 
 @pytest.fixture
 def healthy_required_dependencies(monkeypatch: MonkeyPatch) -> None:
-    async def ok() -> str:
-        return "ok"
+    async def ok() -> health.DependencyCheck:
+        return dependency_check("ok")
 
     monkeypatch.setattr(health, "check_database", ok)
     monkeypatch.setattr(health, "check_redis", ok)
@@ -56,8 +66,8 @@ def test_integrations_default_to_mocks() -> None:
 
 
 def test_readiness_probe_reports_ok(monkeypatch: MonkeyPatch) -> None:
-    async def ok() -> str:
-        return "ok"
+    async def ok() -> health.DependencyCheck:
+        return dependency_check("ok")
 
     monkeypatch.setattr(health, "check_database", ok)
     monkeypatch.setattr(health, "check_redis", ok)
@@ -68,8 +78,8 @@ def test_readiness_probe_reports_ok(monkeypatch: MonkeyPatch) -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "ok"
-    assert body["checks"]["database"] == "ok"
-    assert body["checks"]["redis"] == "ok"
+    assert body["checks"]["database"] == dependency_check("ok")
+    assert body["checks"]["redis"] == dependency_check("ok")
     assert_integration_statuses(
         body,
         {
@@ -82,11 +92,11 @@ def test_readiness_probe_reports_ok(monkeypatch: MonkeyPatch) -> None:
 
 
 def test_readiness_probe_reports_dependency_failure(monkeypatch: MonkeyPatch) -> None:
-    async def ok() -> str:
-        return "ok"
+    async def ok() -> health.DependencyCheck:
+        return dependency_check("ok")
 
-    async def fail() -> str:
-        return "fail"
+    async def fail() -> health.DependencyCheck:
+        return dependency_check("fail")
 
     monkeypatch.setattr(health, "check_database", ok)
     monkeypatch.setattr(health, "check_redis", fail)
@@ -97,8 +107,8 @@ def test_readiness_probe_reports_dependency_failure(monkeypatch: MonkeyPatch) ->
     assert response.status_code == 503
     body = response.json()
     assert body["status"] == "degraded"
-    assert body["checks"]["database"] == "ok"
-    assert body["checks"]["redis"] == "fail"
+    assert body["checks"]["database"] == dependency_check("ok")
+    assert body["checks"]["redis"] == dependency_check("fail")
     assert_integration_statuses(
         body,
         {
@@ -113,8 +123,8 @@ def test_readiness_probe_reports_dependency_failure(monkeypatch: MonkeyPatch) ->
 def test_readiness_probe_reports_real_redis_connection_failure(
     monkeypatch: MonkeyPatch,
 ) -> None:
-    async def ok() -> str:
-        return "ok"
+    async def ok() -> health.DependencyCheck:
+        return dependency_check("ok")
 
     monkeypatch.setattr(health, "check_database", ok)
     monkeypatch.setattr(settings, "redis_url", "redis://127.0.0.1:1/0")
@@ -125,8 +135,10 @@ def test_readiness_probe_reports_real_redis_connection_failure(
     assert response.status_code == 503
     body = response.json()
     assert body["status"] == "degraded"
-    assert body["checks"]["database"] == "ok"
-    assert body["checks"]["redis"] == "fail"
+    assert body["checks"]["database"] == dependency_check("ok")
+    assert body["checks"]["redis"]["status"] == "fail"
+    assert isinstance(body["checks"]["redis"]["detail"], str)
+    assert "Redis ping failed" in body["checks"]["redis"]["detail"]
     assert_integration_statuses(
         body,
         {
@@ -148,6 +160,7 @@ def test_readiness_probe_reports_all_real_integrations_ok(
     monkeypatch.setattr(settings, "openai_base_url", "https://openai.example/v1")
     monkeypatch.setattr(settings, "openai_chat_model", "gpt-health")
     monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_stripe")
+    monkeypatch.setattr(settings, "stripe_webhook_secret", "whsec_test")
     monkeypatch.setattr(settings, "sendgrid_api_key", "SG.test")
 
     with respx.mock(assert_all_mocked=True, assert_all_called=False) as router:
@@ -225,6 +238,34 @@ def test_readiness_probe_reports_all_real_integrations_ok(
     assert sendgrid_scopes.called
 
 
+def test_readiness_probe_reports_real_stripe_missing_webhook_secret(
+    monkeypatch: MonkeyPatch,
+    healthy_required_dependencies: None,
+) -> None:
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_stripe")
+    monkeypatch.setattr(settings, "stripe_webhook_secret", "")
+
+    with respx.mock(assert_all_mocked=True, assert_all_called=False) as router:
+        stripe_balance = router.get("https://api.stripe.com/v1/balance").mock(
+            return_value=httpx.Response(
+                200,
+                json={"object": "balance", "available": [], "pending": []},
+            )
+        )
+
+        client = TestClient(app)
+        response = client.get("/api/v1/health/ready")
+
+    assert response.status_code == 503
+    body = response.json()
+    assert body["status"] == "degraded"
+    stripe = body["checks"]["integrations"]["stripe"]
+    assert stripe["status"] == "fail"
+    assert stripe["mode"] == "real"
+    assert "STRIPE_WEBHOOK_SECRET is required" in stripe["detail"]
+    assert not stripe_balance.called
+
+
 def test_readiness_probe_reports_real_anthropic_provider_ok(
     monkeypatch: MonkeyPatch,
     healthy_required_dependencies: None,
@@ -279,8 +320,8 @@ def test_readiness_probe_reports_real_provider_http_failure(
 def test_readiness_probe_reports_mock_integration_failure_without_dev_routes(
     monkeypatch: MonkeyPatch,
 ) -> None:
-    async def ok() -> str:
-        return "ok"
+    async def ok() -> health.DependencyCheck:
+        return dependency_check("ok")
 
     monkeypatch.setattr(health, "check_database", ok)
     monkeypatch.setattr(health, "check_redis", ok)
@@ -306,8 +347,8 @@ def test_readiness_probe_reports_mock_integration_failure_without_dev_routes(
 def test_readiness_probe_reports_partial_google_credentials(
     monkeypatch: MonkeyPatch,
 ) -> None:
-    async def ok() -> str:
-        return "ok"
+    async def ok() -> health.DependencyCheck:
+        return dependency_check("ok")
 
     monkeypatch.setattr(health, "check_database", ok)
     monkeypatch.setattr(health, "check_redis", ok)

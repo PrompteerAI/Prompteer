@@ -13,6 +13,7 @@ from pathlib import Path
 from re import sub
 from typing import Any
 
+import structlog
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field, ValidationError, field_validator, model_validator
 from starlette import status
@@ -24,6 +25,7 @@ from app.core.feature_flags import dev_routes_enabled, require_feature_enabled
 from app.core.ratelimit import EMAIL_RATE_LIMIT, limiter
 
 router = APIRouter(tags=["mock-sendgrid"])
+logger = structlog.get_logger(__name__)
 
 
 def default_mailbox_dir() -> Path:
@@ -141,6 +143,14 @@ class MockSendGridClient:
                         self._to_eml(message, personalization, recipient),
                         encoding="utf-8",
                     )
+                    log_fields = {
+                        "recipient": recipient.email,
+                        "capture_path": str(path),
+                    }
+                    subject = personalization.subject or message.subject
+                    if subject is not None:
+                        log_fields["subject"] = subject
+                    logger.info("mock_email_captured", **log_fields)
                 written_to.append(path)
 
         return written_to
