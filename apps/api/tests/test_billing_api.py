@@ -133,6 +133,45 @@ def test_mock_checkout_completion_updates_user_plan() -> None:
     assert paid_user.plan == "paid"
 
 
+def test_dev_stripe_complete_processes_recorded_checkout_webhook() -> None:
+    app = create_billing_test_app(initial_paid_plan="free")
+    client = TestClient(app)
+
+    create_response = client.post(
+        "/api/v1/billing/checkout",
+        json={"plan": "pro_monthly"},
+    )
+    assert create_response.status_code == 200
+    session_id = create_response.json()["id"]
+
+    complete_response = client.get("/dev/stripe/complete", params={"session_id": session_id})
+
+    assert complete_response.status_code == 200
+    completed = complete_response.json()
+    assert completed["session"]["id"] == session_id
+    assert completed["session"]["status"] == "complete"
+    assert completed["session"]["payment_status"] == "paid"
+    assert completed["webhook_signature"].startswith("t=")
+    assert completed["webhook"]["received"] is True
+    assert completed["webhook"]["event_type"] == "checkout.session.completed"
+    assert completed["webhook"]["processed"] is True
+    assert completed["webhook"]["customer_email"] == "paid@prompteer.dev"
+
+    with Session(app.state.test_engine) as assertion_session:
+        paid_user = assertion_session.exec(
+            select(User).where(User.email == "paid@prompteer.dev")
+        ).one()
+        checkout_record = assertion_session.get(StripeCheckoutSession, session_id)
+        webhook_events = assertion_session.exec(select(StripeWebhookEvent)).all()
+    assert paid_user.plan == "paid"
+    assert checkout_record is not None
+    assert checkout_record.status == "complete"
+    assert checkout_record.payment_status == "paid"
+    assert len(webhook_events) == 1
+    assert webhook_events[0].event_id == completed["event"]["id"]
+    assert webhook_events[0].processed is True
+
+
 def test_mock_checkout_completion_captures_receipt_email(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

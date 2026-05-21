@@ -30,6 +30,7 @@ from app.schemas.billing import (
 )
 from app.services.billing import (
     StripeWebhookResult,
+    apply_signed_stripe_webhook_payload,
     apply_stripe_webhook_event,
     get_recorded_checkout_session_payload,
     record_checkout_session,
@@ -173,8 +174,10 @@ def handle_stripe_webhook_payload(
     payload: str,
     stripe_signature: str,
 ) -> StripeWebhookResult:
-    event = construct_stripe_webhook_event(payload, stripe_signature)
-    return apply_stripe_webhook_event(db_session, event)
+    try:
+        return apply_signed_stripe_webhook_payload(db_session, payload, stripe_signature)
+    except StripeWebhookSignatureError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
 
 def construct_stripe_webhook_event(payload: str, stripe_signature: str) -> dict[str, Any]:

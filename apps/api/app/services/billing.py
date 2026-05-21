@@ -9,6 +9,7 @@ from typing import Any
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
+from app.integrations.payments.webhooks import construct_stripe_event
 from app.models.domain import StripeCheckoutSession, StripeWebhookEvent, User, utc_now
 
 
@@ -46,6 +47,15 @@ def apply_stripe_webhook_event(db_session: Session, event: dict[str, Any]) -> St
         db_session, event_id=event_id, event_type=event_type, checkout_session=checkout_session
     )
     return record_stripe_webhook_event(db_session, result)
+
+
+def apply_signed_stripe_webhook_payload(
+    db_session: Session,
+    payload: str,
+    stripe_signature: str,
+) -> StripeWebhookResult:
+    event = construct_stripe_event(payload, stripe_signature)
+    return apply_stripe_webhook_event(db_session, event)
 
 
 def record_stripe_webhook_event(

@@ -1,6 +1,6 @@
 # Stripe Integration
 
-Verified on: 2026-05-21
+Verified on: 2026-05-22
 
 Sources:
 
@@ -9,7 +9,7 @@ Sources:
 - https://docs.stripe.com/api/checkout/sessions/create
 - https://docs.stripe.com/api/checkout/sessions/retrieve
 - https://docs.stripe.com/api/checkout/sessions/expire
-- https://docs.stripe.com/api/events
+- https://docs.stripe.com/api/events/object
 - https://docs.stripe.com/checkout/fulfillment
 - https://docs.stripe.com/webhooks/signature
 
@@ -55,7 +55,7 @@ The mock Checkout Session response keeps the upstream fields the app needs for b
 }
 ```
 
-`GET /dev/stripe/complete?session_id=...` is dev-only. It marks an open mock session complete, sets `payment_status` to `paid`, creates a mock `payment_intent` or `subscription` depending on the session mode, and returns a `checkout.session.completed` event plus a mock `Stripe-Signature` header value.
+`GET /dev/stripe/complete?session_id=...` is dev-only. It marks an open mock session complete, sets `payment_status` to `paid`, creates a mock `payment_intent` or `subscription` depending on the session mode, signs a `checkout.session.completed` event with the local webhook secret, and applies that signed payload through the same billing webhook handler used by real Stripe events. The response includes the completed session, event, mock `Stripe-Signature` header value, and the local webhook processing result.
 
 `POST /api/v1/billing/webhooks/stripe` accepts the raw event payload and `Stripe-Signature` header, verifies the signature, and applies `checkout.session.completed` side effects. `POST /api/v1/billing/checkout/:id/complete` is the product-facing local-dev wrapper used by the Next.js billing screen. It is available only when dev routes are enabled and no real `STRIPE_SECRET_KEY` is configured, and it routes mock completion through the same webhook handler used by real Stripe events.
 

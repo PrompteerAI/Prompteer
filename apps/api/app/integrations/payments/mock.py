@@ -1,10 +1,11 @@
 """Stripe Checkout mock.
 
-Schema references verified on 2026-05-21:
+Schema references verified on 2026-05-22:
 - https://docs.stripe.com/api/checkout/sessions
 - https://docs.stripe.com/api/checkout/sessions/create
 - https://docs.stripe.com/api/checkout/sessions/retrieve
 - https://docs.stripe.com/api/checkout/sessions/expire
+- https://docs.stripe.com/api/events/object
 - https://docs.stripe.com/webhooks/signature
 """
 
@@ -16,18 +17,21 @@ import secrets
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
-from typing import Any, cast
+from typing import Annotated, Any, cast
 
-from fastapi import APIRouter, HTTPException, Query, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from sqlmodel import Session
 
 from app.core.feature_flags import dev_routes_enabled, require_feature_enabled
 from app.core.ratelimit import PAYMENTS_RATE_LIMIT, limiter
+from app.db.session import get_session
 from app.integrations.payments.webhooks import (
     StripeWebhookSignatureError,
     construct_stripe_event,
     sign_stripe_webhook_payload,
     stripe_webhook_secret,
 )
+from app.services.billing import apply_signed_stripe_webhook_payload
 
 MOCK_CHECKOUT_BASE_URL = "https://checkout.stripe.com/c/pay"
 SEED_CHECKOUT_CREATED = 1_800_000_000
@@ -141,6 +145,7 @@ async def expire_checkout_session(
 async def complete_mock_checkout(
     request: Request,
     response: Response,
+    db_session: Annotated[Session, Depends(get_session)],
     session_id: str = Query(..., description="Mock Checkout Session id."),
 ) -> dict[str, Any]:
     del request, response
@@ -151,9 +156,26 @@ async def complete_mock_checkout(
     except MockStripeError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     event_payload = json.dumps(result["event"], separators=(",", ":"), sort_keys=True)
+    webhook_signature = MockStripeClient().sign_webhook_payload(event_payload)
+    try:
+        webhook_result = apply_signed_stripe_webhook_payload(
+            db_session,
+            event_payload,
+            webhook_signature,
+        )
+    except StripeWebhookSignatureError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return {
         **result,
-        "webhook_signature": MockStripeClient().sign_webhook_payload(event_payload),
+        "webhook_signature": webhook_signature,
+        "webhook": {
+            "received": True,
+            "event_id": webhook_result.event_id,
+            "event_type": webhook_result.event_type,
+            "processed": webhook_result.processed,
+            "customer_email": webhook_result.customer_email,
+            "user_id": webhook_result.user_id,
+        },
     }
 
 

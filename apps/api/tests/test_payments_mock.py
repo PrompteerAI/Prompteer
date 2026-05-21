@@ -1,14 +1,21 @@
 """Tests for Stripe mock checkout sessions, webhooks, and real client payloads."""
 
 import json
+from collections.abc import Generator
 from urllib.parse import parse_qs
 
 import httpx
 import pytest
 import respx
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from sqlalchemy.pool import StaticPool
+from sqlmodel import Session, SQLModel, create_engine
 
+# Import model modules so SQLModel metadata is populated for test databases.
+import app.models  # noqa: F401
 from app.core.config import settings
+from app.db.session import get_session
 from app.integrations.payments import get_payments_client
 from app.integrations.payments.mock import (
     STORE,
@@ -51,6 +58,23 @@ def reset_store(monkeypatch: pytest.MonkeyPatch) -> None:
     STORE.reset()
 
 
+def create_mock_stripe_test_app() -> FastAPI:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    SQLModel.metadata.create_all(engine)
+
+    def override_session() -> Generator[Session, None, None]:
+        with Session(engine) as session:
+            yield session
+
+    app = create_app()
+    app.dependency_overrides[get_session] = override_session
+    return app
+
+
 @pytest.mark.asyncio
 async def test_mock_stripe_session_lifecycle_and_webhook_signature() -> None:
     client = MockStripeClient()
@@ -82,7 +106,7 @@ async def test_mock_stripe_session_lifecycle_and_webhook_signature() -> None:
 
 
 def test_mock_stripe_routes_accept_form_payload_and_complete_checkout() -> None:
-    client = TestClient(create_app())
+    client = TestClient(create_mock_stripe_test_app())
 
     create_response = client.post(
         "/v1/checkout/sessions",
@@ -115,6 +139,8 @@ def test_mock_stripe_routes_accept_form_payload_and_complete_checkout() -> None:
     assert completed["session"]["payment_intent"].startswith("pi_mock_")
     assert completed["event"]["type"] == "checkout.session.completed"
     assert completed["webhook_signature"].startswith("t=")
+    assert completed["webhook"]["received"] is True
+    assert completed["webhook"]["processed"] is False
 
 
 def test_mock_stripe_route_rejects_malformed_json_payload() -> None:
@@ -132,7 +158,7 @@ def test_mock_stripe_route_rejects_malformed_json_payload() -> None:
 
 
 def test_mock_stripe_expire_route() -> None:
-    client = TestClient(create_app())
+    client = TestClient(create_mock_stripe_test_app())
 
     session = client.post("/v1/checkout/sessions", json=CHECKOUT_PAYLOAD).json()
     expire_response = client.post(f"/v1/checkout/sessions/{session['id']}/expire")
