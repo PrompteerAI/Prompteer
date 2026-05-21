@@ -50,3 +50,17 @@ maintenance_url_from_url() {
   url="${url%/}"
   printf '%s/postgres%s\n' "${url%/*}" "$query"
 }
+
+database_url_with_name() {
+  local url="$1"
+  local database_name="$2"
+  local query=""
+
+  if [[ "$url" == *\?* ]]; then
+    query="?${url#*\?}"
+    url="${url%%\?*}"
+  fi
+
+  url="${url%/}"
+  printf '%s/%s%s\n' "${url%/*}" "$database_name" "$query"
+}

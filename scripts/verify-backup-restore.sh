@@ -4,9 +4,14 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 script_dir="$repo_root/scripts"
 source "$script_dir/lib/db-url.sh"
+source "$script_dir/lib/load-env.sh"
 
-source_url="$(to_pg_url "${SOURCE_DATABASE_URL:-postgresql://prompteer:prompteer@localhost:5432/prompteer_backup_source}")"
-restore_url="$(to_pg_url "${RESTORE_DATABASE_URL:-postgresql://prompteer:prompteer@localhost:5432/prompteer_backup_restore}")"
+load_env_file "$repo_root/.env"
+apply_local_port_env
+
+base_database_url="$(to_pg_url "${DATABASE_URL:-$DEFAULT_DATABASE_URL}")"
+source_url="$(to_pg_url "${SOURCE_DATABASE_URL:-$(database_url_with_name "$base_database_url" prompteer_backup_source)}")"
+restore_url="$(to_pg_url "${RESTORE_DATABASE_URL:-$(database_url_with_name "$base_database_url" prompteer_backup_restore)}")"
 maintenance_url="$(to_pg_url "${MAINTENANCE_DATABASE_URL:-$(maintenance_url_from_url "$source_url")}")"
 dump_path="${1:-${BACKUP_FILE:-$repo_root/.verify/backups/prompteer-roundtrip.dump}}"
 

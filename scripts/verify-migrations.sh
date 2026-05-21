@@ -4,8 +4,13 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 script_dir="$repo_root/scripts"
 source "$script_dir/lib/db-url.sh"
+source "$script_dir/lib/load-env.sh"
 
-migration_url="$(to_pg_url "${MIGRATION_DATABASE_URL:-postgresql://prompteer:prompteer@localhost:5432/prompteer_migration_check}")"
+load_env_file "$repo_root/.env"
+apply_local_port_env
+
+base_database_url="$(to_pg_url "${DATABASE_URL:-$DEFAULT_DATABASE_URL}")"
+migration_url="$(to_pg_url "${MIGRATION_DATABASE_URL:-$(database_url_with_name "$base_database_url" prompteer_migration_check)}")"
 maintenance_url="$(to_pg_url "${MAINTENANCE_DATABASE_URL:-$(maintenance_url_from_url "$migration_url")}")"
 migration_database="$(database_name_from_url "$migration_url")"
 

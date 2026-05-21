@@ -15,6 +15,7 @@ load_env_file() {
     key="${key#"${key%%[![:space:]]*}"}"
     key="${key%"${key##*[![:space:]]}"}"
     [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
+    [[ -v "$key" ]] && continue
 
     if [[ "$value" == \"*\" && "$value" == *\" && ${#value} -ge 2 ]]; then
       value="${value:1:${#value}-2}"
