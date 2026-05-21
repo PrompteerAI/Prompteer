@@ -2,5 +2,13 @@
   "metadata": {
     "title": "Prompteer Legacy Preview",
     "description": "Legacy-style Prompteer frontend preview"
+  },
+  "errors": {
+    "appTitle": "Legacy preview interrupted",
+    "appDescription": "The legacy preview could not render this page.",
+    "authTitle": "Sign-in preview interrupted",
+    "authDescription": "The legacy preview could not render this sign-in page.",
+    "supportId": "Support ID",
+    "retry": "Retry"
   }
 }

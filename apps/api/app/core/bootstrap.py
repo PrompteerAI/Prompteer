@@ -8,6 +8,7 @@ import structlog
 from alembic import command
 from sqlmodel import Session
 
+from app.core.config import integration_modes as configured_integration_modes
 from app.core.config import settings
 from app.core.migrations import alembic_config
 from app.db.seed import seed, seed_mock_emails
@@ -55,13 +56,12 @@ def main() -> None:
 
 
 def integration_modes() -> dict[str, str]:
+    modes = configured_integration_modes()
     return {
-        "llm": "real" if settings.openai_api_key or settings.anthropic_api_key else "mock",
-        "google_oauth": "real"
-        if settings.google_client_id and settings.google_client_secret
-        else "mock",
-        "stripe": "real" if settings.stripe_secret_key else "mock",
-        "email": "real" if settings.sendgrid_api_key else "mock",
+        "llm": modes["llm"],
+        "google_oauth": modes["google_oauth"],
+        "stripe": modes["stripe"],
+        "email": modes["email"],
     }
 
 

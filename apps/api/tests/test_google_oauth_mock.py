@@ -8,16 +8,19 @@ from urllib.parse import parse_qs, urlparse
 import jwt
 import pytest
 import respx
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from fastapi.testclient import TestClient
 from httpx import Response
 
 from app.core.config import settings
 from app.integrations.google_oauth import get_google_oauth_client
+from app.integrations.google_oauth import mock as google_mock
 from app.integrations.google_oauth.mock import (
-    DEV_PUBLIC_KEY,
     MOCK_GOOGLE_CLIENT_ID,
     MOCK_GOOGLE_CLIENT_SECRET,
     authorization_header,
+    dev_public_key,
     load_or_create_private_key,
 )
 from app.integrations.google_oauth.real import GOOGLE_JWKS_URL, GOOGLE_OIDC_DISCOVERY_URL
@@ -68,6 +71,27 @@ def test_mock_google_private_key_is_generated_to_runtime_file(tmp_path: Path) ->
         first_key.private_numbers().public_numbers.n
         == second_key.private_numbers().public_numbers.n
     )
+
+
+def test_mock_google_private_key_is_loaded_lazily(monkeypatch: pytest.MonkeyPatch) -> None:
+    generated = False
+
+    def fake_load_or_create_private_key(
+        path: Path = google_mock.MOCK_GOOGLE_PRIVATE_KEY_PATH,
+    ) -> RSAPrivateKey:
+        nonlocal generated
+        generated = True
+        return rsa.generate_private_key(public_exponent=65537, key_size=2048)
+
+    google_mock.dev_private_key.cache_clear()
+    monkeypatch.setattr(google_mock, "load_or_create_private_key", fake_load_or_create_private_key)
+
+    try:
+        assert not generated
+        google_mock.public_jwk()
+        assert generated
+    finally:
+        google_mock.dev_private_key.cache_clear()
 
 
 def test_openid_discovery_can_publish_internal_server_endpoints(
@@ -135,7 +159,7 @@ def test_mock_google_authorization_code_flow() -> None:
 
     claims = jwt.decode(
         cast(str, token_body["id_token"]),
-        DEV_PUBLIC_KEY,
+        dev_public_key(),
         algorithms=["RS256"],
         audience=MOCK_GOOGLE_CLIENT_ID,
         issuer=settings.auth_mock_google_issuer,
@@ -202,3 +226,23 @@ async def test_google_oauth_factory_selects_real_metadata_client(
     assert client.provider == "real"
     assert discovery["issuer"] == "https://accounts.google.com"
     assert keys["keys"][0]["kid"] == "google-key"
+
+
+def test_google_oauth_factory_rejects_partial_credentials(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "google_client_id", "real-client")
+
+    with pytest.raises(RuntimeError, match="must be set together"):
+        get_google_oauth_client()
+
+
+def test_mock_google_routes_are_not_available_with_partial_credentials(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "google_client_secret", "real-secret")
+    client = TestClient(create_app())
+
+    response = client.get("/.well-known/openid-configuration")
+
+    assert response.status_code == 404

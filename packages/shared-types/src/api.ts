@@ -530,7 +530,7 @@ export interface components {
        * Google Oauth
        * @enum {string}
        */
-      google_oauth: "mock" | "real";
+      google_oauth: "mock" | "partial" | "real";
       /**
        * Llm
        * @enum {string}

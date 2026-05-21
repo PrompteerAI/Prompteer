@@ -7,6 +7,11 @@ for the target commit have been pushed to GHCR.
 
 - Confirm the release commit is on `main` and has passing `ci.yaml`,
   `build.yaml`, and `e2e.yaml` workflow runs.
+- `build.yaml` publishes GHCR images only after its `required verification` job
+  passes. That job repeats the lightweight release gate (`format:check`,
+  environment documentation checks, dependency audit, lint, typecheck, unit
+  tests, generated API type checks, and frontend builds) before the workflow
+  logs in to GHCR.
 - Review dependency updates and security advisories before tagging:
 
   ```sh
@@ -24,6 +29,15 @@ for the target commit have been pushed to GHCR.
   ```sh
   make types-check
   ```
+
+## Repository Hooks
+
+`package.json` intentionally keeps `prepare` as `husky || true`. Docker image
+builds run `pnpm install` from a context where `.git` is ignored, so Husky cannot
+install hooks there; the tolerant prepare script prevents that expected
+container-only state from blocking image builds. Local hook bodies are wired
+through package scripts, currently `pnpm run hooks:pre-commit`, so contributors
+can run the same checks manually without invoking Git.
 
 ## Cut The Release
 

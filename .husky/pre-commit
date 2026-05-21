@@ -1,2 +1,1 @@
-pnpm lint-staged
-uv run --project apps/api pre-commit run --all-files
+pnpm run hooks:pre-commit

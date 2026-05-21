@@ -70,6 +70,23 @@ def test_integration_config_endpoint_reports_mock_and_real_modes(
     }
 
 
+def test_integration_config_endpoint_reports_partial_google_credentials(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "google_client_secret", "google-secret")
+    client = TestClient(create_app())
+
+    response = client.get("/api/v1/config/integrations")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "google_oauth": "partial",
+        "llm": "mock",
+        "payments": "mock",
+        "email": "mock",
+    }
+
+
 def test_disabled_llm_route_returns_problem_details(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "feature_llm_enabled", False)
     client = TestClient(create_app())

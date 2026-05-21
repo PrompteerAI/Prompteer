@@ -12,7 +12,7 @@ import type { components } from "@prompteer/shared-types";
 type PostRead = components["schemas"]["PostRead"];
 
 type Props = {
-  params: Promise<{ postId: string }>;
+  params: Promise<{ locale: string; postId: string }>;
 };
 
 export const dynamic = "force-dynamic";
@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 export default async function BoardPostDetailPage({
   params,
 }: Props): Promise<React.ReactElement> {
-  const [{ postId }, t, boardT, errors] = await Promise.all([
+  const [{ locale, postId }, t, boardT, errors] = await Promise.all([
     params,
     getTranslations("board.detail"),
     getTranslations("board"),
@@ -96,7 +96,7 @@ export default async function BoardPostDetailPage({
                 {t("createdAt")}
               </dt>
               <dd className="mt-1 font-medium text-zinc-950">
-                {formatDate(post.created_at)}
+                {formatDate(post.created_at, locale)}
               </dd>
             </div>
             <div>
@@ -128,8 +128,8 @@ export default async function BoardPostDetailPage({
   );
 }
 
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("en", {
+function formatDate(value: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));

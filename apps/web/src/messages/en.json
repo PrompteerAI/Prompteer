@@ -266,6 +266,10 @@
   },
   "errors": {
     "title": "Something went wrong",
+    "appTitle": "Workspace interrupted",
+    "appUnexpectedDescription": "An unexpected error interrupted this workspace route. Try again, or report it with the support ID if one is shown.",
+    "authTitle": "Sign-in interrupted",
+    "authUnexpectedDescription": "An unexpected error interrupted the sign-in flow. Try again, or report it with the support ID if one is shown.",
     "unexpectedDescription": "An unexpected error interrupted this page. Try again, or report it with the support ID if one is shown.",
     "supportId": "Support ID",
     "apiUnavailableTitle": "Service unavailable",

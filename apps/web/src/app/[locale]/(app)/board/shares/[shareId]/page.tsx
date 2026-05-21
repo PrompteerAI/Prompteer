@@ -12,7 +12,7 @@ import type { components } from "@prompteer/shared-types";
 type ShareRead = components["schemas"]["ShareRead"];
 
 type Props = {
-  params: Promise<{ shareId: string }>;
+  params: Promise<{ locale: string; shareId: string }>;
 };
 
 export const dynamic = "force-dynamic";
@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 export default async function BoardShareDetailPage({
   params,
 }: Props): Promise<React.ReactElement> {
-  const [{ shareId }, t, boardT, errors] = await Promise.all([
+  const [{ locale, shareId }, t, boardT, errors] = await Promise.all([
     params,
     getTranslations("board.detail"),
     getTranslations("board"),
@@ -96,7 +96,7 @@ export default async function BoardShareDetailPage({
                 {t("createdAt")}
               </dt>
               <dd className="mt-1 font-medium text-zinc-950">
-                {formatDate(share.created_at)}
+                {formatDate(share.created_at, locale)}
               </dd>
             </div>
             <div>
@@ -130,8 +130,8 @@ export default async function BoardShareDetailPage({
   );
 }
 
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("en", {
+function formatDate(value: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));

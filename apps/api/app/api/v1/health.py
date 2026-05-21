@@ -12,8 +12,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.responses import JSONResponse
 
-from app.core.bootstrap import integration_modes
-from app.core.config import settings
+from app.core.config import integration_modes, settings
 from app.core.feature_flags import dev_routes_enabled, feature_flags
 from app.core.migrations import MigrationState, migration_state
 from app.db.session import engine
@@ -102,7 +101,7 @@ async def check_integrations() -> dict[str, IntegrationCheck]:
 
 
 async def check_google_oauth(*, mode: str) -> IntegrationCheck:
-    if bool(settings.google_client_id) != bool(settings.google_client_secret):
+    if mode == "partial":
         return {
             "status": "fail",
             "mode": "partial",

@@ -18,6 +18,7 @@
     "audit": "pnpm audit --audit-level moderate",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "hooks:pre-commit": "pnpm exec lint-staged && uv run --project apps/api pre-commit run --all-files",
     "commitlint": "commitlint --edit"
   },
   "devDependencies": {

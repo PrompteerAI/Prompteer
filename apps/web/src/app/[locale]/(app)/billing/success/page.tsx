@@ -13,20 +13,23 @@ import type { components } from "@prompteer/shared-types";
 type CheckoutSession = components["schemas"]["CheckoutSessionRead"];
 
 interface BillingSuccessPageProps {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 export const dynamic = "force-dynamic";
 
 export default async function BillingSuccessPage({
+  params,
   searchParams,
 }: BillingSuccessPageProps): Promise<React.ReactElement> {
-  const [t, session, params] = await Promise.all([
+  const [t, session, query, routeParams] = await Promise.all([
     getTranslations("billing.success"),
     auth(),
     searchParams,
+    params,
   ]);
-  const sessionId = firstSearchParam(params.session_id);
+  const sessionId = firstSearchParam(query.session_id);
 
   if (!sessionId || !session?.user?.email) {
     return (
@@ -72,7 +75,9 @@ export default async function BillingSuccessPage({
   const isComplete =
     checkoutSession.status === "complete" ||
     checkoutSession.payment_status === "paid";
-  const amount = formatCheckoutAmount(checkoutSession) ?? t("unknownAmount");
+  const amount =
+    formatCheckoutAmount(checkoutSession, routeParams.locale) ??
+    t("unknownAmount");
 
   return (
     <BillingSuccessShell backLabel={t("back")}>
@@ -172,11 +177,14 @@ function firstSearchParam(value: string | string[] | undefined): string | null {
   return value ?? null;
 }
 
-function formatCheckoutAmount(session: CheckoutSession): string | null {
+function formatCheckoutAmount(
+  session: CheckoutSession,
+  locale: string,
+): string | null {
   if (typeof session.amount_total !== "number" || !session.currency) {
     return null;
   }
-  return new Intl.NumberFormat("en", {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: session.currency.toUpperCase(),
   }).format(session.amount_total / 100);

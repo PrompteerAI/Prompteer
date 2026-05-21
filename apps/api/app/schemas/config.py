@@ -1,10 +1,8 @@
 # Public runtime configuration schemas returned by the versioned API.
 
-from typing import Literal
-
 from pydantic import BaseModel
 
-IntegrationMode = Literal["mock", "real"]
+from app.core.config import GoogleOAuthIntegrationMode, RealMockIntegrationMode
 
 
 class FeatureFlagsRead(BaseModel):
@@ -14,7 +12,7 @@ class FeatureFlagsRead(BaseModel):
 
 
 class IntegrationModesRead(BaseModel):
-    google_oauth: IntegrationMode
-    llm: IntegrationMode
-    payments: IntegrationMode
-    email: IntegrationMode
+    google_oauth: GoogleOAuthIntegrationMode
+    llm: RealMockIntegrationMode
+    payments: RealMockIntegrationMode
+    email: RealMockIntegrationMode

@@ -37,8 +37,14 @@ services:
       APP_URL: "http://localhost:${HTTP_PORT:-80}"
       API_UVICORN_WORKERS: ${API_UVICORN_WORKERS:-1}
       API_UVICORN_WORKERS_MAX: ${API_UVICORN_WORKERS_MAX:-32}
+      API_GUNICORN_TIMEOUT: ${API_GUNICORN_TIMEOUT:-30}
+      API_GUNICORN_GRACEFUL_TIMEOUT: ${API_GUNICORN_GRACEFUL_TIMEOUT:-30}
+      API_GUNICORN_KEEPALIVE: ${API_GUNICORN_KEEPALIVE:-2}
       LOG_JSON: "true"
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-prompteer}:${POSTGRES_PASSWORD:-prompteer}@postgres:5432/${POSTGRES_DB:-prompteer}
+      DATABASE_POOL_SIZE: ${DATABASE_POOL_SIZE:-5}
+      DATABASE_MAX_OVERFLOW: ${DATABASE_MAX_OVERFLOW:-10}
+      DATABASE_POOL_TIMEOUT: ${DATABASE_POOL_TIMEOUT:-30}
       REDIS_URL: redis://redis:6379/0
       RATE_LIMIT_STORAGE_URL: redis://redis:6379/0
       AUTH_JWKS_URL: http://web:3000/api/auth/jwks
@@ -68,6 +74,9 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-prompteer}:${POSTGRES_PASSWORD:-prompteer}@postgres:5432/${POSTGRES_DB:-prompteer}
+      DATABASE_POOL_SIZE: ${DATABASE_POOL_SIZE:-5}
+      DATABASE_MAX_OVERFLOW: ${DATABASE_MAX_OVERFLOW:-10}
+      DATABASE_POOL_TIMEOUT: ${DATABASE_POOL_TIMEOUT:-30}
       REDIS_URL: redis://redis:6379/0
     depends_on:
       postgres:

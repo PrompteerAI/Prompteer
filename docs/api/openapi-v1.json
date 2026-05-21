@@ -443,7 +443,7 @@
             "type": "string"
           },
           "google_oauth": {
-            "enum": ["mock", "real"],
+            "enum": ["mock", "partial", "real"],
             "title": "Google Oauth",
             "type": "string"
           },

@@ -22,7 +22,10 @@ export default async function AppLayout({
     const { locale } = await params;
     redirect(localizedPath("/login", locale));
   }
-  const t = await getTranslations("nav");
+  const [t, appT] = await Promise.all([
+    getTranslations("nav"),
+    getTranslations("app"),
+  ]);
   const navItems = [
     { href: "/" as const, label: t("home") },
     { href: "/challenges/coding" as const, label: t("challenges") },
@@ -42,7 +45,7 @@ export default async function AppLayout({
             className="inline-flex min-h-11 items-center text-base font-semibold text-zinc-950"
             href="/"
           >
-            Prompteer
+            {appT("name")}
           </Link>
           <AppNavLinks items={navItems} />
         </nav>

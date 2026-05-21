@@ -1,9 +1,20 @@
 """Typed application settings loaded from environment variables and .env files."""
 
 from functools import lru_cache
+from typing import Literal, TypedDict
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+RealMockIntegrationMode = Literal["mock", "real"]
+GoogleOAuthIntegrationMode = Literal["mock", "partial", "real"]
+
+
+class IntegrationModes(TypedDict):
+    llm: RealMockIntegrationMode
+    google_oauth: GoogleOAuthIntegrationMode
+    stripe: RealMockIntegrationMode
+    email: RealMockIntegrationMode
 
 
 class Settings(BaseSettings):
@@ -20,6 +31,9 @@ class Settings(BaseSettings):
         default="postgresql+psycopg://prompteer:prompteer@localhost:55432/prompteer",
         alias="DATABASE_URL",
     )
+    database_pool_size: int = Field(default=5, alias="DATABASE_POOL_SIZE")
+    database_max_overflow: int = Field(default=10, alias="DATABASE_MAX_OVERFLOW")
+    database_pool_timeout: float = Field(default=30.0, alias="DATABASE_POOL_TIMEOUT")
     redis_url: str = Field(default="redis://localhost:56379/0", alias="REDIS_URL")
     rate_limit_enabled: bool = Field(default=True, alias="RATE_LIMIT_ENABLED")
     rate_limit_storage_url: str = Field(
@@ -53,6 +67,12 @@ class Settings(BaseSettings):
     auth_jwt_audience: str = Field(default="prompteer-api", alias="AUTH_JWT_AUDIENCE")
     log_json: bool = Field(default=False, alias="LOG_JSON")
     sentry_dsn: str = Field(default="", alias="SENTRY_DSN")
+    api_gunicorn_timeout: int = Field(default=30, alias="API_GUNICORN_TIMEOUT")
+    api_gunicorn_graceful_timeout: int = Field(
+        default=30,
+        alias="API_GUNICORN_GRACEFUL_TIMEOUT",
+    )
+    api_gunicorn_keepalive: int = Field(default=2, alias="API_GUNICORN_KEEPALIVE")
 
     google_client_id: str = Field(default="", alias="GOOGLE_CLIENT_ID")
     google_client_secret: str = Field(default="", alias="GOOGLE_CLIENT_SECRET")
@@ -95,3 +115,33 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
+
+
+def credential_is_set(value: str) -> bool:
+    return bool(value.strip())
+
+
+def google_oauth_integration_mode(
+    config: Settings | None = None,
+) -> GoogleOAuthIntegrationMode:
+    active_settings = config or settings
+    has_client_id = credential_is_set(active_settings.google_client_id)
+    has_client_secret = credential_is_set(active_settings.google_client_secret)
+    if has_client_id != has_client_secret:
+        return "partial"
+    if has_client_id and has_client_secret:
+        return "real"
+    return "mock"
+
+
+def integration_modes(config: Settings | None = None) -> IntegrationModes:
+    active_settings = config or settings
+    return {
+        "llm": "real"
+        if credential_is_set(active_settings.openai_api_key)
+        or credential_is_set(active_settings.anthropic_api_key)
+        else "mock",
+        "google_oauth": google_oauth_integration_mode(active_settings),
+        "stripe": "real" if credential_is_set(active_settings.stripe_secret_key) else "mock",
+        "email": "real" if credential_is_set(active_settings.sendgrid_api_key) else "mock",
+    }

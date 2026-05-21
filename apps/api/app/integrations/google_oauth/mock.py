@@ -16,6 +16,7 @@ import time
 from contextlib import suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from functools import lru_cache
 from pathlib import Path
 from tempfile import gettempdir
 from typing import Annotated, Any
@@ -28,7 +29,7 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPubl
 from fastapi import APIRouter, Form, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 
-from app.core.config import settings
+from app.core.config import google_oauth_integration_mode, settings
 from app.core.feature_flags import dev_routes_enabled
 
 MOCK_GOOGLE_CLIENT_ID = "mock-google-client"
@@ -161,8 +162,14 @@ def load_or_create_private_key(path: Path = MOCK_GOOGLE_PRIVATE_KEY_PATH) -> RSA
             lock_path.unlink()
 
 
-DEV_PRIVATE_KEY: RSAPrivateKey = load_or_create_private_key()
-DEV_PUBLIC_KEY: RSAPublicKey = DEV_PRIVATE_KEY.public_key()
+@lru_cache(maxsize=1)
+def dev_private_key() -> RSAPrivateKey:
+    return load_or_create_private_key()
+
+
+def dev_public_key() -> RSAPublicKey:
+    return dev_private_key().public_key()
+
 
 router = APIRouter(tags=["mock-google-oauth"])
 
@@ -176,7 +183,7 @@ def server_base_url() -> str:
 
 
 def require_mock_enabled() -> None:
-    if settings.google_client_id and settings.google_client_secret:
+    if google_oauth_integration_mode() != "mock":
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     if not dev_routes_enabled():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
@@ -189,7 +196,7 @@ def base64url_uint(value: int) -> str:
 
 
 def public_jwk() -> dict[str, str]:
-    numbers = DEV_PUBLIC_KEY.public_numbers()
+    numbers = dev_public_key().public_numbers()
     return {
         "kty": "RSA",
         "use": "sig",
@@ -411,7 +418,7 @@ def sign_id_token(*, user: MockGoogleUser, client_id: str, nonce: str | None) ->
         payload["nonce"] = nonce
     token = jwt.encode(
         payload,
-        DEV_PRIVATE_KEY,
+        dev_private_key(),
         algorithm="RS256",
         headers={"kid": MOCK_GOOGLE_KEY_ID},
     )

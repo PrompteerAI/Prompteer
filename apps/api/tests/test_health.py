@@ -65,6 +65,18 @@ def test_integrations_default_to_mocks() -> None:
     }
 
 
+def test_integrations_report_partial_google_credentials(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "google_client_id", "google-client")
+
+    client = TestClient(app)
+    response = client.get("/api/v1/integrations")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["google_oauth"] == "partial"
+    assert body["llm"] == "mock"
+
+
 def test_readiness_probe_reports_ok(monkeypatch: MonkeyPatch) -> None:
     async def ok() -> health.DependencyCheck:
         return dependency_check("ok")
