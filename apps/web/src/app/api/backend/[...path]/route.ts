@@ -34,6 +34,34 @@ export async function POST(
   return forwardToApi(request, context);
 }
 
+export async function PUT(
+  request: NextRequest,
+  context: RouteContext,
+): Promise<Response> {
+  return forwardToApi(request, context);
+}
+
+export async function PATCH(
+  request: NextRequest,
+  context: RouteContext,
+): Promise<Response> {
+  return forwardToApi(request, context);
+}
+
+export async function DELETE(
+  request: NextRequest,
+  context: RouteContext,
+): Promise<Response> {
+  return forwardToApi(request, context);
+}
+
+export async function HEAD(
+  request: NextRequest,
+  context: RouteContext,
+): Promise<Response> {
+  return forwardToApi(request, context);
+}
+
 async function forwardToApi(
   request: NextRequest,
   context: RouteContext,
@@ -54,7 +82,10 @@ async function forwardToApi(
     upstreamResponse = await fetch(upstreamUrl(request, await context.params), {
       method: request.method,
       headers: upstreamHeaders(request, session),
-      body: request.method === "GET" ? undefined : await request.text(),
+      body:
+        request.method === "GET" || request.method === "HEAD"
+          ? undefined
+          : await request.text(),
       cache: "no-store",
     });
   } catch {

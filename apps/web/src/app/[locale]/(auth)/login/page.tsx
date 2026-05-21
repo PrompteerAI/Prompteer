@@ -2,9 +2,9 @@
 import { LogIn, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
-import { localizedPath } from "@/i18n/paths";
 import { signIn } from "@/lib/auth";
 import { getServerEnv, publicEnv } from "@/lib/env";
+import { safeLocalizedCallbackUrl } from "@/lib/redirects";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -16,7 +16,7 @@ export default async function LoginPage({
   searchParams,
 }: Props): Promise<React.ReactElement> {
   const [{ locale }, query] = await Promise.all([params, searchParams]);
-  const redirectTo = safeCallbackUrl(query.callbackUrl, locale);
+  const redirectTo = safeLocalizedCallbackUrl(query.callbackUrl, locale);
 
   async function signInWithGoogle(formData: FormData): Promise<void> {
     "use server";
@@ -65,39 +65,4 @@ export default async function LoginPage({
       </div>
     </main>
   );
-}
-
-function safeCallbackUrl(
-  value: string | string[] | undefined,
-  locale: string,
-): `/${string}` {
-  const fallback = localizedPath("/", locale);
-  const rawValue = Array.isArray(value) ? value[0] : value;
-
-  if (
-    !rawValue ||
-    !rawValue.startsWith("/") ||
-    rawValue.startsWith("//") ||
-    rawValue.includes("\\") ||
-    rawValue.includes("\n") ||
-    rawValue.includes("\r")
-  ) {
-    return fallback;
-  }
-
-  try {
-    const parsedUrl = new URL(rawValue, "http://localhost");
-    const localePrefix = `/${locale}`;
-    if (
-      parsedUrl.origin === "http://localhost" &&
-      (parsedUrl.pathname === localePrefix ||
-        parsedUrl.pathname.startsWith(`${localePrefix}/`))
-    ) {
-      return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}` as `/${string}`;
-    }
-  } catch {
-    return fallback;
-  }
-
-  return fallback;
 }

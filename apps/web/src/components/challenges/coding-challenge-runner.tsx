@@ -122,9 +122,9 @@ export function CodingChallengeRunner({
                 number: selectedChallenge.challenge_number,
               })}
             </p>
-            <h1 className="mt-2 text-2xl font-semibold text-zinc-950">
+            <h2 className="mt-2 text-2xl font-semibold text-zinc-950">
               {selectedChallenge.title}
-            </h1>
+            </h2>
           </div>
           <span className="rounded-md border border-zinc-200 px-2.5 py-1 text-xs font-medium capitalize text-zinc-700">
             {selectedChallenge.level}

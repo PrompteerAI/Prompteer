@@ -117,9 +117,9 @@ export function BillingCheckoutPanel({
         <p className="text-sm font-medium uppercase text-emerald-700">
           {t("plan.name")}
         </p>
-        <h1 className="mt-2 text-3xl font-semibold text-zinc-950">
+        <h2 className="mt-2 text-3xl font-semibold text-zinc-950">
           {t("plan.price")}
-        </h1>
+        </h2>
         <p className="mt-4 text-sm leading-6 text-zinc-600">
           {t("plan.description")}
         </p>
@@ -197,7 +197,7 @@ export function BillingCheckoutPanel({
             }}
             type="button"
           >
-            {isLoading && step === "idle" ? (
+            {createCheckoutMutation.isPending ? (
               <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
             ) : (
               <CreditCard aria-hidden="true" className="h-4 w-4" />
@@ -229,7 +229,7 @@ export function BillingCheckoutPanel({
               }}
               type="button"
             >
-              {isLoading && step === "created" ? (
+              {completeCheckoutMutation.isPending ? (
                 <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
               ) : (
                 <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
