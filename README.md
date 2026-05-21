@@ -60,6 +60,14 @@ pnpm dev
 | ------------------------------------------------------------------------ | ------------------------------------------------------------------- |
 | ![Board prompt share detail](docs/screenshots/17-board-share-detail.png) | ![Board question detail](docs/screenshots/18-board-post-detail.png) |
 
+| Image challenge reference metadata                                                           | Image challenge detail metadata                                                                      |
+| -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| ![Image challenge list showing reference metadata](docs/screenshots/19-image-challenges.png) | ![Image challenge detail showing reference metadata](docs/screenshots/20-image-challenge-detail.png) |
+
+| Video challenge reference metadata                                                           | Video challenge detail metadata                                                                      |
+| -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| ![Video challenge list showing reference metadata](docs/screenshots/21-video-challenges.png) | ![Video challenge detail showing reference metadata](docs/screenshots/22-video-challenge-detail.png) |
+
 The verified local demo covers seed login, prompt execution through the LLM mock, Stripe-shaped checkout completion, review board reads, profile settings, logout, and captured SendGrid email viewing.
 
 Legacy-design preview:

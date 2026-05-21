@@ -1,6 +1,6 @@
 // Playwright-based screenshot helper for manual UI verification. Captures the
 // main public, authenticated, and dev-only screens in desktop and mobile sizes.
-import { mkdir } from "node:fs/promises";
+import { mkdir, readdir, unlink } from "node:fs/promises";
 import { createRequire } from "node:module";
 
 const webRequire = createRequire(
@@ -18,10 +18,26 @@ const routes = [
   { name: "01-landing", path: "/en", auth: false },
   { name: "02-login", path: "/en/login", auth: false },
   { name: "03-coding-challenge", path: "/en/challenges/coding", auth: true },
-  { name: "04-billing", path: "/en/billing", auth: true },
-  { name: "05-board", path: "/en/board", auth: true },
-  { name: "06-settings", path: "/en/profile", auth: true },
+  { name: "05-billing-checkout", path: "/en/billing", auth: true },
+  { name: "06-board", path: "/en/board", auth: true },
   { name: "07-mailbox", path: "/dev/mailbox", auth: false },
+  { name: "08-settings", path: "/en/profile", auth: true },
+  { name: "19-image-challenges", path: "/en/challenges/image", auth: true },
+  {
+    name: "20-image-challenge-detail",
+    path: "/en/challenges/image",
+    auth: true,
+    detailLinkName: /View details: Product hero image prompt/,
+    expectedUrl: /\/en\/challenges\/image\/[^/]+$/,
+  },
+  { name: "21-video-challenges", path: "/en/challenges/video", auth: true },
+  {
+    name: "22-video-challenge-detail",
+    path: "/en/challenges/video",
+    auth: true,
+    detailLinkName: /View details: Launch teaser video prompt/,
+    expectedUrl: /\/en\/challenges\/video\/[^/]+$/,
+  },
 ];
 
 const viewports = [
@@ -31,6 +47,24 @@ const viewports = [
 
 function routeUrl(path) {
   return new URL(path, origin).toString();
+}
+
+async function clearPrimaryScreenshots() {
+  try {
+    const entries = await readdir(outDir, { withFileTypes: true });
+    await Promise.all(
+      entries
+        .filter((entry) => entry.isFile() && entry.name.endsWith(".png"))
+        .map((entry) => unlink(new URL(entry.name, outDir))),
+    );
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error) {
+      if (error.code === "ENOENT") {
+        return;
+      }
+    }
+    throw error;
+  }
 }
 
 async function ensureSeedLogin(page) {
@@ -45,6 +79,7 @@ async function ensureSeedLogin(page) {
 }
 
 await mkdir(outDir, { recursive: true });
+await clearPrimaryScreenshots();
 
 const browser = await chromium.launch();
 const failures = [];
@@ -78,6 +113,14 @@ for (const viewport of viewports) {
       );
     }
     await page.locator("body").waitFor({ state: "visible" });
+    if (route.detailLinkName) {
+      await page
+        .getByRole("link", { name: route.detailLinkName })
+        .first()
+        .click();
+      await page.waitForURL(route.expectedUrl);
+      await page.locator("body").waitFor({ state: "visible" });
+    }
     await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {
       // Some server-rendered pages keep background fetches open; visible body is
       // the screenshot readiness gate, while network idle is only a stabilizer.
