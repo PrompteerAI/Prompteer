@@ -2,7 +2,7 @@
 
 Prompt challenge workspace for practicing prompts, comparing deterministic mock outputs, and sharing reviewable challenge runs.
 
-[![CI](https://img.shields.io/github/actions/workflow/status/hyuk/prompteer/ci.yaml?branch=main&label=ci)](https://github.com/hyuk/prompteer/actions/workflows/ci.yaml) [![Build](https://img.shields.io/github/actions/workflow/status/hyuk/prompteer/build.yaml?branch=main&label=build)](https://github.com/hyuk/prompteer/actions/workflows/build.yaml) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Node](https://img.shields.io/badge/node-22-5FA04E)](.nvmrc) [![Python](https://img.shields.io/badge/python-3.12-3776AB)](apps/api/.python-version) [![GHCR](https://img.shields.io/badge/GHCR-prompteer-2496ED)](https://github.com/hyuk/prompteer/pkgs/container/prompteer-web) [![Commit activity](https://img.shields.io/github/commit-activity/m/hyuk/prompteer)](https://github.com/hyuk/prompteer/commits/main)
+[![CI](https://img.shields.io/github/actions/workflow/status/PrompteerAI/Prompteer/ci.yaml?branch=main&label=ci)](https://github.com/PrompteerAI/Prompteer/actions/workflows/ci.yaml) [![Build](https://img.shields.io/github/actions/workflow/status/PrompteerAI/Prompteer/build.yaml?branch=main&label=build)](https://github.com/PrompteerAI/Prompteer/actions/workflows/build.yaml) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Node](https://img.shields.io/badge/node-22-5FA04E)](.nvmrc) [![Python](https://img.shields.io/badge/python-3.12-3776AB)](apps/api/.python-version) [![GHCR](https://img.shields.io/badge/GHCR-prompteer-2496ED)](https://github.com/orgs/PrompteerAI/packages/container/package/prompteer-web) [![Commit activity](https://img.shields.io/github/commit-activity/m/PrompteerAI/Prompteer)](https://github.com/PrompteerAI/Prompteer/commits/main)
 
 ![Prompteer landing workspace](docs/screenshots/01-landing.png)
 
@@ -15,7 +15,7 @@ Prompteer is a clean monorepo rebuild of a prompt challenge and sharing prototyp
 No external API keys are required; blank provider credentials automatically select local mocks.
 
 ```sh
-git clone https://github.com/hyuk/prompteer.git && cd prompteer
+git clone https://github.com/PrompteerAI/Prompteer.git && cd Prompteer
 cp .env.example .env
 docker compose up -d
 ```
@@ -24,17 +24,17 @@ Open `http://localhost`. The default Compose stack serves the app through nginx 
 
 ## Screenshots & Demo
 
-| 1. Landing                           | 2. Mock Google login               | 3. Coding challenge                           |
-| ------------------------------------ | ---------------------------------- | --------------------------------------------- |
-| ![](docs/screenshots/01-landing.png) | ![](docs/screenshots/02-login.png) | ![](docs/screenshots/03-coding-challenge.png) |
+| Landing workspace                                                                           | Mock Google login                                                                    | Coding challenge list                                                                          |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| ![Landing workspace with seeded prompt challenge overview](docs/screenshots/01-landing.png) | ![Mock Google login screen with seed account choices](docs/screenshots/02-login.png) | ![Coding challenge view showing seeded prompt tasks](docs/screenshots/03-coding-challenge.png) |
 
-| 4. Prompt editor                           | 5. Billing upgrade                            | 6. Review board                    |
-| ------------------------------------------ | --------------------------------------------- | ---------------------------------- |
-| ![](docs/screenshots/04-prompt-editor.png) | ![](docs/screenshots/05-billing-checkout.png) | ![](docs/screenshots/06-board.png) |
+| Prompt editor and run result                                                               | Billing upgrade checkout                                                                           | Review board feed                                                                  |
+| ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| ![Prompt editor with deterministic mock LLM output](docs/screenshots/04-prompt-editor.png) | ![Billing page showing hosted mock Stripe checkout flow](docs/screenshots/05-billing-checkout.png) | ![Community review board with seeded public shares](docs/screenshots/06-board.png) |
 
-| 7. Mock mailbox                      | 8. Profile settings                   |
-| ------------------------------------ | ------------------------------------- |
-| ![](docs/screenshots/07-mailbox.png) | ![](docs/screenshots/08-settings.png) |
+| Mock mailbox captured email                                                         | Profile settings and session controls                                                      |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| ![Mock mailbox showing captured SendGrid messages](docs/screenshots/07-mailbox.png) | ![Profile settings page with account details and logout](docs/screenshots/08-settings.png) |
 
 The verified local demo covers seed login, prompt execution through the LLM mock, Stripe-shaped checkout completion, review board reads, profile settings, logout, and captured SendGrid email viewing.
 
@@ -210,8 +210,8 @@ make seed
 | Integration  | Real-mode env vars                              | Local mock behavior                                                         | Schema notes                                                              |
 | ------------ | ----------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | Google OAuth | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`      | Local OIDC provider with seeded admin/paid/free users and JWKS              | [google-oauth.md](docs/integrations/google-oauth.md), verified 2026-05-21 |
-| OpenAI       | `OPENAI_API_KEY`, optional `OPENAI_CHAT_MODEL`  | Deterministic Chat Completions responses and SSE chunks                     | [openai.md](docs/integrations/openai.md), verified 2026-05-20             |
-| Anthropic    | `ANTHROPIC_API_KEY`, optional `ANTHROPIC_MODEL` | Deterministic Messages responses and Anthropic-shaped SSE events            | [anthropic.md](docs/integrations/anthropic.md), verified 2026-05-20       |
+| OpenAI       | `OPENAI_API_KEY`, optional `OPENAI_CHAT_MODEL`  | Deterministic Chat Completions responses and SSE chunks                     | [openai.md](docs/integrations/openai.md), verified 2026-05-21             |
+| Anthropic    | `ANTHROPIC_API_KEY`, optional `ANTHROPIC_MODEL` | Deterministic Messages responses and Anthropic-shaped SSE events            | [anthropic.md](docs/integrations/anthropic.md), verified 2026-05-21       |
 | Stripe       | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`    | Checkout Session create/retrieve/expire/complete with local webhook signing | [stripe.md](docs/integrations/stripe.md), verified 2026-05-21             |
 | SendGrid     | `SENDGRID_API_KEY`                              | Mail Send validation, `.eml` capture, and `/dev/mailbox` viewer             | [sendgrid.md](docs/integrations/sendgrid.md), verified 2026-05-21         |
 
