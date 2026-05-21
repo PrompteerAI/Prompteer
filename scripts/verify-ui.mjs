@@ -153,12 +153,96 @@ const routes = [
     ],
     readme: true,
   },
+  {
+    name: "23-billing-success",
+    path: "/en/billing",
+    auth: true,
+    authEmail: "free@prompteer.dev",
+    expectedText: ["Checkout complete", "Payment status", "paid"],
+    afterGoto: async (page) => {
+      await page.getByRole("button", { name: /Start (new )?checkout/ }).click();
+      await page
+        .getByText("A local Stripe-compatible session is ready.")
+        .waitFor({
+          timeout: 15_000,
+        });
+      const sessionId = (
+        await page
+          .locator("dd", { hasText: /^cs_test_/ })
+          .first()
+          .innerText()
+      ).trim();
+      await page
+        .getByRole("button", { name: "Complete mock checkout" })
+        .click();
+      await page.getByText("checkout.session.completed").waitFor({
+        timeout: 15_000,
+      });
+      await page.goto(
+        routeUrl(
+          `/en/billing/success?session_id=${encodeURIComponent(sessionId)}`,
+        ),
+        { waitUntil: "domcontentloaded" },
+      );
+    },
+  },
+  {
+    name: "24-primary-route-error",
+    path: "/en?__verify_error_boundary=locale",
+    auth: false,
+    expectedText: [
+      "Something went wrong",
+      "An unexpected error interrupted this page.",
+      "Retry",
+      "Reported",
+    ],
+    allowExpectedErrors: true,
+    afterGoto: async (page) => {
+      await page.getByRole("button", { name: "Report" }).click();
+      await page.getByRole("button", { name: "Reported" }).waitFor({
+        timeout: 10_000,
+      });
+    },
+  },
+  {
+    name: "25-primary-app-error",
+    path: "/en/billing?__verify_error_boundary=app",
+    auth: true,
+    expectedText: [
+      "Workspace interrupted",
+      "An unexpected error interrupted this workspace route.",
+      "Retry",
+      "Reported",
+    ],
+    allowExpectedErrors: true,
+    afterGoto: async (page) => {
+      await page.getByRole("button", { name: "Report" }).click();
+      await page.getByRole("button", { name: "Reported" }).waitFor({
+        timeout: 10_000,
+      });
+    },
+  },
 ];
 
 const viewports = [
   { name: "desktop", width: 1440, height: 900 },
   { name: "mobile", width: 390, height: 844 },
 ];
+
+const hideNextDevToolsStyle = `
+  nextjs-portal,
+  [data-nextjs-dev-tools],
+  [data-nextjs-toast],
+  [data-nextjs-dialog-overlay],
+  [data-nextjs-dialog],
+  [aria-label="Next.js static indicator"],
+  [aria-label="Next.js development tools"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+`;
 
 function routeUrl(path) {
   return new URL(path, origin).toString();
@@ -182,8 +266,8 @@ async function clearPngFiles(directoryUrl) {
   }
 }
 
-async function ensureSeedLogin(page) {
-  await page.goto(routeUrl("/dev/login-as/admin%40prompteer.dev"), {
+async function ensureSeedLogin(page, email = "admin@prompteer.dev") {
+  await page.goto(routeUrl(`/dev/login-as/${encodeURIComponent(email)}`), {
     waitUntil: "domcontentloaded",
   });
   if (!page.url().endsWith("/en")) {
@@ -219,67 +303,96 @@ for (const viewport of viewports) {
     viewport: { width: viewport.width, height: viewport.height },
   });
   const page = await context.newPage();
-  let authenticated = false;
+  let authenticatedEmail = null;
+  let allowExpectedErrors = false;
+  let activeRouteName = "startup";
 
   page.on("console", (message) => {
-    if (message.type() === "error") {
-      failures.push(`[${viewport.name}] console error: ${message.text()}`);
+    if (message.type() === "error" && !allowExpectedErrors) {
+      failures.push(
+        `[${viewport.name}] ${activeRouteName} console error at ${page.url()}: ${message.text()}`,
+      );
     }
   });
   page.on("pageerror", (error) => {
-    failures.push(`[${viewport.name}] page error: ${error.message}`);
+    if (!allowExpectedErrors) {
+      failures.push(
+        `[${viewport.name}] ${activeRouteName} page error at ${page.url()}: ${error.message}`,
+      );
+    }
   });
 
   for (const route of routes) {
-    if (route.auth && !authenticated) {
-      await ensureSeedLogin(page);
-      authenticated = true;
-    }
+    allowExpectedErrors = Boolean(route.allowExpectedErrors);
+    activeRouteName = route.name;
+    try {
+      if (route.auth && authenticatedEmail === null) {
+        const authEmail = route.authEmail ?? "admin@prompteer.dev";
+        await ensureSeedLogin(page, authEmail);
+        authenticatedEmail = authEmail;
+      } else if (route.auth) {
+        const authEmail = route.authEmail ?? "admin@prompteer.dev";
+        if (authenticatedEmail !== authEmail) {
+          await ensureSeedLogin(page, authEmail);
+          authenticatedEmail = authEmail;
+        }
+      }
 
-    await page.goto(routeUrl(route.path), { waitUntil: "domcontentloaded" });
-    if (route.auth && page.url().includes("/login")) {
-      failures.push(
-        `[${viewport.name}] ${route.path} redirected to login after seed auth.`,
-      );
-    }
-    await page.locator("body").waitFor({ state: "visible" });
-    if (route.detailLinkName) {
-      await page
-        .getByRole("link", { name: route.detailLinkName })
-        .first()
-        .click();
-      await page.waitForURL(route.expectedUrl);
+      await page.goto(routeUrl(route.path), { waitUntil: "domcontentloaded" });
+      if (route.auth && page.url().includes("/login")) {
+        failures.push(
+          `[${viewport.name}] ${route.path} redirected to login after seed auth.`,
+        );
+      }
       await page.locator("body").waitFor({ state: "visible" });
-    }
-    if (route.afterGoto) {
-      await route.afterGoto(page);
-      await page.locator("body").waitFor({ state: "visible" });
-    }
-    for (const expectedText of route.expectedText ?? []) {
-      await page.getByText(expectedText).first().waitFor({
-        state: "visible",
-        timeout: 10_000,
-      });
-    }
-    await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {
-      // Some server-rendered pages keep background fetches open; visible body is
-      // the screenshot readiness gate, while network idle is only a stabilizer.
-    });
-    await settleForScreenshot(page);
-    await page.screenshot({
-      path: new URL(`${route.name}-${viewport.name}.png`, outDir).pathname,
-      fullPage: true,
-    });
-    if (route.readme && viewport.name === "desktop") {
-      await page.screenshot({
-        path: new URL(`${route.name}.png`, readmeOutDir).pathname,
-        fullPage: true,
-      });
-      if (updateReadmeScreenshots) {
-        await page.screenshot({
-          path: new URL(`${route.name}.png`, promotedReadmeOutDir).pathname,
-          fullPage: true,
+      if (route.detailLinkName) {
+        await page
+          .getByRole("link", { name: route.detailLinkName })
+          .first()
+          .click();
+        await page.waitForURL(route.expectedUrl);
+        await page.locator("body").waitFor({ state: "visible" });
+      }
+      if (route.afterGoto) {
+        await route.afterGoto(page);
+        await page.locator("body").waitFor({ state: "visible" });
+      }
+      for (const expectedText of route.expectedText ?? []) {
+        await page.getByText(expectedText).first().waitFor({
+          state: "visible",
+          timeout: 10_000,
         });
+      }
+      await page
+        .waitForLoadState("networkidle", { timeout: 5_000 })
+        .catch(() => {
+          // Some server-rendered pages keep background fetches open; visible body is
+          // the screenshot readiness gate, while network idle is only a stabilizer.
+        });
+      await settleForScreenshot(page);
+      await page.screenshot({
+        path: new URL(`${route.name}-${viewport.name}.png`, outDir).pathname,
+        fullPage: true,
+        style: hideNextDevToolsStyle,
+      });
+      if (route.readme && viewport.name === "desktop") {
+        await page.screenshot({
+          path: new URL(`${route.name}.png`, readmeOutDir).pathname,
+          fullPage: true,
+          style: hideNextDevToolsStyle,
+        });
+        if (updateReadmeScreenshots) {
+          await page.screenshot({
+            path: new URL(`${route.name}.png`, promotedReadmeOutDir).pathname,
+            fullPage: true,
+            style: hideNextDevToolsStyle,
+          });
+        }
+      }
+    } finally {
+      activeRouteName = route.name;
+      if (!route.allowExpectedErrors) {
+        allowExpectedErrors = false;
       }
     }
   }

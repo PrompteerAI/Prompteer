@@ -15,6 +15,7 @@ JWKS_UNKNOWN_KID_REFRESH_BACKOFF_SECONDS = 5.0
 JWKS_FETCH_ATTEMPTS = 2
 JWKS_FETCH_TIMEOUT_SECONDS = 5.0
 NO_MATCHING_KID_ERROR = "No JWKS key matched the JWT kid."
+SIGNATURE_MISMATCH_ERROR = "JWT signature did not match the JWKS key."
 
 
 @dataclass(frozen=True)
@@ -25,6 +26,14 @@ class Principal:
 
 
 class AuthTokenError(ValueError):
+    pass
+
+
+class JwksNoMatchingKidError(AuthTokenError):
+    pass
+
+
+class JwksSignatureMismatchError(AuthTokenError):
     pass
 
 
@@ -41,35 +50,46 @@ _last_unknown_kid_refresh_at: dict[str, float] = {}
 
 async def verify_bearer_token(token: str) -> Principal:
     jwks_url = settings.auth_jwks_url
+    issuer = settings.auth_jwt_issuer.rstrip("/")
+    audience = settings.auth_jwt_audience
+    jwks_was_cached = has_valid_cached_jwks(jwks_url)
     try:
         return verify_jwt_with_jwks(
             token,
             await get_cached_jwks(jwks_url),
-            issuer=settings.auth_jwt_issuer.rstrip("/"),
-            audience=settings.auth_jwt_audience,
+            issuer=issuer,
+            audience=audience,
         )
-    except AuthTokenError as exc:
-        if str(exc) != NO_MATCHING_KID_ERROR:
+    except JwksNoMatchingKidError:
+        if not should_refresh_unknown_kid(jwks_url):
             raise
-    if not should_refresh_unknown_kid(jwks_url):
-        raise AuthTokenError(NO_MATCHING_KID_ERROR)
+    except JwksSignatureMismatchError:
+        if not jwks_was_cached or not should_refresh_signature_mismatch():
+            raise
     return verify_jwt_with_jwks(
         token,
         await get_cached_jwks(jwks_url, force_refresh=True),
-        issuer=settings.auth_jwt_issuer.rstrip("/"),
-        audience=settings.auth_jwt_audience,
+        issuer=issuer,
+        audience=audience,
     )
+
+
+def has_valid_cached_jwks(jwks_url: str) -> bool:
+    return get_valid_cached_jwks(jwks_url) is not None
+
+
+def get_valid_cached_jwks(jwks_url: str) -> dict[str, Any] | None:
+    cache = _jwks_cache
+    if cache is None or cache.url != jwks_url or cache.expires_at <= monotonic():
+        return None
+    return cache.jwks
 
 
 async def get_cached_jwks(jwks_url: str, *, force_refresh: bool = False) -> dict[str, Any]:
     global _jwks_cache
-    if (
-        not force_refresh
-        and _jwks_cache is not None
-        and _jwks_cache.url == jwks_url
-        and _jwks_cache.expires_at > monotonic()
-    ):
-        return _jwks_cache.jwks
+    cached_jwks = get_valid_cached_jwks(jwks_url)
+    if not force_refresh and cached_jwks is not None:
+        return cached_jwks
 
     jwks = await fetch_jwks(jwks_url)
     _jwks_cache = JwksCacheEntry(
@@ -96,6 +116,10 @@ def should_refresh_unknown_kid(jwks_url: str) -> bool:
         return False
     _last_unknown_kid_refresh_at[jwks_url] = now
     return True
+
+
+def should_refresh_signature_mismatch() -> bool:
+    return settings.is_development
 
 
 async def fetch_jwks(jwks_url: str) -> dict[str, Any]:
@@ -145,6 +169,8 @@ def verify_jwt_with_jwks(
             issuer=issuer,
             options={"require": ["exp", "iat", "iss", "aud", "sub"]},
         )
+    except jwt.InvalidSignatureError as exc:
+        raise JwksSignatureMismatchError(SIGNATURE_MISMATCH_ERROR) from exc
     except jwt.PyJWTError as exc:
         raise AuthTokenError("Invalid Auth.js JWT.") from exc
     subject = claims.get("sub")
@@ -166,4 +192,4 @@ def find_jwk(jwks: dict[str, Any], kid: Any) -> dict[str, Any]:
     for key in keys:
         if isinstance(key, dict) and key.get("kid") == kid:
             return key
-    raise AuthTokenError(NO_MATCHING_KID_ERROR)
+    raise JwksNoMatchingKidError(NO_MATCHING_KID_ERROR)

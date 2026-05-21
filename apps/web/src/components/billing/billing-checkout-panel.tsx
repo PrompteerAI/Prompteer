@@ -13,6 +13,7 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
+import { Badge, Button, Card } from "@/components/ui";
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
 import { normalizeError } from "@/lib/errors";
 import type { components } from "@prompteer/shared-types";
@@ -52,8 +53,9 @@ export function BillingCheckoutPanel({
   });
   const subscription = subscriptionQuery.data ?? null;
   const isMockSession = session?.provider === "mock";
-  const hasActiveSubscription =
-    session?.payment_status === "paid" || subscription?.status === "active";
+  const checkoutIsPaid = session?.payment_status === "paid";
+  const accountHasActiveSubscription = subscription?.status === "active";
+  const hasActiveSubscription = checkoutIsPaid || accountHasActiveSubscription;
   const hostedCheckoutUrl =
     session && !isMockSession && session.url ? session.url : null;
   const createCheckoutMutation = useMutation({
@@ -94,9 +96,16 @@ export function BillingCheckoutPanel({
     : hasActiveSubscription
       ? t("checkout.activeDescription")
       : t("checkout.createDescription");
-  const startCheckoutLabel = hasActiveSubscription
+  const startCheckoutLabel = accountHasActiveSubscription
     ? t("checkout.startAnother")
     : t("checkout.start");
+  const paymentStatusVariant = session
+    ? checkoutIsPaid
+      ? "success"
+      : "warning"
+    : accountHasActiveSubscription
+      ? "success"
+      : "secondary";
 
   const price = useMemo(() => {
     if (!session?.amount_total || !session.currency) {
@@ -169,7 +178,7 @@ export function BillingCheckoutPanel({
 
   return (
     <section className="grid gap-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-      <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+      <Card className="p-6">
         <p className="text-sm font-medium uppercase text-emerald-700">
           {t("plan.name")}
         </p>
@@ -191,9 +200,9 @@ export function BillingCheckoutPanel({
             <dd className="font-medium text-zinc-950">{accountEmail}</dd>
           </div>
         </dl>
-      </div>
+      </Card>
 
-      <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+      <Card className="p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold text-zinc-950">
@@ -203,12 +212,12 @@ export function BillingCheckoutPanel({
               {checkoutDescription}
             </p>
           </div>
-          <span className="rounded-md border border-zinc-200 px-2.5 py-1 text-xs font-medium capitalize text-zinc-700">
+          <Badge className="capitalize" variant={paymentStatusVariant}>
             {paymentStatusLabel}
-          </span>
+          </Badge>
         </div>
 
-        <div className="mt-6 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+        <div className="mt-6 rounded-lg border border-border bg-surface-subtle p-4">
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
             <div>
               <dt className="text-zinc-500">{t("checkout.amount")}</dt>
@@ -238,28 +247,25 @@ export function BillingCheckoutPanel({
         </div>
 
         <div className="mt-5 flex flex-wrap gap-3">
-          <button
-            className={
-              hasActiveSubscription
-                ? "inline-flex min-h-11 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-400"
-                : "inline-flex min-h-11 items-center gap-2 rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
-            }
+          <Button
+            className="min-h-11 px-4"
             aria-busy={createCheckoutMutation.isPending}
             disabled={!paymentsEnabled || isLoading}
             onClick={() => {
               void createCheckout();
             }}
             type="button"
+            variant={accountHasActiveSubscription ? "outline" : "default"}
           >
             {createCheckoutMutation.isPending ? (
               <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
-            ) : hasActiveSubscription ? (
+            ) : accountHasActiveSubscription ? (
               <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
             ) : (
               <CreditCard aria-hidden="true" className="h-4 w-4" />
             )}
             {startCheckoutLabel}
-          </button>
+          </Button>
           {hostedCheckoutUrl ? (
             <a
               className="inline-flex min-h-11 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
@@ -271,8 +277,8 @@ export function BillingCheckoutPanel({
               {t("checkout.openHosted")}
             </a>
           ) : (
-            <button
-              className="inline-flex min-h-11 items-center gap-2 rounded-md border border-emerald-700 bg-emerald-50 px-4 text-sm font-medium text-emerald-900 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-zinc-300 disabled:bg-white disabled:text-zinc-400"
+            <Button
+              className="min-h-11 border-emerald-700 bg-emerald-50 px-4 text-emerald-900 hover:bg-emerald-100 disabled:border-zinc-300 disabled:bg-white disabled:text-zinc-400"
               aria-busy={completeCheckoutMutation.isPending}
               disabled={
                 !paymentsEnabled ||
@@ -284,6 +290,7 @@ export function BillingCheckoutPanel({
                 void completeCheckout();
               }}
               type="button"
+              variant="outline"
             >
               {completeCheckoutMutation.isPending ? (
                 <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
@@ -291,17 +298,18 @@ export function BillingCheckoutPanel({
                 <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
               )}
               {t("checkout.complete")}
-            </button>
+            </Button>
           )}
           {session || step !== "idle" ? (
-            <button
-              className="inline-flex min-h-11 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
+            <Button
+              className="min-h-11 px-4"
               onClick={reset}
               type="button"
+              variant="outline"
             >
               <RotateCcw aria-hidden="true" className="h-4 w-4" />
               {t("checkout.reset")}
-            </button>
+            </Button>
           ) : null}
         </div>
 
@@ -330,7 +338,7 @@ export function BillingCheckoutPanel({
               : t("checkout.persistedActive", { email: accountEmail })}
           </div>
         ) : null}
-      </div>
+      </Card>
     </section>
   );
 }

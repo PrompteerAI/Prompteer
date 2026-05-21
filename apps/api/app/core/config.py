@@ -108,6 +108,10 @@ class Settings(BaseSettings):
     def is_production(self) -> bool:
         return self.env == "production"
 
+    @property
+    def is_development(self) -> bool:
+        return self.env == "development"
+
 
 @lru_cache
 def get_settings() -> Settings:
@@ -119,6 +123,10 @@ settings = get_settings()
 
 def credential_is_set(value: str) -> bool:
     return bool(value.strip())
+
+
+def credential_value(value: str) -> str:
+    return value.strip()
 
 
 def google_oauth_integration_mode(

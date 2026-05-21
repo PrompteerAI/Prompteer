@@ -187,9 +187,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .verify
-          pnpm dev > .verify/pnpm-dev.log 2>&1 &
+          setsid pnpm dev > .verify/pnpm-dev.log 2>&1 &
           dev_pid=$!
           cleanup() {
+            kill -TERM "-$dev_pid" >/dev/null 2>&1 || true
             kill "$dev_pid" >/dev/null 2>&1 || true
             wait "$dev_pid" >/dev/null 2>&1 || true
           }
@@ -207,9 +208,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .verify
-          pnpm dev:legacy > .verify/pnpm-dev-legacy.log 2>&1 &
+          setsid pnpm dev:legacy > .verify/pnpm-dev-legacy.log 2>&1 &
           dev_pid=$!
           cleanup() {
+            kill -TERM "-$dev_pid" >/dev/null 2>&1 || true
             kill "$dev_pid" >/dev/null 2>&1 || true
             wait "$dev_pid" >/dev/null 2>&1 || true
           }

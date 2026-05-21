@@ -8,6 +8,7 @@ import {
   LogIn,
   RotateCcw,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
@@ -34,6 +35,8 @@ export function LegacyBillingPanel({
   loginHref,
   paymentsEnabled,
 }: LegacyBillingPanelProps): React.ReactElement {
+  const t = useTranslations("legacy.billing.panel");
+  const commonT = useTranslations("legacy.common");
   const [session, setSession] = useState<CheckoutSession | null>(null);
   const [subscription, setSubscription] = useState<BillingSubscription | null>(
     initialSubscription,
@@ -46,7 +49,7 @@ export function LegacyBillingPanel({
 
   async function startCheckout(): Promise<void> {
     if (!isAuthenticated || !billingEmail) {
-      setError("Sign in before starting checkout.");
+      setError(t("errors.signInBeforeCheckout"));
       return;
     }
     setError(null);
@@ -65,7 +68,7 @@ export function LegacyBillingPanel({
       const normalized = await normalizeError(caughtError);
       setError(
         normalized.status === 401
-          ? "Sign in before starting checkout."
+          ? t("errors.signInBeforeCheckout")
           : normalized.message,
       );
     } finally {
@@ -104,48 +107,46 @@ export function LegacyBillingPanel({
   return (
     <section className="legacy-billing-grid">
       <aside className="legacy-panel">
-        <span className="legacy-pill">Prompteer Pro</span>
-        <h2 style={{ fontSize: 32, marginTop: 12 }}>$12/mo</h2>
-        <p>
-          Start and complete a Stripe-shaped checkout while preserving the old
-          settings-style panel layout.
-        </p>
+        <span className="legacy-pill">{t("planName")}</span>
+        <h2 style={{ fontSize: 32, marginTop: 12 }}>{t("planPrice")}</h2>
+        <p>{t("planDescription")}</p>
         <dl>
           <div className="legacy-card-meta">
-            <dt>Provider</dt>
-            <dd>{session?.provider ?? subscription?.provider ?? "mock"}</dd>
+            <dt>{t("provider")}</dt>
+            <dd>
+              {session?.provider ??
+                subscription?.provider ??
+                t("fallbackProvider")}
+            </dd>
           </div>
           <div className="legacy-card-meta">
-            <dt>Billing email</dt>
+            <dt>{t("billingEmail")}</dt>
             <dd>
               {session?.customer_email ??
                 subscription?.customer_email ??
                 billingEmail ??
-                "Sign in required"}
+                commonT("signInRequired")}
             </dd>
           </div>
         </dl>
       </aside>
       <div className="legacy-panel">
         <div className="legacy-card-meta">
-          <h2>Checkout session</h2>
+          <h2>{t("checkoutTitle")}</h2>
           <span className="legacy-pill">
-            {checkoutPaid ? "paid" : "unpaid"}
+            {checkoutPaid ? t("paid") : t("unpaid")}
           </span>
         </div>
-        <p>
-          Local mock sessions complete in-app. Real Stripe sessions return a
-          hosted URL from the API.
-        </p>
+        <p>{t("checkoutDescription")}</p>
         <dl style={{ marginTop: 22 }}>
           <div className="legacy-card-meta">
-            <dt>Status</dt>
-            <dd>{session?.status ?? "not created"}</dd>
+            <dt>{t("status")}</dt>
+            <dd>{session?.status ?? t("fallbackStatus")}</dd>
           </div>
           <div className="legacy-card-meta">
-            <dt>Session</dt>
+            <dt>{t("session")}</dt>
             <dd style={{ fontFamily: "monospace", overflowWrap: "anywhere" }}>
-              {session?.id ?? "No checkout session yet"}
+              {session?.id ?? t("fallbackSession")}
             </dd>
           </div>
         </dl>
@@ -164,18 +165,18 @@ export function LegacyBillingPanel({
               ) : (
                 <CreditCard aria-hidden="true" size={18} />
               )}
-              Start checkout
+              {t("startCheckout")}
             </button>
           ) : (
             <div className="legacy-login-callout compact" role="note">
-              <p>Sign in to view subscription state and start checkout.</p>
+              <p>{t("loginCallout")}</p>
               <div className="legacy-auth-inline-actions">
                 <a className="legacy-primary-button" href={demoLoginHref}>
                   <LogIn aria-hidden="true" size={18} />
-                  Paid demo login
+                  {commonT("paidDemoLogin")}
                 </a>
                 <a className="legacy-secondary-button" href={loginHref}>
-                  Primary login
+                  {commonT("primaryLogin")}
                 </a>
               </div>
             </div>
@@ -194,7 +195,7 @@ export function LegacyBillingPanel({
             type="button"
           >
             <CheckCircle2 aria-hidden="true" size={18} />
-            Complete mock checkout
+            {t("completeCheckout")}
           </button>
           <button
             className="legacy-secondary-button"
@@ -206,7 +207,7 @@ export function LegacyBillingPanel({
             type="button"
           >
             <RotateCcw aria-hidden="true" size={18} />
-            Reset
+            {t("reset")}
           </button>
         </div>
         {error ? (

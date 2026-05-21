@@ -1,16 +1,19 @@
 // Client-side active-link navigation for the legacy-preview header.
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Link, usePathname } from "@/i18n/navigation";
 
 const navItems = [
-  { href: "/board", label: "Board" },
-  { href: "/category/coding", label: "Algorithm" },
-  { href: "/category/image", label: "Image" },
-  { href: "/category/video", label: "Video" },
+  { href: "/board", labelKey: "board" },
+  { href: "/category/coding", labelKey: "algorithm" },
+  { href: "/category/image", labelKey: "image" },
+  { href: "/category/video", labelKey: "video" },
 ] as const;
 
 export function LegacyNavLinks(): React.ReactElement {
+  const t = useTranslations("legacy.nav");
   const pathname = usePathname();
 
   return (
@@ -24,7 +27,7 @@ export function LegacyNavLinks(): React.ReactElement {
             href={item.href}
             key={item.href}
           >
-            {item.label}
+            {t(item.labelKey)}
           </Link>
         );
       })}

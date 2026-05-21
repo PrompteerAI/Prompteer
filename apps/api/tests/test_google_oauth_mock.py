@@ -23,7 +23,12 @@ from app.integrations.google_oauth.mock import (
     dev_public_key,
     load_or_create_private_key,
 )
-from app.integrations.google_oauth.real import GOOGLE_JWKS_URL, GOOGLE_OIDC_DISCOVERY_URL
+from app.integrations.google_oauth.real import (
+    GOOGLE_JWKS_URL,
+    GOOGLE_OIDC_DISCOVERY_URL,
+    GOOGLE_TOKEN_URL,
+    GOOGLE_USERINFO_URL,
+)
 from app.main import create_app
 
 
@@ -199,6 +204,48 @@ async def test_google_oauth_factory_selects_mock_client() -> None:
 
 
 @pytest.mark.asyncio
+async def test_mock_google_client_models_authorization_token_and_userinfo_flow() -> None:
+    oauth_client = get_google_oauth_client()
+    redirect_uri = "http://localhost:3000/api/auth/callback/google"
+
+    authorization_url = oauth_client.authorization_url(
+        client_id=MOCK_GOOGLE_CLIENT_ID,
+        redirect_uri=redirect_uri,
+        state="opaque-state",
+        login_hint="admin@prompteer.dev",
+        nonce="nonce-value",
+    )
+    query = parse_qs(urlparse(authorization_url).query)
+    code = google_mock.encode_authorization_code(
+        google_mock.AuthorizationCode(
+            email="admin@prompteer.dev",
+            client_id=query["client_id"][0],
+            redirect_uri=query["redirect_uri"][0],
+            scope=query["scope"][0],
+            nonce=query["nonce"][0],
+        )
+    )
+
+    token_body = await oauth_client.token(
+        {
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": redirect_uri,
+        },
+        authorization=authorization_header(
+            MOCK_GOOGLE_CLIENT_ID,
+            MOCK_GOOGLE_CLIENT_SECRET,
+        ),
+    )
+    profile = await oauth_client.userinfo(cast(str, token_body["access_token"]))
+
+    assert token_body["token_type"] == "Bearer"
+    assert str(token_body["id_token"]).count(".") == 2
+    assert profile["email"] == "admin@prompteer.dev"
+    assert profile["email_verified"] is True
+
+
+@pytest.mark.asyncio
 async def test_google_oauth_factory_selects_real_metadata_client(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -219,13 +266,56 @@ async def test_google_oauth_factory_selects_real_metadata_client(
         router.get(GOOGLE_JWKS_URL).mock(
             return_value=Response(200, json={"keys": [{"kid": "google-key"}]})
         )
+        token_route = router.post(GOOGLE_TOKEN_URL).mock(
+            return_value=Response(
+                200,
+                json={
+                    "access_token": "ya29.real",
+                    "expires_in": 3600,
+                    "refresh_token": "1//real",
+                    "scope": "openid email profile",
+                    "token_type": "Bearer",
+                    "id_token": "header.payload.signature",
+                },
+            )
+        )
+        userinfo_route = router.get(GOOGLE_USERINFO_URL).mock(
+            return_value=Response(
+                200,
+                json={
+                    "sub": "google-sub",
+                    "email": "real@example.com",
+                    "email_verified": True,
+                    "name": "Real User",
+                },
+            )
+        )
 
         discovery = await client.discovery_document()
         keys = await client.jwks()
+        token_body = await client.token(
+            {
+                "grant_type": "authorization_code",
+                "code": "real-code",
+                "redirect_uri": "http://localhost/callback",
+                "client_id": "real-client",
+                "client_secret": "real-secret",
+            }
+        )
+        profile = await client.userinfo("ya29.real")
 
     assert client.provider == "real"
+    assert client.authorization_url(
+        client_id="real-client",
+        redirect_uri="http://localhost/callback",
+        state="state",
+    ).startswith("https://accounts.google.com/o/oauth2/v2/auth?")
     assert discovery["issuer"] == "https://accounts.google.com"
     assert keys["keys"][0]["kid"] == "google-key"
+    assert token_body["access_token"] == "ya29.real"
+    assert profile["email"] == "real@example.com"
+    assert "grant_type=authorization_code" in token_route.calls.last.request.content.decode()
+    assert userinfo_route.calls.last.request.headers["authorization"] == "Bearer ya29.real"
 
 
 def test_google_oauth_factory_rejects_partial_credentials(
@@ -246,3 +336,16 @@ def test_mock_google_routes_are_not_available_with_partial_credentials(
     response = client.get("/.well-known/openid-configuration")
 
     assert response.status_code == 404
+
+
+def test_mock_google_routes_hide_malformed_requests_in_real_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "google_client_id", "real-client")
+    monkeypatch.setattr(settings, "google_client_secret", "real-secret")
+    client = TestClient(create_app())
+
+    assert client.get("/o/oauth2/v2/auth").status_code == 404
+    assert client.post("/token").status_code == 404
+    assert client.get("/v3/userinfo").status_code == 404
+    assert client.get("/oauth2/v3/certs").status_code == 404

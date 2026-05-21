@@ -43,7 +43,29 @@ if [[ -z "${GOOGLE_CLIENT_ID:-}" || -z "${GOOGLE_CLIENT_SECRET:-}" ]]; then
   printf 'Mock Google OAuth is ON\n'
 fi
 
-trap 'kill 0' INT TERM EXIT
-scripts/api-dev.sh &
-scripts/web-dev.sh &
-wait
+child_pids=()
+
+start_child() {
+  if command -v setsid >/dev/null 2>&1; then
+    setsid "$@" &
+  else
+    "$@" &
+  fi
+  child_pids+=("$!")
+}
+
+cleanup() {
+  trap - INT TERM EXIT
+  if ((${#child_pids[@]} > 0)); then
+    for child_pid in "${child_pids[@]}"; do
+      kill -TERM "-$child_pid" >/dev/null 2>&1 || true
+    done
+    kill "${child_pids[@]}" >/dev/null 2>&1 || true
+    wait "${child_pids[@]}" >/dev/null 2>&1 || true
+  fi
+}
+
+trap cleanup INT TERM EXIT
+start_child scripts/api-dev.sh
+start_child scripts/web-dev.sh
+wait "${child_pids[@]}"

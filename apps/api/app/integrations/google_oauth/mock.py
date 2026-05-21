@@ -13,6 +13,7 @@ from __future__ import annotations
 import base64
 import os
 import time
+from collections.abc import Mapping
 from contextlib import suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -571,3 +572,123 @@ class MockGoogleOAuthClient:
 
     async def jwks(self) -> dict[str, Any]:
         return await jwks()
+
+    def authorization_url(
+        self,
+        *,
+        client_id: str,
+        redirect_uri: str,
+        response_type: str = "code",
+        scope: str = "openid email profile",
+        state: str | None = None,
+        login_hint: str | None = None,
+        nonce: str | None = None,
+    ) -> str:
+        query = {
+            "client_id": client_id,
+            "redirect_uri": redirect_uri,
+            "response_type": response_type,
+            "scope": scope,
+        }
+        if state is not None:
+            query["state"] = state
+        if login_hint is not None:
+            query["login_hint"] = login_hint
+        if nonce is not None:
+            query["nonce"] = nonce
+        return f"{issuer_url()}/o/oauth2/v2/auth?{urlencode(query)}"
+
+    async def token(
+        self,
+        payload: Mapping[str, str],
+        *,
+        authorization: str | None = None,
+    ) -> dict[str, Any]:
+        grant_type = payload.get("grant_type")
+        code = payload.get("code")
+        redirect_uri = payload.get("redirect_uri")
+        if not grant_type or not code or not redirect_uri:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="OAuth token requests require grant_type, code, and redirect_uri.",
+            )
+        authenticated_client_id = validate_client_credentials(
+            authorization,
+            payload.get("client_id"),
+            payload.get("client_secret"),
+        )
+        if grant_type != "authorization_code":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unsupported grant_type.",
+            )
+        authorization_code = decode_authorization_code(code)
+        if not redirect_uris_match(authorization_code.redirect_uri, redirect_uri):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid redirect_uri.",
+            )
+        if authorization_code.client_id != authenticated_client_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid client_id.",
+            )
+        user = MOCK_USERS[authorization_code.email]
+        access_token = issue_access_token(user)
+        return {
+            "access_token": access_token,
+            "expires_in": ACCESS_TOKEN_SECONDS,
+            "refresh_token": "1//"
+            + encode_mock_state(
+                {"mock_type": "refresh_token", "email": user.email},
+                lifetime_seconds=ACCESS_TOKEN_SECONDS,
+            ),
+            "scope": authorization_code.scope,
+            "token_type": "Bearer",
+            "id_token": sign_id_token(
+                user=user,
+                client_id=authenticated_client_id,
+                nonce=authorization_code.nonce,
+            ),
+        }
+
+    async def userinfo(self, access_token: str) -> dict[str, Any]:
+        return userinfo_payload(MOCK_USERS[access_token_email(access_token)])
+
+
+def validate_client_credentials(
+    authorization: str | None,
+    form_client_id: str | None,
+    form_client_secret: str | None,
+) -> str:
+    basic_client_id, basic_client_secret = decode_basic_authorization_header(authorization or "")
+    client_id = form_client_id or basic_client_id
+    client_secret = form_client_secret or basic_client_secret
+    if client_id != MOCK_GOOGLE_CLIENT_ID or client_secret != MOCK_GOOGLE_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid client authentication.",
+        )
+    return client_id
+
+
+def decode_basic_authorization_header(
+    authorization: str,
+) -> tuple[str | None, str | None]:
+    scheme, _, credentials = authorization.partition(" ")
+    if scheme.lower() != "basic" or not credentials:
+        return None, None
+    try:
+        decoded = base64.b64decode(credentials).decode("utf-8")
+    except (ValueError, UnicodeDecodeError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid client authentication.",
+        ) from exc
+    client_id, separator, client_secret = decoded.partition(":")
+    if separator == "":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid client authentication.",
+        )
+    return client_id, client_secret

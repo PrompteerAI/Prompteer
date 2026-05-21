@@ -1,4 +1,6 @@
 // Legacy-preview video challenge category route.
+import { getTranslations } from "next-intl/server";
+
 import { ChallengeCard } from "@/components/legacy/challenge-card";
 import { Link } from "@/i18n/navigation";
 import { readChallenges } from "@/lib/data";
@@ -6,40 +8,41 @@ import { readChallenges } from "@/lib/data";
 export const dynamic = "force-dynamic";
 
 export default async function VideoCategoryPage(): Promise<React.ReactElement> {
-  const challenges = await readChallenges("video");
+  const [t, commonT, challenges] = await Promise.all([
+    getTranslations("legacy.categories.video"),
+    getTranslations("legacy.common"),
+    readChallenges("video"),
+  ]);
   const featured = challenges[0];
 
   return (
     <main className="legacy-page">
       <section className="legacy-featured-banner">
-        <span className="legacy-pill">Featured</span>
-        <h1>Video Challenges</h1>
-        <p>
-          Motion and scene prompts use the same backend challenge runner while
-          keeping the legacy video-card treatment.
-        </p>
+        <span className="legacy-pill">{commonT("featured")}</span>
+        <h1>{t("title")}</h1>
+        <p>{t("description")}</p>
         {featured ? (
           <Link
             className="legacy-primary-button"
             href={`/video/challenge/${featured.id}`}
             style={{ marginTop: 24 }}
           >
-            Challenge now
+            {commonT("challengeNow")}
           </Link>
         ) : null}
       </section>
       <div className="legacy-toolbar">
         <input
           className="legacy-search"
-          placeholder="Search video challenges"
+          placeholder={t("searchPlaceholder")}
           readOnly
         />
         <div className="legacy-filter-group">
           <Link className="legacy-filter-button" href="/category/image">
-            Image
+            {t("imageFilter")}
           </Link>
           <button className="legacy-filter-button active" type="button">
-            Video
+            {t("videoFilter")}
           </button>
         </div>
       </div>

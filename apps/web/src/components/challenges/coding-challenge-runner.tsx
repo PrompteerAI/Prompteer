@@ -10,6 +10,7 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { Badge, Button, Card } from "@/components/ui";
 import { Link } from "@/i18n/navigation";
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
 import { normalizeError } from "@/lib/errors";
@@ -103,7 +104,7 @@ export function CodingChallengeRunner({
 
   if (!selectedChallenge) {
     return (
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+      <Card className="p-6">
         <h1 className="text-2xl font-semibold text-zinc-950">
           {t("emptyTitle")}
         </h1>
@@ -111,13 +112,13 @@ export function CodingChallengeRunner({
           {t("emptyDescriptionBefore")} <code>make seed</code>{" "}
           {t("emptyDescriptionAfter")}
         </p>
-      </section>
+      </Card>
     );
   }
 
   return (
     <section className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-      <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+      <Card className="p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium uppercase text-emerald-700">
@@ -129,9 +130,9 @@ export function CodingChallengeRunner({
               {selectedChallenge.title}
             </h2>
           </div>
-          <span className="rounded-md border border-zinc-200 px-2.5 py-1 text-xs font-medium capitalize text-zinc-700">
+          <Badge className="capitalize" variant="outline">
             {selectedChallenge.level}
-          </span>
+          </Badge>
         </div>
 
         <label
@@ -162,7 +163,7 @@ export function CodingChallengeRunner({
         <p className="mt-6 text-sm leading-6 text-zinc-600">
           {selectedChallenge.content ?? t("noInstructions")}
         </p>
-      </div>
+      </Card>
 
       <form
         aria-busy={isRunning}
@@ -206,8 +207,8 @@ export function CodingChallengeRunner({
             </span>
           </span>
         </label>
-        <button
-          className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+        <Button
+          className="mt-4 min-h-11 px-4"
           disabled={!llmEnabled || isRunning || !isValid}
           type="submit"
         >
@@ -217,7 +218,7 @@ export function CodingChallengeRunner({
             <Play aria-hidden="true" className="h-4 w-4" />
           )}
           {t("run")}
-        </button>
+        </Button>
 
         {!llmEnabled ? (
           <p className="mt-3 text-sm text-amber-700">{t("disabledNotice")}</p>

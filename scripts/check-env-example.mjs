@@ -39,6 +39,7 @@ const SCAN_FILES = [
   "scripts/restore-db.sh",
   "scripts/verify-backup-restore.sh",
   "scripts/verify-ui.mjs",
+  "scripts/verify-ui-legacy.mjs",
   "compose.yaml",
   "package.json",
   "apps/web/package.json",

@@ -34,6 +34,8 @@ ANTHROPIC_PAYLOAD: dict[str, Any] = {
 def enable_dev_routes(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "env", "development")
     monkeypatch.setattr(settings, "enable_dev_routes", True)
+    monkeypatch.setattr(settings, "openai_api_key", "")
+    monkeypatch.setattr(settings, "anthropic_api_key", "")
 
 
 @pytest.mark.asyncio
@@ -138,6 +140,36 @@ def test_llm_factory_selects_real_clients(monkeypatch: pytest.MonkeyPatch) -> No
 
     monkeypatch.setattr(settings, "anthropic_api_key", "")
     assert isinstance(get_llm_client(), MockLLMClient)
+
+
+def test_llm_factory_treats_whitespace_keys_as_mock(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "openai_api_key", "   ")
+    monkeypatch.setattr(settings, "anthropic_api_key", "\n\t")
+
+    assert isinstance(get_llm_client(), MockLLMClient)
+
+
+def test_llm_mock_routes_are_not_available_in_real_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "openai_api_key", "sk-test")
+    client = TestClient(create_app())
+
+    response = client.post("/v1/chat/completions", json=OPENAI_PAYLOAD)
+
+    assert response.status_code == 404
+
+
+def test_llm_mock_routes_hide_malformed_requests_in_real_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "openai_api_key", "sk-test")
+    client = TestClient(create_app())
+
+    assert client.post("/v1/chat/completions").status_code == 404
+    assert client.post("/v1/messages").status_code == 404
 
 
 @pytest.mark.asyncio

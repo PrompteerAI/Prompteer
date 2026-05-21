@@ -23,12 +23,21 @@ const entrypoints = [
 
 type Props = {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export default async function HomePage({
   params,
+  searchParams,
 }: Props): Promise<React.ReactElement> {
-  const { locale } = await params;
+  const [{ locale }, query] = await Promise.all([params, searchParams]);
+  if (
+    process.env.ENV !== "production" &&
+    query.__verify_error_boundary === "locale"
+  ) {
+    throw new Error("Primary route boundary verification failure.");
+  }
+
   async function signOutAction(): Promise<void> {
     "use server";
 

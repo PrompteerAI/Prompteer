@@ -18,9 +18,29 @@ const outDir = resolve(
   process.cwd(),
   process.env.PROMPTEER_LEGACY_SCREENSHOT_DIR || ".verify/screenshots/legacy",
 );
+const extraOutDir = resolve(
+  process.cwd(),
+  process.env.PROMPTEER_LEGACY_EXTRA_SCREENSHOT_DIR ||
+    ".verify/screenshots/legacy-extra",
+);
 
 const desktop = { width: 1440, height: 900 };
 const mobile = { width: 390, height: 844 };
+
+const hideNextDevToolsStyle = `
+  nextjs-portal,
+  [data-nextjs-dev-tools],
+  [data-nextjs-toast],
+  [data-nextjs-dialog-overlay],
+  [data-nextjs-dialog],
+  [aria-label="Next.js static indicator"],
+  [aria-label="Next.js development tools"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+`;
 
 const captures = [
   {
@@ -87,6 +107,20 @@ const captures = [
     viewport: mobile,
     expectedText: ["Algorithm", "FizzBuzz prompt repair"],
   },
+  {
+    name: "legacy-error-boundary",
+    path: "/en/coding/problem/not-a-real-challenge",
+    viewport: desktop,
+    expectedText: ["Legacy preview interrupted", "Retry", "Reported"],
+    readme: false,
+    allowExpectedErrors: true,
+    afterGoto: async (page) => {
+      await page.getByRole("button", { name: "Report" }).click();
+      await page.getByRole("button", { name: "Reported" }).waitFor({
+        timeout: 10_000,
+      });
+    },
+  },
 ];
 
 function routeUrl(path) {
@@ -125,30 +159,6 @@ async function ensureSeedLogin(page) {
   }
 }
 
-async function hideNextDevTools(page) {
-  await page.waitForFunction(
-    () => document.head !== null || document.body !== null,
-    undefined,
-    { timeout: 30_000 },
-  );
-  await page.addStyleTag({
-    content: `
-      nextjs-portal,
-      [data-nextjs-dev-tools],
-      [data-nextjs-toast],
-      [data-nextjs-dialog-overlay],
-      [data-nextjs-dialog],
-      [aria-label="Next.js static indicator"],
-      [aria-label="Next.js development tools"] {
-        display: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
-      }
-    `,
-  });
-}
-
 async function settleForScreenshot(page) {
   await page.evaluate(() => {
     if (document.activeElement instanceof HTMLElement) {
@@ -160,7 +170,9 @@ async function settleForScreenshot(page) {
 }
 
 await mkdir(outDir, { recursive: true });
+await mkdir(extraOutDir, { recursive: true });
 await clearPngFiles(outDir);
+await clearPngFiles(extraOutDir);
 
 const browser = await chromium.launch();
 const failures = [];
@@ -170,14 +182,17 @@ for (const capture of captures) {
     viewport: capture.viewport,
   });
   const page = await context.newPage();
+  let allowExpectedErrors = Boolean(capture.allowExpectedErrors);
 
   page.on("console", (message) => {
-    if (message.type() === "error") {
+    if (message.type() === "error" && !allowExpectedErrors) {
       failures.push(`[${capture.name}] console error: ${message.text()}`);
     }
   });
   page.on("pageerror", (error) => {
-    failures.push(`[${capture.name}] page error: ${error.message}`);
+    if (!allowExpectedErrors) {
+      failures.push(`[${capture.name}] page error: ${error.message}`);
+    }
   });
 
   if (capture.authenticated) {
@@ -188,13 +203,11 @@ for (const capture of captures) {
     timeout: 60_000,
     waitUntil: "commit",
   });
-  await hideNextDevTools(page);
   if (capture.authenticated && page.url().includes("/login")) {
     failures.push(`${capture.name} redirected to login after seed auth.`);
   }
   if (capture.afterGoto) {
     await capture.afterGoto(page);
-    await hideNextDevTools(page);
   }
   await page.locator("body").waitFor({ state: "visible" });
   for (const expectedText of capture.expectedText ?? []) {
@@ -207,12 +220,21 @@ for (const capture of captures) {
     // Some server-rendered pages keep background fetches open; visible body is
     // the screenshot readiness gate, while network idle is only a stabilizer.
   });
-  await hideNextDevTools(page);
   await settleForScreenshot(page);
-  await page.screenshot({
-    path: resolve(outDir, `${capture.name}.png`),
-    fullPage: true,
-  });
+  try {
+    await page.screenshot({
+      path: resolve(
+        capture.readme === false ? extraOutDir : outDir,
+        `${capture.name}.png`,
+      ),
+      fullPage: true,
+      style: hideNextDevToolsStyle,
+    });
+  } finally {
+    if (!capture.allowExpectedErrors) {
+      allowExpectedErrors = false;
+    }
+  }
 
   await context.close();
 }
@@ -224,4 +246,9 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log(`Saved ${captures.length} legacy screenshots to ${outDir}`);
+console.log(
+  `Saved ${captures.filter((capture) => capture.readme !== false).length} legacy screenshots to ${outDir}`,
+);
+console.log(
+  `Saved ${captures.filter((capture) => capture.readme === false).length} legacy verification screenshots to ${extraOutDir}`,
+);

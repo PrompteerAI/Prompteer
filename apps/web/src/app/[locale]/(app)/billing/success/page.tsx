@@ -3,6 +3,7 @@
 import { CheckCircle2, Clock, CreditCard } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
+import { Badge, Card } from "@/components/ui";
 import { Link } from "@/i18n/navigation";
 import { auth } from "@/lib/auth";
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
@@ -93,30 +94,42 @@ export default async function BillingSuccessPage({
         title={isComplete ? t("completeTitle") : t("pendingTitle")}
         tone={isComplete ? "emerald" : "amber"}
       />
-      <dl className="mt-6 grid gap-3 rounded-lg border border-zinc-200 bg-white p-4 text-sm sm:grid-cols-2">
-        <div>
-          <dt className="text-zinc-500">{t("session")}</dt>
-          <dd className="mt-1 break-all font-mono text-xs text-zinc-800">
-            {checkoutSession.id}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-zinc-500">{t("amount")}</dt>
-          <dd className="mt-1 font-medium text-zinc-950">{amount}</dd>
-        </div>
-        <div>
-          <dt className="text-zinc-500">{t("status")}</dt>
-          <dd className="mt-1 font-medium capitalize text-zinc-950">
-            {checkoutSession.status}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-zinc-500">{t("paymentStatus")}</dt>
-          <dd className="mt-1 font-medium capitalize text-zinc-950">
-            {checkoutSession.payment_status}
-          </dd>
-        </div>
-      </dl>
+      <Card className="mt-6 p-4">
+        <dl className="grid gap-3 text-sm sm:grid-cols-2">
+          <div>
+            <dt className="text-zinc-500">{t("session")}</dt>
+            <dd className="mt-1 break-all font-mono text-xs text-zinc-800">
+              {checkoutSession.id}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-zinc-500">{t("amount")}</dt>
+            <dd className="mt-1 font-medium text-zinc-950">{amount}</dd>
+          </div>
+          <div>
+            <dt className="text-zinc-500">{t("status")}</dt>
+            <dd className="mt-1">
+              <Badge
+                className="capitalize"
+                variant={isComplete ? "success" : "warning"}
+              >
+                {checkoutSession.status}
+              </Badge>
+            </dd>
+          </div>
+          <div>
+            <dt className="text-zinc-500">{t("paymentStatus")}</dt>
+            <dd className="mt-1">
+              <Badge
+                className="capitalize"
+                variant={isComplete ? "success" : "warning"}
+              >
+                {checkoutSession.payment_status}
+              </Badge>
+            </dd>
+          </div>
+        </dl>
+      </Card>
     </BillingSuccessShell>
   );
 }
@@ -162,11 +175,11 @@ function StatusCard({
     red: "border-red-200 bg-red-50 text-red-900",
   }[tone];
   return (
-    <section className={`rounded-lg border p-6 ${toneClass}`}>
+    <Card className={`p-6 ${toneClass}`}>
       <Icon aria-hidden="true" className="h-6 w-6" />
       <h1 className="mt-4 text-2xl font-semibold">{title}</h1>
       <p className="mt-2 text-sm leading-6">{description}</p>
-    </section>
+    </Card>
   );
 }
 

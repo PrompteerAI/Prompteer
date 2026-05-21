@@ -21,6 +21,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request, Response, status
 from fastapi.responses import StreamingResponse
 
+from app.core.config import integration_modes
 from app.core.feature_flags import dev_routes_enabled, require_feature_enabled
 from app.core.ratelimit import LLM_RATE_LIMIT, limiter
 
@@ -167,6 +168,8 @@ class MockLLMClient:
 
 
 def require_mock_routes() -> None:
+    if integration_modes()["llm"] != "mock":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     if not dev_routes_enabled():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
 

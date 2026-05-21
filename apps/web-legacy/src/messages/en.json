@@ -3,12 +3,313 @@
     "title": "Prompteer Legacy Preview",
     "description": "Legacy-style Prompteer frontend preview"
   },
+  "legacy": {
+    "brand": "PROMPTeer",
+    "header": {
+      "navigationLabel": "Prompteer navigation",
+      "myPageFallback": "My page",
+      "settings": "Settings",
+      "login": "Login",
+      "demoLogin": "Demo login"
+    },
+    "footer": {
+      "tagline": "Prompt challenge and sharing platform.",
+      "contact": "Contact",
+      "settings": "Settings",
+      "copyright": "Copyright (c) 2026 hyuk and contributors"
+    },
+    "nav": {
+      "board": "Board",
+      "algorithm": "Algorithm",
+      "image": "Image",
+      "video": "Video"
+    },
+    "common": {
+      "featured": "Featured",
+      "challengeNow": "Challenge now",
+      "backHome": "Back home",
+      "backBoard": "Back to board",
+      "primaryLogin": "Primary login",
+      "demoLogin": "Demo login",
+      "paidDemoLogin": "Paid demo login",
+      "enabled": "enabled",
+      "disabled": "disabled",
+      "signInRequired": "Sign in required"
+    },
+    "challenge": {
+      "number": "Challenge #{number}",
+      "excerptFallback": "Practice prompt design against this seeded Prompteer challenge.",
+      "categories": {
+        "algorithm": "Algorithm",
+        "image": "Image",
+        "video": "Video"
+      },
+      "levels": {
+        "easy": "Easy",
+        "medium": "Medium",
+        "hard": "Hard"
+      },
+      "referencePreviewLabel": "{title} reference preview",
+      "referenceCount": "{count, plural, =0 {No references} one {# reference} other {# references}}",
+      "primaryReference": "Primary: {fileType} - {filePath}",
+      "noReferenceFile": "No reference file attached"
+    },
+    "home": {
+      "topTitle": "Top Challenges",
+      "topDescription": "Practice prompt design across algorithm, image, and video challenges using the rebuilt FastAPI backend.",
+      "topAriaLabel": "Top challenges",
+      "categoryTitle": "Challenge Category",
+      "categoryAriaLabel": "Challenge categories",
+      "categories": {
+        "algorithm": {
+          "title": "Algorithm",
+          "description": "Algorithm prompts, solution reasoning, and output critique."
+        },
+        "image": {
+          "title": "Image",
+          "description": "Visual prompt structure with image-specific backend feedback."
+        },
+        "video": {
+          "title": "Video",
+          "description": "Scene, motion, timing, and consistency prompt feedback."
+        },
+        "preparing": {
+          "title": "Preparing",
+          "description": "Additional legacy categories are staged for future API coverage."
+        }
+      }
+    },
+    "auth": {
+      "login": {
+        "title": "Sign in",
+        "description": "The legacy preview uses the primary Prompteer web app as the Auth.js gateway. Demo buttons bridge through that app and return here.",
+        "adminDemo": "Admin demo",
+        "paidDemo": "Paid demo",
+        "freeDemo": "Free demo",
+        "primaryLogin": "Continue with primary login",
+        "backHome": "Back to home"
+      },
+      "signup": {
+        "title": "Create account",
+        "description": "Account creation is owned by the primary Auth.js app in the rebuilt architecture. Use demo login locally or configure real Google OAuth.",
+        "openDemoLogin": "Open demo login",
+        "backHome": "Back home"
+      }
+    },
+    "categories": {
+      "coding": {
+        "title": "Algorithm Challenges",
+        "featuredChallenge": "Challenge #{number} {title}",
+        "emptyFeatured": "Seed algorithm challenges to start.",
+        "searchPlaceholder": "Search challenges",
+        "difficulty": "Difficulty",
+        "recent": "Recent"
+      },
+      "image": {
+        "title": "Image Challenges",
+        "description": "Visual prompt practice with the rebuilt challenge API and deterministic feedback.",
+        "searchPlaceholder": "Search image challenges",
+        "imageFilter": "Image",
+        "videoFilter": "Video"
+      },
+      "video": {
+        "title": "Video Challenges",
+        "description": "Motion and scene prompts use the same backend challenge runner while keeping the legacy video-card treatment.",
+        "searchPlaceholder": "Search video challenges",
+        "imageFilter": "Image",
+        "videoFilter": "Video"
+      },
+      "preparing": {
+        "title": "Preparing",
+        "description": "This legacy category shell is ready for future backend coverage."
+      }
+    },
+    "board": {
+      "title": "Board",
+      "description": "Shared questions and prompt runs from the rebuilt community API.",
+      "filters": {
+        "all": "All",
+        "questions": "Questions",
+        "shares": "Shares"
+      },
+      "writePost": "Write post",
+      "headers": {
+        "title": "Title",
+        "category": "Category",
+        "problem": "Problem",
+        "author": "Author",
+        "type": "Type",
+        "date": "Date"
+      },
+      "types": {
+        "share": "Share",
+        "question": "Question"
+      },
+      "write": {
+        "title": "Write post",
+        "description": "The legacy write surface is present; write APIs are not exposed yet.",
+        "titleLabel": "Title",
+        "titleValue": "Legacy preview draft",
+        "contentLabel": "Content",
+        "contentValue": "Board creation will be wired once the rebuilt API exposes mutation endpoints for community posts."
+      },
+      "detail": {
+        "postNotFoundTitle": "Post not found",
+        "postNotFoundDescription": "This legacy board post is no longer available from the community detail API.",
+        "shareNotFoundTitle": "Shared prompt not found",
+        "shareNotFoundDescription": "This shared prompt may be private or no longer available from the community detail API.",
+        "postByline": "{type} by {author} on {date}.",
+        "shareByline": "Shared by {author} on {date}.",
+        "postMetadataLabel": "Post metadata",
+        "shareMetadataLabel": "Share metadata",
+        "postTypes": {
+          "share": "Shared post",
+          "question": "Question"
+        },
+        "categoryMeta": "Category: {category}",
+        "typeMeta": "Type: {type}",
+        "problemMeta": "Problem: {number}",
+        "authorPlanMeta": "Author plan: {plan}",
+        "postHeading": "Post",
+        "promptHeading": "Prompt",
+        "emptyPostBody": "This post does not include additional body text.",
+        "emptyPromptBody": "This shared run does not include prompt text.",
+        "problemLabel": "Problem {number}",
+        "challengeSummary": "{tag} / {level}"
+      },
+      "problem": {
+        "title": "Problem detail",
+        "description": "Problem detail shell for board post {postId}.",
+        "body": "Challenge problem pages are available from each category. Board-linked problem details need a dedicated board-detail API before they can show authoritative data."
+      }
+    },
+    "billing": {
+      "title": "Subscription checkout",
+      "description": "Stripe-compatible billing flow in the legacy settings layout.",
+      "panel": {
+        "planName": "Prompteer Pro",
+        "planPrice": "$12/mo",
+        "planDescription": "Start and complete a Stripe-shaped checkout while preserving the old settings-style panel layout.",
+        "provider": "Provider",
+        "fallbackProvider": "mock",
+        "billingEmail": "Billing email",
+        "checkoutTitle": "Checkout session",
+        "paid": "paid",
+        "unpaid": "unpaid",
+        "checkoutDescription": "Local mock sessions complete in-app. Real Stripe sessions return a hosted URL from the API.",
+        "status": "Status",
+        "fallbackStatus": "not created",
+        "session": "Session",
+        "fallbackSession": "No checkout session yet",
+        "startCheckout": "Start checkout",
+        "completeCheckout": "Complete mock checkout",
+        "reset": "Reset",
+        "loginCallout": "Sign in to view subscription state and start checkout.",
+        "errors": {
+          "signInBeforeCheckout": "Sign in before starting checkout."
+        }
+      }
+    },
+    "myPage": {
+      "title": "My page",
+      "description": "Account, participation, and mock integration status.",
+      "demoUser": "Demo user",
+      "signedOut": "Sign in through the primary web app.",
+      "billing": "Billing",
+      "integrationMode": "Integration mode",
+      "integrationDescription": "Blank credentials keep local development on deterministic mocks.",
+      "integrations": {
+        "google": "Google OAuth",
+        "llm": "LLM",
+        "stripe": "Stripe",
+        "sendgrid": "SendGrid"
+      },
+      "recentPractice": "Recent algorithm practice"
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Legacy sidebar settings layout backed by the rebuilt runtime config.",
+      "profile": "Profile",
+      "noActiveSession": "No active session",
+      "runtimeFeatures": "Runtime features",
+      "features": {
+        "llm": "LLM prompt runs",
+        "billing": "Billing checkout",
+        "email": "Email capture"
+      }
+    },
+    "runner": {
+      "challengeNumber": "Challenge #{number}",
+      "categories": {
+        "coding": "Algorithm",
+        "image": "Image",
+        "video": "Video"
+      },
+      "eyebrows": {
+        "coding": "Coding",
+        "image": "Image",
+        "video": "Video"
+      },
+      "levels": {
+        "easy": "Easy",
+        "medium": "Medium",
+        "hard": "Hard"
+      },
+      "instructions": "Instructions",
+      "currentBehavior": "Current backend behavior",
+      "editorTitle": "Prompt editor",
+      "mediaPromptTitle": "Prompt",
+      "feedbackPill": "LLM feedback",
+      "promptAriaLabel": "Prompt",
+      "publishToBoard": "Publish this run to the board",
+      "runPrompt": "Run prompt",
+      "loginCallout": "Sign in before running prompts. The legacy preview will reuse the primary Prompteer Auth.js session through the gateway.",
+      "featureDisabled": "Prompt runs are disabled by feature flag.",
+      "previewTitle": "Preview",
+      "resultTitle": "Result console",
+      "referencePreviewLabel": "{title} reference preview",
+      "referenceMetadataLabel": "Reference metadata",
+      "referenceCount": "{count, plural, =0 {No references} one {# reference} other {# references}}",
+      "referenceItem": "Reference {number}:",
+      "referenceFile": "{fileType} - {filePath}",
+      "noReferenceFile": "No reference file attached",
+      "emptyOutput": "Run a prompt to receive deterministic feedback from the rebuilt backend.",
+      "published": "Published to board",
+      "privateRun": "Private run",
+      "tokenCount": "{count, plural, one {# token} other {# tokens}}",
+      "defaultPrompts": {
+        "coding": "Explain the problem constraints first, then produce a concise solution plan and implementation.",
+        "image": "Describe the visual goal, composition, key objects, lighting, style, and constraints.",
+        "video": "Describe the scene, camera movement, timing, subject action, and visual consistency rules."
+      },
+      "helpers": {
+        "coding": "Coding challenges run through the LLM mock or configured provider and can publish prompt shares.",
+        "image": "Image challenges currently use the shared LLM feedback endpoint; media generation is intentionally not promised by this preview.",
+        "video": "Video challenges currently use prompt feedback with video-specific framing, not generated video output."
+      },
+      "excerptFallback": "Practice prompt design against this seeded Prompteer challenge.",
+      "errors": {
+        "unauthorized": "Sign in through the primary Prompteer login, then try again."
+      }
+    }
+  },
   "errors": {
+    "title": "Something went wrong",
+    "description": "The legacy preview could not render this page.",
     "appTitle": "Legacy preview interrupted",
     "appDescription": "The legacy preview could not render this page.",
     "authTitle": "Sign-in preview interrupted",
     "authDescription": "The legacy preview could not render this sign-in page.",
     "supportId": "Support ID",
-    "retry": "Retry"
+    "supportIdWithValue": "Support ID: {digest}",
+    "retry": "Retry",
+    "report": "Report",
+    "reported": "Reported",
+    "reportFailed": "Report failed"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "This legacy preview route is not available yet.",
+    "backHome": "Back home"
   }
 }

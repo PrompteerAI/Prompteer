@@ -2,6 +2,7 @@
 import { LogIn, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
+import { Button, Card } from "@/components/ui";
 import { Link } from "@/i18n/navigation";
 import { localizedPath } from "@/i18n/paths";
 import { signIn } from "@/lib/auth";
@@ -50,7 +51,7 @@ export default async function LoginPage({
 
   return (
     <main className="grid min-h-screen place-items-center bg-zinc-50 px-6">
-      <div className="w-full max-w-sm rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+      <Card className="w-full max-w-sm p-6">
         <h1 className="text-2xl font-semibold text-zinc-950">{t("title")}</h1>
         {isContinuation ? (
           <p className="mt-3 text-sm leading-6 text-zinc-600">
@@ -59,16 +60,16 @@ export default async function LoginPage({
         ) : null}
         <form action={signInWithGoogle} className="mt-6 space-y-2">
           {accounts.map(({ email, label, Icon }) => (
-            <button
+            <Button
               key={email || "google"}
-              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950"
+              className="min-h-11 w-full px-4"
               name="login_hint"
               type="submit"
               value={email}
             >
               <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
               <span>{label}</span>
-            </button>
+            </Button>
           ))}
         </form>
         <Link
@@ -77,7 +78,7 @@ export default async function LoginPage({
         >
           {t("home")}
         </Link>
-      </div>
+      </Card>
     </main>
   );
 }

@@ -1,4 +1,6 @@
 // Legacy-preview billing route that mirrors the old subscription screen.
+import { getTranslations } from "next-intl/server";
+
 import { LegacyBillingPanel } from "@/components/legacy/billing-panel";
 import { readGatewaySession } from "@/lib/auth-gateway";
 import { readBillingSubscription, readFeatures } from "@/lib/data";
@@ -13,7 +15,8 @@ export default async function BillingPage({
   params,
 }: Props): Promise<React.ReactElement> {
   const { locale } = await params;
-  const [session, features] = await Promise.all([
+  const [t, session, features] = await Promise.all([
+    getTranslations("legacy.billing"),
     readGatewaySession(),
     readFeatures(),
   ]);
@@ -23,8 +26,8 @@ export default async function BillingPage({
   return (
     <main className="legacy-page">
       <section className="legacy-section-banner compact">
-        <h1>Subscription checkout</h1>
-        <p>Stripe-compatible billing flow in the legacy settings layout.</p>
+        <h1>{t("title")}</h1>
+        <p>{t("description")}</p>
       </section>
       <LegacyBillingPanel
         billingEmail={email}

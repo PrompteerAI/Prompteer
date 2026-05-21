@@ -1,4 +1,6 @@
 // Legacy-preview image challenge category route.
+import { getTranslations } from "next-intl/server";
+
 import { ChallengeCard } from "@/components/legacy/challenge-card";
 import { Link } from "@/i18n/navigation";
 import { readChallenges } from "@/lib/data";
@@ -6,40 +8,41 @@ import { readChallenges } from "@/lib/data";
 export const dynamic = "force-dynamic";
 
 export default async function ImageCategoryPage(): Promise<React.ReactElement> {
-  const challenges = await readChallenges("img");
+  const [t, commonT, challenges] = await Promise.all([
+    getTranslations("legacy.categories.image"),
+    getTranslations("legacy.common"),
+    readChallenges("img"),
+  ]);
   const featured = challenges[0];
 
   return (
     <main className="legacy-page">
       <section className="legacy-featured-banner">
-        <span className="legacy-pill">Featured</span>
-        <h1>Image Challenges</h1>
-        <p>
-          Visual prompt practice with the rebuilt challenge API and
-          deterministic feedback.
-        </p>
+        <span className="legacy-pill">{commonT("featured")}</span>
+        <h1>{t("title")}</h1>
+        <p>{t("description")}</p>
         {featured ? (
           <Link
             className="legacy-primary-button"
             href={`/image/challenge/${featured.id}`}
             style={{ marginTop: 24 }}
           >
-            Challenge now
+            {commonT("challengeNow")}
           </Link>
         ) : null}
       </section>
       <div className="legacy-toolbar">
         <input
           className="legacy-search"
-          placeholder="Search image challenges"
+          placeholder={t("searchPlaceholder")}
           readOnly
         />
         <div className="legacy-filter-group">
           <button className="legacy-filter-button active" type="button">
-            Image
+            {t("imageFilter")}
           </button>
           <Link className="legacy-filter-button" href="/category/video">
-            Video
+            {t("videoFilter")}
           </Link>
         </div>
       </div>

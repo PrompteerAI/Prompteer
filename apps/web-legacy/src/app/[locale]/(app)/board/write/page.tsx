@@ -1,31 +1,32 @@
 // Legacy-preview board composer placeholder route.
+import { getTranslations } from "next-intl/server";
+
 import { Link } from "@/i18n/navigation";
 
-export default function BoardWritePage(): React.ReactElement {
+export default async function BoardWritePage(): Promise<React.ReactElement> {
+  const [t, commonT] = await Promise.all([
+    getTranslations("legacy.board.write"),
+    getTranslations("legacy.common"),
+  ]);
+
   return (
     <main className="legacy-page">
       <section className="legacy-board">
         <div className="legacy-section-banner compact">
-          <h1>Write post</h1>
-          <p>
-            The legacy write surface is present; write APIs are not exposed yet.
-          </p>
+          <h1>{t("title")}</h1>
+          <p>{t("description")}</p>
         </div>
         <form className="legacy-panel">
           <label>
-            Title
-            <input
-              className="legacy-search"
-              readOnly
-              value="Legacy preview draft"
-            />
+            {t("titleLabel")}
+            <input className="legacy-search" readOnly value={t("titleValue")} />
           </label>
           <label style={{ display: "block", marginTop: 18 }}>
-            Content
+            {t("contentLabel")}
             <textarea
               className="legacy-prompt-area"
               readOnly
-              value="Board creation will be wired once the rebuilt API exposes mutation endpoints for community posts."
+              value={t("contentValue")}
             />
           </label>
           <Link
@@ -33,7 +34,7 @@ export default function BoardWritePage(): React.ReactElement {
             href="/board"
             style={{ marginTop: 18 }}
           >
-            Back to board
+            {commonT("backBoard")}
           </Link>
         </form>
       </section>

@@ -1,13 +1,12 @@
 // Legacy-preview challenge card used by category and media listing routes.
 import { ImageIcon, Play, TerminalSquare } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
 import {
   categoryMeta,
-  challengeExcerpt,
   challengeReferencePreview,
   levelClass,
-  levelLabel,
   type Challenge,
   type ChallengeTag,
 } from "@/lib/legacy";
@@ -21,12 +20,20 @@ export function ChallengeCard({
   challenge,
   variant = "compact",
 }: ChallengeCardProps): React.ReactElement {
+  const t = useTranslations("legacy.challenge");
   const meta = categoryMeta[challenge.tag];
   const href = meta.problemRoute(challenge.id);
   const isVideo = challenge.tag === "video";
   const isImage = challenge.tag === "img";
   const referencePreview = challengeReferencePreview(challenge);
   const primaryReference = referencePreview?.primaryReference ?? null;
+  const excerpt =
+    challenge.content?.replace(/\s+/g, " ").trim() || t("excerptFallback");
+  const categoryLabel = t(`categories.${categoryKey(challenge.tag)}`);
+  const difficultyLabel = t(`levels.${challenge.level}`);
+  const challengeNumber = t("number", {
+    number: challenge.challenge_number,
+  });
 
   if (variant === "media") {
     return (
@@ -51,7 +58,9 @@ export function ChallengeCard({
           ) : null}
           {primaryReference?.previewUrl && primaryReference.kind === "video" ? (
             <video
-              aria-label={`${challenge.title} reference preview`}
+              aria-label={t("referencePreviewLabel", {
+                title: challenge.title,
+              })}
               muted
               playsInline
               preload="metadata"
@@ -73,7 +82,7 @@ export function ChallengeCard({
             className="legacy-pill"
             style={{ position: "absolute", right: 18, top: 18, zIndex: 2 }}
           >
-            {meta.label}
+            {categoryLabel}
           </span>
           {referencePreview ? (
             <div
@@ -92,7 +101,11 @@ export function ChallengeCard({
                 zIndex: 2,
               }}
             >
-              <strong>{referencePreview.countLabel}</strong>
+              <strong>
+                {t("referenceCount", {
+                  count: referencePreview.references.length,
+                })}
+              </strong>
               <span
                 style={{
                   display: "block",
@@ -102,19 +115,22 @@ export function ChallengeCard({
                 }}
               >
                 {primaryReference
-                  ? `Primary: ${primaryReference.fileType} · ${primaryReference.filePath}`
-                  : "No reference file attached"}
+                  ? t("primaryReference", {
+                      filePath: primaryReference.filePath,
+                      fileType: primaryReference.fileType,
+                    })
+                  : t("noReferenceFile")}
               </span>
             </div>
           ) : null}
         </div>
         <div className="legacy-card-body">
-          <p className="legacy-pill">Challenge #{challenge.challenge_number}</p>
+          <p className="legacy-pill">{challengeNumber}</p>
           <h2>{challenge.title}</h2>
-          <p>{challengeExcerpt(challenge)}</p>
+          <p>{excerpt}</p>
           <div className="legacy-card-meta">
             <span className={levelClass(challenge.level)}>
-              {levelLabel(challenge.level)}
+              {difficultyLabel}
             </span>
             {iconForTag(challenge.tag)}
           </div>
@@ -125,19 +141,25 @@ export function ChallengeCard({
 
   return (
     <Link className="legacy-challenge-card" href={href}>
-      <span className="legacy-pill">
-        Challenge #{challenge.challenge_number}
-      </span>
+      <span className="legacy-pill">{challengeNumber}</span>
       <h2>{challenge.title}</h2>
-      <p>{challengeExcerpt(challenge)}</p>
+      <p>{excerpt}</p>
       <div className="legacy-card-meta" style={{ width: "100%" }}>
-        <span className={levelClass(challenge.level)}>
-          {levelLabel(challenge.level)}
-        </span>
-        <span className="legacy-pill">{meta.label}</span>
+        <span className={levelClass(challenge.level)}>{difficultyLabel}</span>
+        <span className="legacy-pill">{categoryLabel}</span>
       </div>
     </Link>
   );
+}
+
+function categoryKey(tag: ChallengeTag): "algorithm" | "image" | "video" {
+  if (tag === "img") {
+    return "image";
+  }
+  if (tag === "video") {
+    return "video";
+  }
+  return "algorithm";
 }
 
 function iconForTag(tag: ChallengeTag): React.ReactElement {

@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Path, Request, Re
 from sqlmodel import Session
 
 from app.api.deps import get_current_principal
-from app.core.config import settings
+from app.core.config import integration_modes, settings
 from app.core.feature_flags import dev_routes_enabled, feature_enabled, require_feature_enabled
 from app.core.ratelimit import GENERAL_RATE_LIMIT, PAYMENTS_RATE_LIMIT, limiter
 from app.core.security import Principal
@@ -118,7 +118,7 @@ async def complete_mock_checkout(
     del request, response
     require_feature_enabled("payments")
     user = resolve_user_for_principal(db_session, principal)
-    if not dev_routes_enabled() or settings.stripe_secret_key:
+    if not dev_routes_enabled() or integration_modes()["stripe"] != "mock":
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     try:
         session = get_recorded_checkout_or_404(db_session, session_id)
@@ -326,7 +326,7 @@ def billing_subscription_to_read(user: User) -> BillingSubscriptionRead:
         plan=user.plan,
         status="active" if user.plan == "paid" else "inactive",
         customer_email=user.email,
-        provider="stripe" if settings.stripe_secret_key else "mock",
+        provider="stripe" if integration_modes()["stripe"] == "real" else "mock",
     )
 
 

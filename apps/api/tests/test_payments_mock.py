@@ -54,6 +54,7 @@ CHECKOUT_PAYLOAD = {
 def reset_store(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "env", "development")
     monkeypatch.setattr(settings, "enable_dev_routes", True)
+    monkeypatch.setattr(settings, "stripe_secret_key", "")
     monkeypatch.setattr(settings, "stripe_webhook_secret", "")
     STORE.reset()
 
@@ -178,6 +179,15 @@ def test_mock_stripe_uses_default_webhook_secret_when_env_is_empty() -> None:
     assert client.webhook_secret() == MOCK_STRIPE_WEBHOOK_SECRET
 
 
+def test_mock_stripe_uses_default_webhook_secret_for_whitespace_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "stripe_secret_key", "  ")
+    monkeypatch.setattr(settings, "stripe_webhook_secret", "  ")
+
+    assert MockStripeClient().webhook_secret() == MOCK_STRIPE_WEBHOOK_SECRET
+
+
 def test_stripe_webhook_signature_parser_accepts_spaced_segments() -> None:
     payload = json.dumps(
         {
@@ -217,6 +227,47 @@ def test_payments_factory_selects_real_client(monkeypatch: pytest.MonkeyPatch) -
 
     monkeypatch.setattr(settings, "stripe_secret_key", "")
     assert isinstance(get_payments_client(), MockStripeClient)
+
+
+def test_payments_factory_treats_whitespace_key_as_mock(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "stripe_secret_key", "   ")
+
+    assert isinstance(get_payments_client(), MockStripeClient)
+
+
+def test_mock_stripe_routes_are_not_available_in_real_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test")
+    client = TestClient(create_mock_stripe_test_app())
+
+    response = client.post("/v1/checkout/sessions", json=CHECKOUT_PAYLOAD)
+
+    assert response.status_code == 404
+
+
+def test_mock_stripe_routes_hide_malformed_requests_in_real_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test")
+    client = TestClient(create_mock_stripe_test_app())
+
+    assert client.post("/v1/checkout/sessions").status_code == 404
+    assert client.get("/dev/stripe/complete").status_code == 404
+    assert client.post("/api/v1/billing/checkout/cs_test_mock/complete").status_code == 404
+
+
+def test_mock_stripe_routes_hide_when_dev_routes_are_disabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "enable_dev_routes", False)
+    client = TestClient(create_mock_stripe_test_app())
+
+    assert client.post("/v1/checkout/sessions").status_code == 404
+    assert client.get("/dev/stripe/complete").status_code == 404
+    assert client.post("/api/v1/billing/checkout/cs_test_mock/complete").status_code == 404
 
 
 @pytest.mark.asyncio

@@ -20,7 +20,7 @@ from pydantic import BaseModel, EmailStr, Field, ValidationError, field_validato
 from starlette import status
 from starlette.responses import Response
 
-from app.core.config import settings
+from app.core.config import integration_modes, settings
 from app.core.errors import ProblemException
 from app.core.feature_flags import dev_routes_enabled, require_feature_enabled
 from app.core.ratelimit import EMAIL_RATE_LIMIT, limiter
@@ -86,6 +86,8 @@ class SendGridMailPayload(BaseModel):
 
 
 def require_mock_routes() -> bool:
+    if integration_modes()["email"] != "mock":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     if not dev_routes_enabled():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     return True

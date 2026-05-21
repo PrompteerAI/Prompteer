@@ -2,7 +2,7 @@
 import type { Metadata } from "next";
 import { hasLocale } from "next-intl";
 import { NextIntlClientProvider } from "next-intl";
-import { getMessages } from "next-intl/server";
+import { getMessages, getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 
 import { LegacyFooter } from "@/components/legacy/footer";
@@ -17,10 +17,13 @@ type Props = {
   params: Promise<{ locale: string }>;
 };
 
-export const metadata: Metadata = {
-  title: "Prompteer Legacy Preview",
-  description: "Legacy-style Prompteer frontend preview",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("metadata");
+  return {
+    title: t("title"),
+    description: t("description"),
+  };
+}
 
 export default async function LocaleLayout({
   children,

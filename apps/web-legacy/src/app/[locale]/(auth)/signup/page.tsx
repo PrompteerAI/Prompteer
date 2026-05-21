@@ -1,24 +1,25 @@
 // Legacy-preview signup route that guides users to mock login in dev.
+import { getTranslations } from "next-intl/server";
+
 import { Link } from "@/i18n/navigation";
 
-export default function SignupPage(): React.ReactElement {
+export default async function SignupPage(): Promise<React.ReactElement> {
+  const t = await getTranslations("legacy.auth.signup");
+
   return (
     <main className="legacy-auth-screen">
       <section
         className="legacy-auth-card"
         style={{ width: "min(762px, 100%)" }}
       >
-        <h1>Create account</h1>
-        <p>
-          Account creation is owned by the primary Auth.js app in the rebuilt
-          architecture. Use demo login locally or configure real Google OAuth.
-        </p>
+        <h1>{t("title")}</h1>
+        <p>{t("description")}</p>
         <div className="legacy-auth-actions">
           <Link className="legacy-primary-button" href="/login">
-            Open demo login
+            {t("openDemoLogin")}
           </Link>
           <Link className="legacy-secondary-button" href="/">
-            Back home
+            {t("backHome")}
           </Link>
         </div>
       </section>

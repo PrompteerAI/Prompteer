@@ -10,12 +10,26 @@ import { apiTokenForSession } from "@/server/api-token";
 
 export const dynamic = "force-dynamic";
 
-export default async function BillingPage(): Promise<React.ReactElement> {
-  const [t, errors, session] = await Promise.all([
+type BillingPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function BillingPage({
+  searchParams,
+}: BillingPageProps): Promise<React.ReactElement> {
+  const [t, errors, session, query] = await Promise.all([
     getTranslations("billing"),
     getTranslations("errors"),
     auth(),
+    searchParams,
   ]);
+  if (
+    process.env.ENV !== "production" &&
+    query.__verify_error_boundary === "app"
+  ) {
+    throw new Error("Primary app boundary verification failure.");
+  }
+
   const billingEmail = session?.user?.email ?? "paid@prompteer.dev";
   const api = createPrompteerApiClient();
   let features: { payments: boolean };

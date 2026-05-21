@@ -1,5 +1,6 @@
 // Legacy-preview landing route modeled after the original frontend.
 import { ImageIcon, TerminalSquare, Video } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 import { ChallengeCard } from "@/components/legacy/challenge-card";
 import { Link } from "@/i18n/navigation";
@@ -8,7 +9,8 @@ import { readChallenges } from "@/lib/data";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage(): Promise<React.ReactElement> {
-  const [coding, image, video] = await Promise.all([
+  const [t, coding, image, video] = await Promise.all([
+    getTranslations("legacy.home"),
     readChallenges("ps"),
     readChallenges("img"),
     readChallenges("video"),
@@ -18,13 +20,10 @@ export default async function HomePage(): Promise<React.ReactElement> {
   return (
     <main className="legacy-main">
       <section className="legacy-section-banner">
-        <h1>Top Challenges</h1>
-        <p>
-          Practice prompt design across algorithm, image, and video challenges
-          using the rebuilt FastAPI backend.
-        </p>
+        <h1>{t("topTitle")}</h1>
+        <p>{t("topDescription")}</p>
       </section>
-      <section className="legacy-home-grid" aria-label="Top challenges">
+      <section className="legacy-home-grid" aria-label={t("topAriaLabel")}>
         {topChallenges.map((challenge) => (
           <ChallengeCard
             challenge={challenge}
@@ -35,34 +34,34 @@ export default async function HomePage(): Promise<React.ReactElement> {
       </section>
 
       <section className="legacy-section-banner compact">
-        <h1>Challenge Category</h1>
+        <h1>{t("categoryTitle")}</h1>
       </section>
       <section
         className="legacy-category-grid"
-        aria-label="Challenge categories"
+        aria-label={t("categoryAriaLabel")}
       >
         <CategoryTile
-          description="Algorithm prompts, solution reasoning, and output critique."
+          description={t("categories.algorithm.description")}
           href="/category/coding"
           icon={<TerminalSquare aria-hidden="true" size={32} />}
-          title="Algorithm"
+          title={t("categories.algorithm.title")}
         />
         <CategoryTile
-          description="Visual prompt structure with image-specific backend feedback."
+          description={t("categories.image.description")}
           href="/category/image"
           icon={<ImageIcon aria-hidden="true" size={32} />}
-          title="Image"
+          title={t("categories.image.title")}
         />
         <CategoryTile
-          description="Scene, motion, timing, and consistency prompt feedback."
+          description={t("categories.video.description")}
           href="/category/video"
           icon={<Video aria-hidden="true" size={32} />}
-          title="Video"
+          title={t("categories.video.title")}
         />
         <CategoryTile
-          description="Additional legacy categories are staged for future API coverage."
+          description={t("categories.preparing.description")}
           href="/category/preparing"
-          title="Preparing"
+          title={t("categories.preparing.title")}
         />
       </section>
     </main>

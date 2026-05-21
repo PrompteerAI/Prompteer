@@ -1,5 +1,6 @@
 // Header recreated from the original Prompteer frontend proportions.
 import { LogIn, Settings, UserRound } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
 import { authLoginUrl, type GatewaySession } from "@/lib/auth-gateway";
@@ -14,13 +15,15 @@ export function LegacyHeader({
   locale,
   session,
 }: LegacyHeaderProps): React.ReactElement {
+  const t = useTranslations("legacy.header");
+  const brand = useTranslations("legacy");
   const user = session?.user;
 
   return (
     <header className="legacy-header">
-      <nav aria-label="Prompteer navigation" className="legacy-header-inner">
+      <nav aria-label={t("navigationLabel")} className="legacy-header-inner">
         <Link className="legacy-logo" href="/">
-          PROMPTeer
+          {brand("brand")}
         </Link>
         <LegacyNavLinks />
         <div className="legacy-account">
@@ -28,11 +31,11 @@ export function LegacyHeader({
             <>
               <Link className="legacy-icon-link" href="/mypage">
                 <UserRound aria-hidden="true" size={16} />
-                <span>{user.name ?? user.email ?? "My page"}</span>
+                <span>{user.name ?? user.email ?? t("myPageFallback")}</span>
               </Link>
               <Link className="legacy-icon-button" href="/settings">
                 <Settings aria-hidden="true" size={16} />
-                <span>Settings</span>
+                <span>{t("settings")}</span>
               </Link>
             </>
           ) : (
@@ -42,10 +45,10 @@ export function LegacyHeader({
                 href={authLoginUrl(`/${locale}/login`)}
               >
                 <LogIn aria-hidden="true" size={16} />
-                <span>Login</span>
+                <span>{t("login")}</span>
               </a>
               <Link className="legacy-primary-small" href="/login">
-                Demo login
+                {t("demoLogin")}
               </Link>
             </>
           )}

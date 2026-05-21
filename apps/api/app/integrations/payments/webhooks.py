@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from hashlib import sha256
 from typing import Any
 
-from app.core.config import settings
+from app.core.config import credential_value, settings
 
 # Local-only mock signing secret; real mode reads STRIPE_WEBHOOK_SECRET.
 MOCK_STRIPE_WEBHOOK_SECRET = "whsec_mock_prompteer"  # noqa: S105  # Local-only test secret.
@@ -19,9 +19,11 @@ class StripeWebhookSignatureError(ValueError):
 
 
 def stripe_webhook_secret() -> str:
-    if settings.stripe_webhook_secret:
-        return settings.stripe_webhook_secret
-    if settings.stripe_secret_key:
+    webhook_secret = credential_value(settings.stripe_webhook_secret)
+    stripe_secret_key = credential_value(settings.stripe_secret_key)
+    if webhook_secret:
+        return webhook_secret
+    if stripe_secret_key:
         raise StripeWebhookSignatureError(
             "STRIPE_WEBHOOK_SECRET is required when STRIPE_SECRET_KEY is set."
         )

@@ -278,7 +278,8 @@
     "reload": "Reload",
     "retry": "Retry",
     "report": "Report",
-    "reported": "Reported"
+    "reported": "Reported",
+    "reportFailed": "Report failed"
   },
   "notFound": {
     "title": "Page not found"

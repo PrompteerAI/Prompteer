@@ -12,7 +12,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.responses import JSONResponse
 
-from app.core.config import integration_modes, settings
+from app.core.config import credential_value, integration_modes, settings
 from app.core.feature_flags import dev_routes_enabled, feature_flags
 from app.core.migrations import MigrationState, migration_state
 from app.db.session import engine
@@ -135,10 +135,12 @@ async def check_llm_integration(
     )
     if base_check is not None:
         return base_check
-    if settings.openai_api_key:
-        return await check_openai_reachable(mode=mode)
-    if settings.anthropic_api_key:
-        return await check_anthropic_reachable(mode=mode)
+    openai_api_key = credential_value(settings.openai_api_key)
+    anthropic_api_key = credential_value(settings.anthropic_api_key)
+    if openai_api_key:
+        return await check_openai_reachable(mode=mode, api_key=openai_api_key)
+    if anthropic_api_key:
+        return await check_anthropic_reachable(mode=mode, api_key=anthropic_api_key)
     return integration_fail(
         mode=mode,
         detail="real LLM mode selected without provider credentials.",
@@ -158,13 +160,15 @@ async def check_stripe_integration(
     )
     if base_check is not None:
         return base_check
-    if not settings.stripe_secret_key:
+    stripe_secret_key = credential_value(settings.stripe_secret_key)
+    stripe_webhook_secret = credential_value(settings.stripe_webhook_secret)
+    if not stripe_secret_key:
         return integration_fail(
             mode=mode,
             detail="real Stripe mode selected without STRIPE_SECRET_KEY.",
         )
-    if not settings.stripe_webhook_secret:
-        stripe_check = await check_stripe_reachable(mode=mode)
+    if not stripe_webhook_secret:
+        stripe_check = await check_stripe_reachable(mode=mode, api_key=stripe_secret_key)
         if stripe_check["status"] != "ok":
             return stripe_check
         webhook_detail = (
@@ -174,7 +178,7 @@ async def check_stripe_integration(
         if settings.is_production:
             return integration_fail(mode=mode, detail=webhook_detail)
         return integration_ok(mode=mode, detail=webhook_detail)
-    return await check_stripe_reachable(mode=mode)
+    return await check_stripe_reachable(mode=mode, api_key=stripe_secret_key)
 
 
 async def check_email_integration(
@@ -190,7 +194,10 @@ async def check_email_integration(
     )
     if base_check is not None:
         return base_check
-    return await check_sendgrid_reachable(mode=mode)
+    return await check_sendgrid_reachable(
+        mode=mode,
+        api_key=credential_value(settings.sendgrid_api_key),
+    )
 
 
 def check_featured_integration_base(
@@ -266,7 +273,7 @@ async def check_google_oidc_reachable(*, mode: str) -> IntegrationCheck:
     return integration_ok(mode=mode, detail="Google OIDC discovery and JWKS are reachable.")
 
 
-async def check_openai_reachable(*, mode: str) -> IntegrationCheck:
+async def check_openai_reachable(*, mode: str, api_key: str) -> IntegrationCheck:
     model = quote(settings.openai_chat_model, safe="")
     try:
         response = await provider_readiness_request(
@@ -274,7 +281,7 @@ async def check_openai_reachable(*, mode: str) -> IntegrationCheck:
             method="GET",
             url=f"{settings.openai_base_url.rstrip('/')}/models/{model}",
             headers={
-                "authorization": f"Bearer {settings.openai_api_key}",
+                "authorization": f"Bearer {api_key}",
                 "accept": "application/json",
             },
         )
@@ -302,14 +309,14 @@ async def check_openai_reachable(*, mode: str) -> IntegrationCheck:
     return integration_ok(mode=mode, detail="OpenAI model endpoint is reachable.")
 
 
-async def check_anthropic_reachable(*, mode: str) -> IntegrationCheck:
+async def check_anthropic_reachable(*, mode: str, api_key: str) -> IntegrationCheck:
     try:
         response = await provider_readiness_request(
             provider="anthropic",
             method="POST",
             url=f"{settings.anthropic_base_url.rstrip('/')}/messages/count_tokens",
             headers={
-                "x-api-key": settings.anthropic_api_key,
+                "x-api-key": api_key,
                 "anthropic-version": settings.anthropic_version,
                 "content-type": "application/json",
                 "accept": "application/json",
@@ -344,14 +351,14 @@ async def check_anthropic_reachable(*, mode: str) -> IntegrationCheck:
     return integration_ok(mode=mode, detail="Anthropic token-count endpoint is reachable.")
 
 
-async def check_stripe_reachable(*, mode: str) -> IntegrationCheck:
+async def check_stripe_reachable(*, mode: str, api_key: str) -> IntegrationCheck:
     try:
         response = await provider_readiness_request(
             provider="stripe",
             method="GET",
             url=f"{STRIPE_BASE_URL}/v1/balance",
             headers={
-                "authorization": f"Bearer {settings.stripe_secret_key}",
+                "authorization": f"Bearer {api_key}",
                 "accept": "application/json",
             },
         )
@@ -379,14 +386,14 @@ async def check_stripe_reachable(*, mode: str) -> IntegrationCheck:
     return integration_ok(mode=mode, detail="Stripe balance endpoint is reachable.")
 
 
-async def check_sendgrid_reachable(*, mode: str) -> IntegrationCheck:
+async def check_sendgrid_reachable(*, mode: str, api_key: str) -> IntegrationCheck:
     try:
         response = await provider_readiness_request(
             provider="sendgrid",
             method="GET",
             url=f"{SENDGRID_BASE_URL}/v3/scopes",
             headers={
-                "authorization": f"Bearer {settings.sendgrid_api_key}",
+                "authorization": f"Bearer {api_key}",
                 "accept": "application/json",
             },
         )

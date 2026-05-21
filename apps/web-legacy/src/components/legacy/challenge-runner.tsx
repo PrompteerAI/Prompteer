@@ -2,18 +2,17 @@
 "use client";
 
 import { CheckCircle2, Loader2, LogIn, Play, WandSparkles } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
+import { useState } from "react";
 
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
 import { normalizeError } from "@/lib/errors";
 import {
-  categoryMeta,
-  challengeExcerpt,
   challengeReferencePreview,
   levelClass,
-  levelLabel,
   normalizeGeneratedRunText,
   type Challenge,
+  type ChallengeTag,
 } from "@/lib/legacy";
 import type { components } from "@prompteer/shared-types";
 
@@ -34,21 +33,25 @@ export function LegacyChallengeRunner({
   llmEnabled,
   loginHref,
 }: LegacyChallengeRunnerProps): React.ReactElement {
-  const [prompt, setPrompt] = useState(defaultPrompt(challenge.tag));
+  const t = useTranslations("legacy.runner");
+  const commonT = useTranslations("legacy.common");
+  const tagKey = challengeTagKey(challenge.tag);
+  const [prompt, setPrompt] = useState(t(`defaultPrompts.${tagKey}`));
   const [publishToBoard, setPublishToBoard] = useState(true);
   const [result, setResult] = useState<ChallengeRunResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
-  const meta = categoryMeta[challenge.tag];
   const mediaMode = challenge.tag === "img" || challenge.tag === "video";
   const referencePreview = challengeReferencePreview(challenge);
   const canRun =
     isAuthenticated && llmEnabled && prompt.trim().length >= 10 && !isRunning;
-  const helper = useMemo(() => helperText(challenge.tag), [challenge.tag]);
+  const helper = t(`helpers.${tagKey}`);
+  const excerpt =
+    challenge.content?.replace(/\s+/g, " ").trim() || t("excerptFallback");
   const primaryReference = referencePreview?.primaryReference ?? null;
   const outputText = result?.output
     ? normalizeGeneratedRunText(result.output)
-    : "Run a prompt to receive deterministic feedback from the rebuilt backend.";
+    : t("emptyOutput");
 
   async function runPrompt(): Promise<void> {
     if (!canRun) {
@@ -71,9 +74,7 @@ export function LegacyChallengeRunner({
     } catch (caughtError) {
       const normalized = await normalizeError(caughtError);
       if (normalized.status === 401) {
-        setError(
-          "Sign in through the primary Prompteer login, then try again.",
-        );
+        setError(t("errors.unauthorized"));
       } else {
         setError(normalized.message);
       }
@@ -86,36 +87,36 @@ export function LegacyChallengeRunner({
     <main className="legacy-problem-shell">
       <div className="legacy-workspace">
         <aside className="legacy-problem-sidebar">
-          <span className="legacy-pill">{meta.eyebrow}</span>
+          <span className="legacy-pill">{t(`eyebrows.${tagKey}`)}</span>
           <h1>
-            Challenge #{challenge.challenge_number}
+            {t("challengeNumber", { number: challenge.challenge_number })}
             <br />
             {challenge.title}
           </h1>
           <div className="legacy-card-meta">
             <span className={levelClass(challenge.level)}>
-              {levelLabel(challenge.level)}
+              {t(`levels.${challenge.level}`)}
             </span>
-            <span className="legacy-pill">{meta.label}</span>
+            <span className="legacy-pill">{t(`categories.${tagKey}`)}</span>
           </div>
           <section className="legacy-problem-section">
-            <h2>Instructions</h2>
-            <p>{challengeExcerpt(challenge)}</p>
+            <h2>{t("instructions")}</h2>
+            <p>{excerpt}</p>
           </section>
           <section className="legacy-problem-section">
-            <h2>Current backend behavior</h2>
+            <h2>{t("currentBehavior")}</h2>
             <p>{helper}</p>
           </section>
         </aside>
 
         <section className="legacy-editor-panel">
           <div className="legacy-card-meta">
-            <h2>{mediaMode ? "Prompt" : "Prompt editor"}</h2>
-            <span className="legacy-pill">LLM feedback</span>
+            <h2>{mediaMode ? t("mediaPromptTitle") : t("editorTitle")}</h2>
+            <span className="legacy-pill">{t("feedbackPill")}</span>
           </div>
           <textarea
             className="legacy-prompt-area"
-            aria-label="Prompt"
+            aria-label={t("promptAriaLabel")}
             onChange={(event) => setPrompt(event.target.value)}
             value={prompt}
           />
@@ -132,7 +133,7 @@ export function LegacyChallengeRunner({
               onChange={(event) => setPublishToBoard(event.target.checked)}
               type="checkbox"
             />
-            <span>Publish this run to the board</span>
+            <span>{t("publishToBoard")}</span>
           </label>
           {isAuthenticated ? (
             <button
@@ -147,29 +148,24 @@ export function LegacyChallengeRunner({
               ) : (
                 <Play aria-hidden="true" size={18} />
               )}
-              Run prompt
+              {t("runPrompt")}
             </button>
           ) : (
             <div className="legacy-login-callout" role="note">
-              <p>
-                Sign in before running prompts. The legacy preview will reuse
-                the primary Prompteer Auth.js session through the gateway.
-              </p>
+              <p>{t("loginCallout")}</p>
               <div className="legacy-auth-inline-actions">
                 <a className="legacy-primary-button" href={demoLoginHref}>
                   <LogIn aria-hidden="true" size={18} />
-                  Demo login
+                  {commonT("demoLogin")}
                 </a>
                 <a className="legacy-secondary-button" href={loginHref}>
-                  Primary login
+                  {commonT("primaryLogin")}
                 </a>
               </div>
             </div>
           )}
           {!llmEnabled ? (
-            <p style={{ color: "#c92a2a" }}>
-              Prompt runs are disabled by feature flag.
-            </p>
+            <p style={{ color: "#c92a2a" }}>{t("featureDisabled")}</p>
           ) : null}
           {error ? (
             <p role="alert" style={{ color: "#c92a2a" }}>
@@ -180,7 +176,7 @@ export function LegacyChallengeRunner({
 
         <section className="legacy-result-panel">
           <div className="legacy-card-meta">
-            <h2>{mediaMode ? "Preview" : "Result console"}</h2>
+            <h2>{mediaMode ? t("previewTitle") : t("resultTitle")}</h2>
             <WandSparkles aria-hidden="true" color="#1971c2" size={20} />
           </div>
           {mediaMode ? (
@@ -212,7 +208,9 @@ export function LegacyChallengeRunner({
               {primaryReference?.previewUrl &&
               primaryReference.kind === "video" ? (
                 <video
-                  aria-label={`${challenge.title} reference preview`}
+                  aria-label={t("referencePreviewLabel", {
+                    title: challenge.title,
+                  })}
                   controls
                   muted
                   playsInline
@@ -235,7 +233,7 @@ export function LegacyChallengeRunner({
           ) : null}
           {referencePreview ? (
             <div
-              aria-label="Reference metadata"
+              aria-label={t("referenceMetadataLabel")}
               style={{
                 background: "#ffffff",
                 border: "1px solid var(--legacy-border)",
@@ -247,7 +245,11 @@ export function LegacyChallengeRunner({
                 padding: "12px 14px",
               }}
             >
-              <strong>{referencePreview.countLabel}</strong>
+              <strong>
+                {t("referenceCount", {
+                  count: referencePreview.references.length,
+                })}
+              </strong>
               {referencePreview.references.length > 0 ? (
                 <ul
                   style={{
@@ -261,10 +263,13 @@ export function LegacyChallengeRunner({
                   {referencePreview.references.map((reference, index) => (
                     <li key={`${reference.filePath}-${index}`}>
                       <span style={{ fontWeight: 700 }}>
-                        Reference {index + 1}:
+                        {t("referenceItem", { number: index + 1 })}
                       </span>{" "}
                       <span style={{ overflowWrap: "anywhere" }}>
-                        {reference.fileType} · {reference.filePath}
+                        {t("referenceFile", {
+                          filePath: reference.filePath,
+                          fileType: reference.fileType,
+                        })}
                       </span>
                     </li>
                   ))}
@@ -276,7 +281,7 @@ export function LegacyChallengeRunner({
                     marginTop: 8,
                   }}
                 >
-                  No reference file attached
+                  {t("noReferenceFile")}
                 </span>
               )}
             </div>
@@ -295,10 +300,12 @@ export function LegacyChallengeRunner({
                       size={18}
                     />
                   ) : null}
-                  {result.share ? " Published to board" : " Private run"}
+                  {result.share ? t("published") : t("privateRun")}
                 </span>
                 <span className="legacy-pill">
-                  {result.usage.total_tokens ?? 0} tokens
+                  {t("tokenCount", {
+                    count: result.usage.total_tokens ?? 0,
+                  })}
                 </span>
               </div>
               <p>{result.prompt}</p>
@@ -310,22 +317,12 @@ export function LegacyChallengeRunner({
   );
 }
 
-function defaultPrompt(tag: Challenge["tag"]): string {
+function challengeTagKey(tag: ChallengeTag): "coding" | "image" | "video" {
   if (tag === "img") {
-    return "Describe the visual goal, composition, key objects, lighting, style, and constraints.";
+    return "image";
   }
   if (tag === "video") {
-    return "Describe the scene, camera movement, timing, subject action, and visual consistency rules.";
+    return "video";
   }
-  return "Explain the problem constraints first, then produce a concise solution plan and implementation.";
-}
-
-function helperText(tag: Challenge["tag"]): string {
-  if (tag === "img") {
-    return "Image challenges currently use the shared LLM feedback endpoint; media generation is intentionally not promised by this preview.";
-  }
-  if (tag === "video") {
-    return "Video challenges currently use prompt feedback with video-specific framing, not generated video output.";
-  }
-  return "Coding challenges run through the LLM mock or configured provider and can publish prompt shares.";
+  return "coding";
 }

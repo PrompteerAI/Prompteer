@@ -1,5 +1,6 @@
 // Legacy-preview login route with seed-user shortcuts.
 import { ShieldCheck, Sparkles, UserRound } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
 import { authLoginUrl } from "@/lib/auth-gateway";
@@ -12,20 +13,21 @@ export default async function LoginPage({
   params,
 }: Props): Promise<React.ReactElement> {
   const { locale } = await params;
+  const t = await getTranslations("legacy.auth.login");
   const accounts = [
     {
       email: "admin@prompteer.dev",
-      label: "Admin demo",
+      label: t("adminDemo"),
       Icon: ShieldCheck,
     },
     {
       email: "paid@prompteer.dev",
-      label: "Paid demo",
+      label: t("paidDemo"),
       Icon: Sparkles,
     },
     {
       email: "free@prompteer.dev",
-      label: "Free demo",
+      label: t("freeDemo"),
       Icon: UserRound,
     },
   ];
@@ -33,11 +35,8 @@ export default async function LoginPage({
   return (
     <main className="legacy-auth-screen">
       <section className="legacy-auth-card">
-        <h1>Sign in</h1>
-        <p>
-          The legacy preview uses the primary Prompteer web app as the Auth.js
-          gateway. Demo buttons bridge through that app and return here.
-        </p>
+        <h1>{t("title")}</h1>
+        <p>{t("description")}</p>
         <div className="legacy-auth-actions">
           {accounts.map(({ email, label, Icon }) => (
             <a
@@ -53,10 +52,10 @@ export default async function LoginPage({
             className="legacy-secondary-button"
             href={authLoginUrl(`/${locale}/login`)}
           >
-            Continue with primary login
+            {t("primaryLogin")}
           </a>
           <Link className="legacy-secondary-button" href="/">
-            Back to home
+            {t("backHome")}
           </Link>
         </div>
       </section>

@@ -22,6 +22,7 @@ from typing import Annotated, Any, cast
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlmodel import Session
 
+from app.core.config import integration_modes
 from app.core.feature_flags import dev_routes_enabled, require_feature_enabled
 from app.core.ratelimit import PAYMENTS_RATE_LIMIT, limiter
 from app.db.session import get_session
@@ -180,6 +181,8 @@ async def complete_mock_checkout(
 
 
 def require_mock_routes() -> None:
+    if integration_modes()["stripe"] != "mock":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     if not dev_routes_enabled():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
 

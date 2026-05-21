@@ -21,7 +21,8 @@ from tests.support import reset_limiter_storage
 
 
 @pytest.fixture(autouse=True)
-def reset_rate_limiter() -> None:
+def reset_rate_limiter(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "sendgrid_api_key", "")
     reset_limiter_storage()
 
 
@@ -245,6 +246,46 @@ def test_email_factory_selects_real_client(monkeypatch: pytest.MonkeyPatch) -> N
 
     monkeypatch.setattr(settings, "sendgrid_api_key", "")
     assert isinstance(get_email_client(), MockSendGridClient)
+
+
+def test_email_factory_treats_whitespace_key_as_mock(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "sendgrid_api_key", "   ")
+
+    assert isinstance(get_email_client(), MockSendGridClient)
+
+
+def test_mock_sendgrid_route_is_not_available_in_real_mode(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(email_mock, "default_mailbox_dir", lambda: tmp_path / ".mock" / "email")
+    monkeypatch.setattr(settings, "sendgrid_api_key", "SG.test")
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/v3/mail/send",
+        json={
+            "personalizations": [{"to": [{"email": "paid@prompteer.dev"}]}],
+            "from": {"email": "no-reply@prompteer.dev"},
+            "subject": "Real mode",
+            "content": [{"type": "text/plain", "value": "Hello"}],
+        },
+    )
+
+    assert response.status_code == 404
+
+
+def test_mock_sendgrid_route_hides_malformed_request_in_real_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "sendgrid_api_key", "SG.test")
+    client = TestClient(create_app())
+
+    response = client.post("/v3/mail/send")
+
+    assert response.status_code == 404
 
 
 @pytest.mark.asyncio
