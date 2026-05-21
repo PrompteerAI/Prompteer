@@ -132,7 +132,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: cp .env.example .env
-      - run: scripts/compose-up.sh --build
+      - run: docker compose up -d
       - run: make compose-health
       - name: Verify Compose health endpoints
         run: |
@@ -140,6 +140,8 @@ jobs:
           curl --fail --silent --show-error http://localhost:${HTTP_PORT}/api/v1/health/ready
           curl --fail --silent --show-error http://localhost:${HTTP_PORT}/api/v1/health/startup
           curl --fail --location --silent --show-error http://localhost:${HTTP_PORT}/
+      - name: Verify readiness diagnostics during Redis outage
+        run: make readiness-outage-check
       - run: pnpm --filter @prompteer/web exec playwright install --with-deps chromium
       - name: Run Playwright against Compose
         run: pnpm --filter @prompteer/web test:e2e

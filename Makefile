@@ -2,7 +2,7 @@
 
 PROMPTEER_UPDATE_README_SCREENSHOTS ?= 0
 
-.PHONY: help bootstrap dev dev-legacy lint typecheck test audit format build verify env-check types types-check migration-check backup-restore-check compose-deps compose-dev-deps compose-health e2e verify-ui verify-ui-primary verify-ui-legacy update-ui-screenshots tree api-dev api-lint api-test seed reset reset-db logs
+.PHONY: help bootstrap dev dev-legacy lint typecheck test audit format build verify verify-full env-check types types-check migration-check backup-restore-check compose-deps compose-dev-deps compose-health readiness-outage-check e2e verify-ui verify-ui-primary verify-ui-legacy update-ui-screenshots tree api-dev api-lint api-test seed reset reset-db logs
 
 help: ## Show available Makefile targets.
 	@awk 'BEGIN {FS = ":.*##"; printf "Available targets:\n"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -50,6 +50,9 @@ verify: ## Run the core local verification suite.
 	$(MAKE) types-check
 	$(MAKE) build
 	$(MAKE) e2e
+	$(MAKE) readiness-outage-check
+
+verify-full: verify verify-ui ## Run core verification plus UI screenshot verification.
 
 env-check: ## Verify every referenced environment variable is documented.
 	node scripts/check-env-example.mjs
@@ -76,6 +79,9 @@ compose-dev-deps: ## Start PostgreSQL and Redis for local dev servers.
 
 compose-health: ## Assert every Docker Compose service is running and healthy.
 	scripts/check-compose-health.sh
+
+readiness-outage-check: ## Stop Redis and assert readiness returns diagnostics.
+	scripts/verify-readiness-outage.sh
 
 e2e: ## Run Playwright end-to-end tests against Docker Compose.
 	scripts/compose-up.sh --build

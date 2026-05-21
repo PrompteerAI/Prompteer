@@ -14,33 +14,22 @@ Prompteer is a clean monorepo rebuild of a prompt challenge and sharing prototyp
 
 No external API keys are required; blank provider credentials automatically select local mocks.
 
-Prerequisites for local development:
+Prerequisite for the containerized quick start:
 
 - Docker Engine with Docker Compose v2
-- Node.js 22; `.nvmrc` pins the project version
-- Corepack enabled so `packageManager: pnpm@10.12.1` is honored: `corepack enable`
-- `uv` for Python dependency management
 
-Containerized demo:
+Fresh clone demo:
 
 ```sh
-git clone https://github.com/PrompteerAI/Prompteer.git && cd Prompteer
+git clone https://github.com/PrompteerAI/Prompteer.git
+cd Prompteer
 cp .env.example .env
-./scripts/compose-up.sh --build
+docker compose up -d
 ```
 
 Open `http://localhost`. The default Compose stack serves the app through nginx as one origin, with `/` routed to the web app and `/api/` routed to FastAPI. If `HTTP_PORT` is changed in `.env`, open `http://localhost:<HTTP_PORT>`.
 
-Hot-reload development from a fresh clone:
-
-```sh
-git clone https://github.com/PrompteerAI/Prompteer.git && cd Prompteer
-cp .env.example .env
-./scripts/compose-up.sh postgres redis
-pnpm dev
-```
-
-`pnpm dev` self-installs missing workspace dependencies on first run, then starts Next.js on `WEB_PORT` and FastAPI on `API_PORT`. The `pnpm` and `uv` command-line tools themselves must already be installed.
+For hot-reload workflows, see [Development](#development).
 
 ## Screenshots & Demo
 
@@ -88,17 +77,17 @@ Legacy-design preview:
 
 ```mermaid
 flowchart LR
-  Browser["Browser"] --> Web["Next.js web\nAuth.js + next-intl"]
+  Browser["Browser\nhttp://localhost"] --> Nginx["nginx single origin\n/ -> web\n/api/ -> api"]
+  Nginx --> Web["Next.js web\nAuth.js + next-intl"]
+  Nginx --> API["FastAPI\n/api/v1"]
   Web --> Proxy["Next API proxy\n/api/backend/*"]
-  Proxy --> API["FastAPI\n/api/v1"]
+  Proxy --> API
   Web --> JWKS["Auth JWKS\n/api/auth/jwks"]
   API --> JWKS
   API --> Postgres["PostgreSQL 16"]
   API --> Redis["Redis 7\nrate limits + Celery"]
   API --> Worker["Celery worker"]
   Worker --> Redis
-  Nginx["nginx single origin"] --> Web
-  Nginx --> API
   API --> Google["Google OAuth\nreal or mock"]
   API --> LLM["OpenAI / Anthropic\nreal or mock"]
   API --> Stripe["Stripe\nreal or mock"]
@@ -107,7 +96,7 @@ flowchart LR
 
 Next.js owns authentication and signs RS256 session/API JWTs. Browser mutations go through the same-origin API proxy so Auth.js cookies stay HTTP-only while FastAPI still receives bearer credentials for per-user rate limits and LLM quotas. FastAPI stores domain data in PostgreSQL, uses Redis for shared rate-limit state and Celery, and emits RFC 9457 Problem Details for API errors. See [docs/architecture.md](docs/architecture.md) for deeper notes and ADR links.
 
-## Repository Layout
+### Repository Layout
 
 Prompteer is organized as a monorepo with clear runtime boundaries:
 
@@ -167,6 +156,14 @@ Infrastructure:
 - Images are built for [GHCR](https://ghcr.io/) as `prompteer-web` and `prompteer-api`
 
 ## Development
+
+Additional prerequisites for hot-reload development:
+
+- Node.js 22; `.nvmrc` pins the project version
+- Corepack enabled so `packageManager: pnpm@10.12.1` is honored: `corepack enable`
+- `uv` for Python dependency management
+
+`./scripts/compose-up.sh --build` is an optional helper when you want a scripted rebuild or only want to start selected services. The explicit fresh-clone contract remains `cp .env.example .env` followed by `docker compose up -d`.
 
 Install dependencies:
 
@@ -236,7 +233,7 @@ pnpm format:check
 cd apps/api && uv run ruff check . && uv run mypy app tests
 ```
 
-Run the full local verification suite:
+Run the core local verification suite:
 
 ```sh
 make verify
@@ -252,6 +249,18 @@ make verify-ui
 This resets local Compose volumes, reseeds deterministic demo data, writes
 reviewer artifacts to `.verify/screenshots/`, and writes exact README filename
 candidates to `.verify/screenshots/readme/` and `.verify/screenshots/legacy/`.
+Run both layers when preparing a broad UI or release-quality change:
+
+```sh
+make verify-full
+```
+
+Assert that readiness reports a structured Redis outage diagnostic:
+
+```sh
+make readiness-outage-check
+```
+
 To refresh the committed images in `docs/screenshots/`, run:
 
 ```sh
@@ -315,4 +324,4 @@ MIT - see [LICENSE](LICENSE).
 
 ## Acknowledgments
 
-This repository is a clean rewrite of an earlier Vite + React and FastAPI prototype originally built by a small student team.
+Prompteer is a clean rewrite of a previous Vite + React and FastAPI prototype originally built by a small student team.

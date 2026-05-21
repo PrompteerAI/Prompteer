@@ -37,13 +37,16 @@ Run these before opening a pull request:
 make verify
 ```
 
-`make verify` runs the full local suite, including the `.env.example` contract
+`make verify` runs the core local suite, including the `.env.example` contract
 check, linting, type checks, tests, builds, generated API type checks, Docker
-Compose health, and Playwright. Run narrower checks when you only need to
-re-check one layer:
+Compose health, and Playwright. Run `make verify-full` when the change also
+needs the README screenshot verification layer. Run narrower checks when you
+only need to re-check one layer:
 
 ```sh
 pnpm --filter @prompteer/web test:e2e
+make verify-ui
+make readiness-outage-check
 make migration-check
 make backup-restore-check
 ```

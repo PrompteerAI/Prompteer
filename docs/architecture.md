@@ -34,6 +34,7 @@ flowchart LR
 - The Compose web and API containers stay on the Docker network without publishing host ports 3000 or 8000.
 - The API container is supervised by Gunicorn with `uvicorn_worker.UvicornWorker`; `API_UVICORN_WORKERS` controls the number of Uvicorn worker processes and defaults to `1`, bounded by `API_UVICORN_WORKERS_MAX`.
 - `pnpm dev` starts hot-reload Next.js and FastAPI dev servers on `WEB_PORT` and `API_PORT`, which default to `3000` and `8000`.
+- `apps/web-legacy` is a non-authoritative preview frontend for the legacy visual design. It depends on the primary `apps/web` service for Auth.js sessions, JWKS, and the `/api/backend/*` API proxy, so it does not issue tokens or define backend contracts.
 - Compose publishes nginx, PostgreSQL, and Redis through `HTTP_PORT`, `POSTGRES_PORT`, and `REDIS_PORT`, which default to `80`, `55432`, and `56379`.
 - Server-rendered web reads call the API through `API_INTERNAL_URL`.
 - Browser mutations call the same-origin Next.js `/api/backend/*` proxy, which attaches a short-lived Auth.js RS256 bearer token before forwarding to FastAPI.
