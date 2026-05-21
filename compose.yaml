@@ -37,6 +37,7 @@ services:
       APP_URL: http://localhost
       API_UVICORN_WORKERS: ${API_UVICORN_WORKERS:-1}
       API_UVICORN_WORKERS_MAX: ${API_UVICORN_WORKERS_MAX:-32}
+      LOG_JSON: "true"
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-prompteer}:${POSTGRES_PASSWORD:-prompteer}@postgres:5432/${POSTGRES_DB:-prompteer}
       REDIS_URL: redis://redis:6379/0
       RATE_LIMIT_STORAGE_URL: redis://redis:6379/0

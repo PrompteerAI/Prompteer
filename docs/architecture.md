@@ -61,7 +61,7 @@ The API returns RFC 9457 Problem Details for all errors. Domain failures use exp
 
 ## Observability
 
-FastAPI emits structured logs with `service`, `version`, `env`, and propagated `request_id` fields. A structlog `ProcessorFormatter` bridge routes stdlib, uvicorn, and SQLAlchemy logs through the same processors as application logs. `X-Request-ID` values are accepted when they match a conservative printable identifier shape; otherwise a new request id is generated. Unhandled API exceptions are captured through `sentry-sdk[fastapi]` only when `SENTRY_DSN` is configured, so local development remains fully offline by default.
+FastAPI emits structured logs with `service`, `version`, `env`, and propagated `request_id` fields. A structlog `ProcessorFormatter` bridge routes stdlib, uvicorn, and SQLAlchemy logs through the same processors as application logs. Native dev keeps pretty console logs by default, while Compose sets `LOG_JSON=true` for the API container so `docker compose logs api` is machine-readable. `X-Request-ID` values are accepted when they match a conservative printable identifier shape; otherwise a new request id is generated. Unhandled API exceptions are captured through `sentry-sdk[fastapi]` only when `SENTRY_DSN` is configured, so local development remains fully offline by default.
 
 Next.js uses `@sentry/nextjs` instrumentation for server, edge, router, and client error capture. Browser and web-server capture is enabled only when `NEXT_PUBLIC_SENTRY_DSN` is set. Source map uploads require `SENTRY_ORG`, `SENTRY_PROJECT`, and `SENTRY_AUTH_TOKEN`; empty values skip uploads.
 
@@ -88,6 +88,10 @@ still alive. CI also runs `make compose-health`, which parses
 FastAPI uses `slowapi` for request rate limiting. Local Compose config points SlowAPI at Redis so counters are shared across API workers; Redis is a required dependency rather than an in-process fallback. Cost-sensitive routes have explicit configurable limits: LLM prompt runs and provider-compatible LLM mocks default to `10/minute;200/hour`, payment and checkout routes default to `5/minute`, and SendGrid-compatible mail send defaults to `5/minute;20/day`. General challenge and community reads default to `60/minute`. Keys are scoped by authenticated principal when a route resolves one, otherwise by client IP.
 
 LLM token quotas are stored in `llm_usage_days` by UTC date. Free users default to 50,000 tokens/day, paid users default to 500,000 tokens/day, and admins are uncapped while still being auditable through usage rows. Quota exhaustion returns RFC 9457 Problem Details with `code: "quota_exceeded"`.
+
+## Billing webhooks
+
+Stripe Checkout fulfillment runs through `/api/v1/billing/webhooks/stripe`. The route verifies the raw request body against the `Stripe-Signature` header with `STRIPE_WEBHOOK_SECRET`, then handles `checkout.session.completed` by marking the matching billing email as paid. The local mock checkout completion endpoint signs a Stripe-shaped event and sends it through the same handler so development exercises the production webhook side-effect path.
 
 ## Feature kill switches
 

@@ -1,6 +1,6 @@
 # Stripe Integration
 
-Verified on: 2026-05-20
+Verified on: 2026-05-21
 
 Sources:
 
@@ -9,6 +9,8 @@ Sources:
 - https://docs.stripe.com/api/checkout/sessions/create
 - https://docs.stripe.com/api/checkout/sessions/retrieve
 - https://docs.stripe.com/api/checkout/sessions/expire
+- https://docs.stripe.com/api/events
+- https://docs.stripe.com/checkout/fulfillment
 - https://docs.stripe.com/webhooks/signature
 
 Prompteer uses `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` for real checkout. Empty values select local mock checkout sessions and mock webhook signing.
@@ -25,6 +27,7 @@ The dev mock exposes the Stripe-shaped Checkout Session endpoints:
 - `POST /api/v1/billing/checkout`
 - `GET /api/v1/billing/checkout/:id`
 - `POST /api/v1/billing/checkout/:id/complete`
+- `POST /api/v1/billing/webhooks/stripe`
 
 It accepts JSON payloads and Stripe-style bracket form payloads such as `line_items[0][price_data][unit_amount]=1200`.
 
@@ -54,7 +57,7 @@ The mock Checkout Session response keeps the upstream fields the app needs for b
 
 `GET /dev/stripe/complete?session_id=...` is dev-only. It marks an open mock session complete, sets `payment_status` to `paid`, creates a mock `payment_intent` or `subscription` depending on the session mode, and returns a `checkout.session.completed` event plus a mock `Stripe-Signature` header value.
 
-`POST /api/v1/billing/checkout/:id/complete` is the product-facing local-dev wrapper used by the Next.js billing screen. It is available only when dev routes are enabled and no real `STRIPE_SECRET_KEY` is configured.
+`POST /api/v1/billing/webhooks/stripe` accepts the raw event payload and `Stripe-Signature` header, verifies the signature, and applies `checkout.session.completed` side effects. `POST /api/v1/billing/checkout/:id/complete` is the product-facing local-dev wrapper used by the Next.js billing screen. It is available only when dev routes are enabled and no real `STRIPE_SECRET_KEY` is configured, and it routes mock completion through the same webhook handler used by real Stripe events.
 
 When a real Stripe session is created, the Next.js billing screen shows an `Open Stripe Checkout` link pointing at the returned hosted Checkout URL instead of showing the mock completion action.
 

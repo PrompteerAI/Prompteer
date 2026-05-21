@@ -1,6 +1,6 @@
 """Stripe Checkout mock.
 
-Schema references verified on 2026-05-20:
+Schema references verified on 2026-05-21:
 - https://docs.stripe.com/api/checkout/sessions
 - https://docs.stripe.com/api/checkout/sessions/create
 - https://docs.stripe.com/api/checkout/sessions/retrieve
@@ -10,7 +10,6 @@ Schema references verified on 2026-05-20:
 
 from __future__ import annotations
 
-import hmac
 import json
 import re
 import secrets
@@ -21,11 +20,15 @@ from typing import Any, cast
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 
-from app.core.config import settings
 from app.core.feature_flags import dev_routes_enabled, require_feature_enabled
 from app.core.ratelimit import PAYMENTS_RATE_LIMIT, limiter
+from app.integrations.payments.webhooks import (
+    StripeWebhookSignatureError,
+    construct_stripe_event,
+    sign_stripe_webhook_payload,
+    stripe_webhook_secret,
+)
 
-MOCK_STRIPE_WEBHOOK_SECRET = "whsec_mock_prompteer"
 MOCK_CHECKOUT_BASE_URL = "https://checkout.stripe.com/c/pay"
 FORM_KEY_PATTERN = re.compile(r"[^\[\]]+")
 
@@ -36,8 +39,7 @@ class MockStripeError(ValueError):
     pass
 
 
-class MockStripeSignatureError(ValueError):
-    pass
+MockStripeSignatureError = StripeWebhookSignatureError
 
 
 @dataclass
@@ -98,17 +100,13 @@ class MockStripeClient:
         return session
 
     def webhook_secret(self) -> str:
-        return settings.stripe_webhook_secret or MOCK_STRIPE_WEBHOOK_SECRET
+        return stripe_webhook_secret()
 
     def sign_webhook_payload(self, payload: str, *, timestamp: int | None = None) -> str:
-        return sign_webhook_payload(payload, self.webhook_secret(), timestamp=timestamp)
+        return sign_stripe_webhook_payload(payload, self.webhook_secret(), timestamp=timestamp)
 
     def construct_event(self, payload: str, signature: str) -> dict[str, Any]:
-        verify_webhook_signature(payload, signature, self.webhook_secret())
-        event = json.loads(payload)
-        if not isinstance(event, dict):
-            raise MockStripeSignatureError("Webhook payload must decode to an object.")
-        return event
+        return construct_stripe_event(payload, signature, self.webhook_secret())
 
 
 @router.post("/v1/checkout/sessions")
@@ -341,50 +339,6 @@ def build_checkout_completed_event(session: dict[str, Any]) -> dict[str, Any]:
         "request": {"id": None, "idempotency_key": None},
         "type": "checkout.session.completed",
     }
-
-
-def sign_webhook_payload(payload: str, secret: str, *, timestamp: int | None = None) -> str:
-    timestamp = timestamp if timestamp is not None else int(datetime.now(tz=UTC).timestamp())
-    signed_payload = f"{timestamp}.{payload}"
-    signature = hmac.new(secret.encode(), signed_payload.encode(), sha256).hexdigest()
-    return f"t={timestamp},v1={signature}"
-
-
-def verify_webhook_signature(
-    payload: str,
-    signature_header: str,
-    secret: str,
-    *,
-    tolerance_seconds: int = 300,
-) -> None:
-    values = parse_signature_header(signature_header)
-    timestamp = values.get("t")
-    signatures = values.get("v1", [])
-    if not isinstance(timestamp, str) or not isinstance(signatures, list):
-        raise MockStripeSignatureError("Stripe-Signature header is missing t or v1.")
-    signed_payload = f"{timestamp}.{payload}"
-    expected = hmac.new(secret.encode(), signed_payload.encode(), sha256).hexdigest()
-    if not any(hmac.compare_digest(expected, candidate) for candidate in signatures):
-        raise MockStripeSignatureError("No matching Stripe webhook signature.")
-    age = abs(int(datetime.now(tz=UTC).timestamp()) - int(timestamp))
-    if age > tolerance_seconds:
-        raise MockStripeSignatureError("Stripe webhook signature timestamp is outside tolerance.")
-
-
-def parse_signature_header(header: str) -> dict[str, str | list[str]]:
-    values: dict[str, str | list[str]] = {}
-    for part in header.split(","):
-        key, separator, value = part.partition("=")
-        if separator == "":
-            continue
-        if key == "v1":
-            values.setdefault("v1", [])
-            v1_values = values["v1"]
-            if isinstance(v1_values, list):
-                v1_values.append(value)
-        else:
-            values[key] = value
-    return values
 
 
 def stable_digest(value: dict[str, Any]) -> str:

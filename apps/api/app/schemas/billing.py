@@ -20,3 +20,12 @@ class CheckoutSessionRead(BaseModel):
     url: str | None
     customer_email: str | None
     provider: str
+
+
+class StripeWebhookRead(BaseModel):
+    received: bool
+    event_id: str
+    event_type: str
+    processed: bool
+    customer_email: str | None
+    user_id: str | None

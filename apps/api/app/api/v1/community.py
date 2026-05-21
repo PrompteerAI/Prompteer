@@ -42,7 +42,7 @@ async def read_board_feed(
     del request, response
     date_window = build_date_window(date, timezone)
     posts_statement = select(Post)
-    shares_statement = select(Share).where(Share.is_public == True)  # noqa: E712
+    shares_statement = select(Share).where(col(Share.is_public).is_(True))
     if date_window is not None:
         posts_statement = posts_statement.where(
             col(Post.created_at) >= date_window.start_at,

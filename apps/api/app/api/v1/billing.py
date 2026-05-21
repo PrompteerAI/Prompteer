@@ -1,9 +1,10 @@
 """API v1 billing routes; no sibling billing API version exists yet."""
 
+import json
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Request, Response, status
-from sqlmodel import Session, select
+from fastapi import APIRouter, Depends, Header, HTTPException, Path, Request, Response, status
+from sqlmodel import Session
 
 from app.api.deps import get_optional_principal
 from app.core.config import settings
@@ -13,8 +14,9 @@ from app.core.security import Principal
 from app.db.session import get_session
 from app.integrations.payments import get_payments_client
 from app.integrations.payments.mock import MockStripeClient, MockStripeError
-from app.models.domain import User, utc_now
-from app.schemas.billing import CheckoutCreateRequest, CheckoutSessionRead
+from app.integrations.payments.webhooks import StripeWebhookSignatureError, construct_stripe_event
+from app.schemas.billing import CheckoutCreateRequest, CheckoutSessionRead, StripeWebhookRead
+from app.services.billing import StripeWebhookResult, apply_stripe_webhook_event
 
 router = APIRouter(prefix="/billing", tags=["billing"])
 
@@ -72,21 +74,50 @@ async def complete_mock_checkout(
     except MockStripeError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     checkout_session = result["session"]
-    mark_customer_paid(db_session, checkout_session)
+    process_mock_checkout_webhook(db_session, result["event"])
     return checkout_session_to_read(checkout_session, provider="mock")
 
 
-def mark_customer_paid(db_session: Session, checkout_session: dict[str, Any]) -> None:
-    customer_email = checkout_session.get("customer_email")
-    if not isinstance(customer_email, str):
-        return
-    user = db_session.exec(select(User).where(User.email == customer_email)).first()
-    if user is None:
-        return
-    user.plan = "paid"
-    user.updated_at = utc_now()
-    db_session.add(user)
-    db_session.commit()
+@router.post("/webhooks/stripe")
+async def stripe_webhook(
+    request: Request,
+    db_session: Annotated[Session, Depends(get_session)],
+    stripe_signature: Annotated[str | None, Header(alias="Stripe-Signature")] = None,
+) -> StripeWebhookRead:
+    require_feature_enabled("payments")
+    if not stripe_signature:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing Stripe-Signature header.",
+        )
+    payload = (await request.body()).decode("utf-8")
+    result = handle_stripe_webhook_payload(db_session, payload, stripe_signature)
+    return stripe_webhook_to_read(result)
+
+
+def process_mock_checkout_webhook(
+    db_session: Session,
+    event: dict[str, object],
+) -> StripeWebhookResult:
+    payload = stripe_event_payload(event)
+    signature = MockStripeClient().sign_webhook_payload(payload)
+    return handle_stripe_webhook_payload(db_session, payload, signature)
+
+
+def handle_stripe_webhook_payload(
+    db_session: Session,
+    payload: str,
+    stripe_signature: str,
+) -> StripeWebhookResult:
+    try:
+        event = construct_stripe_event(payload, stripe_signature)
+    except StripeWebhookSignatureError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return apply_stripe_webhook_event(db_session, event)
+
+
+def stripe_event_payload(event: dict[str, object]) -> str:
+    return json.dumps(event, separators=(",", ":"), sort_keys=True)
 
 
 def checkout_payload(request: CheckoutCreateRequest) -> dict[str, Any]:
@@ -123,4 +154,15 @@ def checkout_session_to_read(session: dict[str, Any], *, provider: str) -> Check
             session["customer_email"] if isinstance(session["customer_email"], str) else None
         ),
         provider=provider,
+    )
+
+
+def stripe_webhook_to_read(result: StripeWebhookResult) -> StripeWebhookRead:
+    return StripeWebhookRead(
+        received=True,
+        event_id=result.event_id,
+        event_type=result.event_type,
+        processed=result.processed,
+        customer_email=result.customer_email,
+        user_id=result.user_id,
     )

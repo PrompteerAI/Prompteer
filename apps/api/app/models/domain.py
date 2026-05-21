@@ -2,11 +2,13 @@
 
 from datetime import UTC, date, datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, cast
 from uuid import uuid4
 
 from sqlalchemy import JSON, Column, DateTime
 from sqlmodel import Field, SQLModel
+
+UTCDateTime = cast(type[Any], DateTime(timezone=True))
 
 
 def utc_now() -> datetime:
@@ -31,8 +33,16 @@ class PostType(StrEnum):
 
 
 class TimestampMixin(SQLModel):
-    created_at: datetime = Field(default_factory=utc_now, nullable=False)
-    updated_at: datetime = Field(default_factory=utc_now, nullable=False)
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_type=UTCDateTime,
+        nullable=False,
+    )
+    updated_at: datetime = Field(
+        default_factory=utc_now,
+        sa_type=UTCDateTime,
+        nullable=False,
+    )
 
 
 class User(TimestampMixin, table=True):

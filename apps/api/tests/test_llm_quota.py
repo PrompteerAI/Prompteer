@@ -9,6 +9,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine, select
 
+# Import model modules so SQLModel metadata is populated for test databases.
 import app.models  # noqa: F401
 from app.api.deps import get_current_principal
 from app.core.config import settings

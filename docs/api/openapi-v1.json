@@ -515,6 +515,58 @@
         "title": "ShareRead",
         "type": "object"
       },
+      "StripeWebhookRead": {
+        "properties": {
+          "customer_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Email"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_type": {
+            "title": "Event Type",
+            "type": "string"
+          },
+          "processed": {
+            "title": "Processed",
+            "type": "boolean"
+          },
+          "received": {
+            "title": "Received",
+            "type": "boolean"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          }
+        },
+        "required": [
+          "received",
+          "event_id",
+          "event_type",
+          "processed",
+          "customer_email",
+          "user_id"
+        ],
+        "title": "StripeWebhookRead",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -727,6 +779,53 @@
           }
         },
         "summary": "Complete Mock Checkout",
+        "tags": ["billing"]
+      }
+    },
+    "/api/v1/billing/webhooks/stripe": {
+      "post": {
+        "operationId": "stripe_webhook_api_v1_billing_webhooks_stripe_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Stripe-Signature",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Stripe-Signature"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StripeWebhookRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Stripe Webhook",
         "tags": ["billing"]
       }
     },

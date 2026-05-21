@@ -1,5 +1,7 @@
 """Tests for billing checkout API routes and mock completion behavior."""
 
+import asyncio
+import json
 from collections.abc import Generator
 
 import pytest
@@ -8,11 +10,12 @@ from fastapi.testclient import TestClient
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine, select
 
+# Import model modules so SQLModel metadata is populated for test databases.
 import app.models  # noqa: F401
 from app.core.config import settings
 from app.db.seed import seed
 from app.db.session import get_session
-from app.integrations.payments.mock import STORE
+from app.integrations.payments.mock import STORE, MockStripeClient
 from app.main import create_app
 from app.models.domain import User
 from tests.support import reset_limiter_storage
@@ -76,6 +79,60 @@ def test_mock_checkout_completion_updates_user_plan() -> None:
             select(User).where(User.email == "paid@prompteer.dev")
         ).one()
     assert paid_user.plan == "paid"
+
+
+def test_stripe_webhook_updates_user_plan() -> None:
+    app = create_billing_test_app(initial_paid_plan="free")
+    client = TestClient(app)
+
+    create_response = client.post(
+        "/api/v1/billing/checkout",
+        json={"customer_email": "paid@prompteer.dev"},
+    )
+    assert create_response.status_code == 200
+    completion = asyncio.run(
+        MockStripeClient().complete_checkout_session(create_response.json()["id"])
+    )
+    payload = json.dumps(completion["event"], separators=(",", ":"), sort_keys=True)
+    signature = MockStripeClient().sign_webhook_payload(payload)
+
+    webhook_response = client.post(
+        "/api/v1/billing/webhooks/stripe",
+        content=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Stripe-Signature": signature,
+        },
+    )
+
+    assert webhook_response.status_code == 200
+    webhook = webhook_response.json()
+    assert webhook["received"] is True
+    assert webhook["event_type"] == "checkout.session.completed"
+    assert webhook["processed"] is True
+    assert webhook["customer_email"] == "paid@prompteer.dev"
+    with Session(app.state.test_engine) as assertion_session:
+        paid_user = assertion_session.exec(
+            select(User).where(User.email == "paid@prompteer.dev")
+        ).one()
+    assert paid_user.plan == "paid"
+
+
+def test_stripe_webhook_rejects_invalid_signature() -> None:
+    client = TestClient(create_billing_test_app())
+
+    response = client.post(
+        "/api/v1/billing/webhooks/stripe",
+        content='{"id":"evt_bad","type":"checkout.session.completed"}',
+        headers={
+            "Content-Type": "application/json",
+            "Stripe-Signature": "t=1800000000,v1=bad",
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.headers["content-type"].startswith("application/problem+json")
+    assert response.json()["code"] == "bad_request"
 
 
 def test_billing_checkout_create_is_rate_limited() -> None:

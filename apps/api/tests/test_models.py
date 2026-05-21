@@ -1,7 +1,9 @@
 """Tests for SQLModel metadata and timezone-aware domain defaults."""
 
+from sqlalchemy import DateTime
 from sqlmodel import SQLModel
 
+# Import model modules so SQLModel metadata is populated before assertions.
 import app.models  # noqa: F401
 from app.models.domain import Challenge, ChallengeLevel, ChallengeTag, User, utc_now
 
@@ -46,3 +48,20 @@ def test_domain_models_use_utc_timestamps() -> None:
     assert user.created_at.tzinfo is not None
     assert challenge.created_at.tzinfo is not None
     assert utc_now().tzinfo is not None
+
+
+def test_domain_timestamp_columns_are_timezone_aware() -> None:
+    timestamp_columns = {
+        "users": ("created_at", "updated_at"),
+        "challenges": ("created_at", "updated_at"),
+        "shares": ("created_at", "updated_at"),
+        "posts": ("created_at", "updated_at"),
+        "comments": ("created_at", "updated_at"),
+    }
+
+    for table_name, column_names in timestamp_columns.items():
+        table = SQLModel.metadata.tables[table_name]
+        for column_name in column_names:
+            column_type = table.columns[column_name].type
+            assert isinstance(column_type, DateTime)
+            assert column_type.timezone is True

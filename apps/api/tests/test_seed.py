@@ -2,6 +2,7 @@
 
 from sqlmodel import Session, SQLModel, create_engine, select
 
+# Import model modules so SQLModel metadata is populated for test databases.
 import app.models  # noqa: F401
 from app.db.seed import seed
 from app.models.domain import Challenge, Post, Profile, Share, User

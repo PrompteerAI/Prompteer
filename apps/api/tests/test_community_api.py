@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine, select
 
+# Import model modules so SQLModel metadata is populated for test databases.
 import app.models  # noqa: F401
 from app.db.seed import seed
 from app.db.session import get_session

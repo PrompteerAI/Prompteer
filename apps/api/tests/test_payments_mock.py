@@ -11,12 +11,12 @@ from fastapi.testclient import TestClient
 from app.core.config import settings
 from app.integrations.payments import get_payments_client
 from app.integrations.payments.mock import (
-    MOCK_STRIPE_WEBHOOK_SECRET,
     STORE,
     MockStripeClient,
     MockStripeSignatureError,
 )
 from app.integrations.payments.real import StripeClient
+from app.integrations.payments.webhooks import MOCK_STRIPE_WEBHOOK_SECRET
 from app.main import create_app
 
 CHECKOUT_PAYLOAD = {

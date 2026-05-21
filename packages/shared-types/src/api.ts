@@ -55,6 +55,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/billing/webhooks/stripe": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Stripe Webhook */
+    post: operations["stripe_webhook_api_v1_billing_webhooks_stripe_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/challenges": {
     parameters: {
       query?: never;
@@ -489,6 +506,21 @@ export interface components {
       /** Prompt */
       prompt: string | null;
     };
+    /** StripeWebhookRead */
+    StripeWebhookRead: {
+      /** Customer Email */
+      customer_email: string | null;
+      /** Event Id */
+      event_id: string;
+      /** Event Type */
+      event_type: string;
+      /** Processed */
+      processed: boolean;
+      /** Received */
+      received: boolean;
+      /** User Id */
+      user_id: string | null;
+    };
     /** ValidationError */
     ValidationError: {
       /** Context */
@@ -599,6 +631,37 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["CheckoutSessionRead"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  stripe_webhook_api_v1_billing_webhooks_stripe_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        "Stripe-Signature"?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StripeWebhookRead"];
         };
       };
       /** @description Validation Error */
