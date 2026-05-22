@@ -1,6 +1,6 @@
 services:
   mock-mailbox:
-    image: nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+    image: nginx:1.31-alpine@sha256:2f07d83bf561b506400dc183b1b2003803e39efbd22451f848adaba14d28c7c7
     command:
       [
         "/bin/sh",
@@ -12,7 +12,7 @@ services:
     restart: "no"
 
   postgres:
-    image: postgres:16@sha256:bffa6baeb307a531d731bf3ef9835dc396afaeddf81944337b8f990b2109ffca
+    image: postgres:18@sha256:8ff36f3c66371cba71d20ceedccfc3de9669a68737607888c4ef0af93abe8e39
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-prompteer}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-prompteer}
@@ -31,7 +31,7 @@ services:
       retries: 5
 
   redis:
-    image: redis:7@sha256:72f8f0ab12018eadfb3cf80efc15c3b196ac47c83fd3fc9bc6089eecd73d422d
+    image: redis:8@sha256:4d25e2fe601f7ffaeb4437cb6ced3518bc36edf34ebe98863c80836943d94529
     ports:
       - "${COMPOSE_BIND_HOST:-127.0.0.1}:${REDIS_PORT:-56379}:6379"
     healthcheck:
@@ -150,7 +150,7 @@ services:
         condition: service_healthy
 
   nginx:
-    image: nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+    image: nginx:1.31-alpine@sha256:2f07d83bf561b506400dc183b1b2003803e39efbd22451f848adaba14d28c7c7
     depends_on:
       web:
         condition: service_healthy
