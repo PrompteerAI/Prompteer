@@ -1,3 +1,4 @@
+// Loading skeleton for authenticated application routes.
 export default function AppLoading(): React.ReactElement {
   return (
     <main className="min-h-[calc(100vh-73px)] bg-zinc-50 px-6 py-8 text-zinc-950">

@@ -1,3 +1,4 @@
+// Local draft composer for the legacy-preview board write route.
 "use client";
 
 import { useState } from "react";

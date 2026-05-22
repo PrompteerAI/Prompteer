@@ -1,3 +1,4 @@
+// Loading skeleton for localized public routes.
 export default function LocaleLoading(): React.ReactElement {
   return (
     <main className="min-h-screen bg-zinc-50 px-6 py-10 text-zinc-950">

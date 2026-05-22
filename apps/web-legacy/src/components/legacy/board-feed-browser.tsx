@@ -1,3 +1,4 @@
+// Client-side filtering table for the legacy-preview board feed.
 "use client";
 
 import { useMemo, useState } from "react";

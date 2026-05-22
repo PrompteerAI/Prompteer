@@ -1,3 +1,4 @@
+// Client-side search and sort controls for legacy coding challenges.
 "use client";
 
 import { useMemo, useState } from "react";

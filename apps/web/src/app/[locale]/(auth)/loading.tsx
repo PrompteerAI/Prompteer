@@ -1,3 +1,4 @@
+// Loading skeleton for authentication routes.
 export default function AuthLoading(): React.ReactElement {
   return (
     <main className="grid min-h-screen place-items-center bg-zinc-50 px-6">
