@@ -5,7 +5,7 @@
   "private": true,
   "packageManager": "pnpm@10.12.1",
   "scripts": {
-    "prepare": "husky",
+    "prepare": "if [ \"${HUSKY:-}\" = \"0\" ]; then exit 0; else sh scripts/install-hooks.sh; fi",
     "dev": "scripts/dev.sh",
     "dev:legacy": "scripts/dev-legacy.sh",
     "build": "turbo build",
