@@ -1,4 +1,4 @@
-FROM python:3.12-slim@sha256:9d3abd9fc11d06998ccdbdd93b4dd49b5ad7d67fcbbc11c016eb0eb2c2194891 AS builder
+FROM python:3.14-slim@sha256:c845af9399020c7e562969a13689e929074a10fd057acd1b1fad06a2fb068e97 AS builder
 
 WORKDIR /app/apps/api
 
@@ -10,7 +10,7 @@ ENV UV_PYTHON_DOWNLOADS=0 \
 COPY apps/api/pyproject.toml apps/api/uv.lock apps/api/.python-version apps/api/README.md ./
 RUN uv sync --no-dev --frozen --no-install-project
 
-FROM python:3.12-slim@sha256:9d3abd9fc11d06998ccdbdd93b4dd49b5ad7d67fcbbc11c016eb0eb2c2194891 AS runtime
+FROM python:3.14-slim@sha256:c845af9399020c7e562969a13689e929074a10fd057acd1b1fad06a2fb068e97 AS runtime
 
 WORKDIR /app/apps/api
 ARG APP_VERSION=0.1.0
