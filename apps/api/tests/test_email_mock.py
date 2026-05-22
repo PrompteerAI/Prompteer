@@ -23,6 +23,7 @@ from tests.support import reset_limiter_storage
 @pytest.fixture(autouse=True)
 def reset_rate_limiter(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "sendgrid_api_key", "")
+    monkeypatch.setattr(settings, "enable_dev_routes", True)
     reset_limiter_storage()
 
 

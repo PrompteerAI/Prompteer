@@ -21,7 +21,8 @@ from tests.support import reset_limiter_storage
 
 
 @pytest.fixture(autouse=True)
-def reset_limiter() -> None:
+def reset_limiter(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "enable_dev_routes", True)
     reset_limiter_storage()
 
 
