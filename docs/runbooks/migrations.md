@@ -15,4 +15,6 @@ Local development migrations may be simpler, but destructive production migratio
 
 ## Verification
 
-Run `make migration-check` before merging migration changes. It creates a throwaway PostgreSQL database, runs `alembic upgrade head`, `alembic downgrade base`, and `alembic upgrade head` again, then checks that sentinel tables exist. CI runs the same target in the backend job.
+Run `make migration-check` before merging migration changes. It first runs the migration guardrail linter, then creates a throwaway PostgreSQL database, runs `alembic upgrade head`, `alembic downgrade base`, and `alembic upgrade head` again, then checks that sentinel tables exist. CI runs the same target in the backend job.
+
+`make migration-guardrails` scans Alembic `upgrade()` paths for destructive operations such as data deletion, table/column drops, constraint drops, and column type changes. If a migration intentionally needs one, add a short ADR and reference it with a module-level `destructive_migration_adr = "docs/adr/NNNN-...md"` in the migration file.

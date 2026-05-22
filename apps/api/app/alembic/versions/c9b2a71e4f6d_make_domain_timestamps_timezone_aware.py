@@ -18,6 +18,7 @@ revision: str = "c9b2a71e4f6d"
 down_revision: str | None = "8d2f4a9c1b7e"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
+destructive_migration_adr: str = "docs/adr/0024-pre-release-timestamp-type-migration.md"
 
 TIMESTAMP_TABLES = ("users", "challenges", "shares", "posts", "comments")
 TIMESTAMP_COLUMNS = ("created_at", "updated_at")

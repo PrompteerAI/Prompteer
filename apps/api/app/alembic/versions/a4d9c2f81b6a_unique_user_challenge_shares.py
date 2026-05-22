@@ -14,6 +14,7 @@ revision: str = "a4d9c2f81b6a"
 down_revision: str | None = "7b41c2a9d8f0"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
+destructive_migration_adr: str = "docs/adr/0022-share-uniqueness-migration.md"
 
 
 def upgrade() -> None:
