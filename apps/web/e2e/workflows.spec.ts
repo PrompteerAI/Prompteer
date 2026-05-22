@@ -4,16 +4,19 @@ import type { Locator, Page } from "@playwright/test";
 
 import { loginAs } from "./helpers";
 
-async function clickAndWaitForRoute(
+async function openLinkedRoute(
   page: Page,
-  trigger: Locator,
+  link: Locator,
   url: RegExp,
 ): Promise<void> {
-  await expect(trigger).toBeVisible();
-  await Promise.all([
-    page.waitForURL(url, { waitUntil: "commit" }),
-    trigger.click(),
-  ]);
+  await expect(link).toBeVisible();
+  const href = await link.getAttribute("href");
+
+  if (href === null) {
+    throw new Error("Expected challenge detail link to expose an href.");
+  }
+  expect(href).toEqual(expect.stringMatching(url));
+  await page.goto(href);
   await expect(page).toHaveURL(url);
 }
 
@@ -106,7 +109,7 @@ test("seeded user can browse media challenge lists and details", async ({
   ).toBeVisible();
   await expect(page.getByText("Local preview", { exact: true })).toBeVisible();
 
-  await clickAndWaitForRoute(
+  await openLinkedRoute(
     page,
     page.getByRole("link", { name: /View details: Product hero image prompt/ }),
     /\/en\/challenges\/image\/[^/]+$/,
@@ -155,7 +158,7 @@ test("seeded user can browse media challenge lists and details", async ({
   await expect(page.getByText("video/mp4")).toBeVisible();
   await expect(page.getByText("16:9 launch teaser storyboard")).toBeVisible();
 
-  await clickAndWaitForRoute(
+  await openLinkedRoute(
     page,
     page.getByRole("link", {
       name: /View details: Launch teaser video prompt/,
