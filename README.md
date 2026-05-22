@@ -33,13 +33,17 @@ docker compose up -d
 
 Open `http://localhost`. The default Compose stack serves the app through nginx as one origin, with `/` routed to the web app and `/api/` routed to FastAPI. If `HTTP_PORT` is changed in `.env`, open `http://localhost:<HTTP_PORT>`.
 
+Provider-compatible mock endpoints such as `/v1/chat/completions`,
+`/v1/messages`, `/v1/checkout/sessions`, and `/v3/mail/send` are also exposed
+through the same local origin when dev routes and mock mode are enabled.
+
 For hot-reload workflows, see [Development](#development).
 
 ## Screenshots & Demo
 
-| Dashboard landing workspace                                                                           | Mock Google login                                                                    | Coding challenge list                                                                          |
-| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| ![Dashboard landing workspace with seeded prompt challenge overview](docs/screenshots/01-landing.png) | ![Mock Google login screen with seed account choices](docs/screenshots/02-login.png) | ![Coding challenge view showing seeded prompt tasks](docs/screenshots/03-coding-challenge.png) |
+| Public landing workspace                                                                           | Mock Google login                                                                    | Coding prompt runner                                                                          |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| ![Public landing workspace with seeded prompt challenge overview](docs/screenshots/01-landing.png) | ![Mock Google login screen with seed account choices](docs/screenshots/02-login.png) | ![Coding prompt runner showing seeded prompt tasks](docs/screenshots/03-coding-challenge.png) |
 
 | Prompt editor and run result                                                               | Billing upgrade checkout                                                                           | Review board feed                                                                  |
 | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
@@ -97,7 +101,7 @@ flowchart LR
   API --> SendGrid["SendGrid\nreal or mock"]
 ```
 
-Next.js owns authentication and signs RS256 session/API JWTs. Browser mutations go through the same-origin API proxy so Auth.js cookies stay HTTP-only while FastAPI still receives bearer credentials for per-user rate limits and LLM quotas. FastAPI stores domain data in PostgreSQL, uses Redis for shared rate-limit state and Celery, and emits RFC 9457 Problem Details for API errors. See [docs/architecture.md](docs/architecture.md) for deeper notes and ADR links.
+Next.js owns authentication, keeps Auth.js sessions in HTTP-only encrypted cookies, and mints short-lived RS256 API bearer tokens only inside the same-origin API proxy. FastAPI validates those proxy-issued bearer tokens through the web app's JWKS endpoint for per-user rate limits and LLM quotas. FastAPI stores domain data in PostgreSQL, uses Redis for shared rate-limit state and Celery, and emits RFC 9457 Problem Details for API errors. See [docs/architecture.md](docs/architecture.md) for deeper notes and ADR links.
 
 ### Repository Layout
 

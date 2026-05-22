@@ -19,6 +19,6 @@ The root script uses a small shell wrapper instead of adding another JavaScript 
 
 Local development has one command for application servers while keeping backend dependency management in uv. The script is Unix-shell oriented, which matches the current WSL development environment; if Windows-native support becomes a requirement, replace the shell wrapper with a cross-platform runner.
 
-## Alternatives Considered
+## Alternatives considered
 
 Running only Next.js from `pnpm dev` would be simpler, but it would violate the local zero-key end-to-end contract. Adding `concurrently` would be portable but unnecessary at this stage.

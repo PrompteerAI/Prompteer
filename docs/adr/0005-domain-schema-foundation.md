@@ -24,6 +24,6 @@ The initial domain schema keeps the legacy product concepts while changing the p
 
 Future API routes can build on stable table names and foreign keys. Seed data can now create realistic demo users, challenges, shares, and board content without reviving local password auth.
 
-## Alternatives Considered
+## Alternatives considered
 
 Copying the legacy schema directly would have been faster, but it would preserve password storage and startup table creation patterns that the rebuild explicitly replaces.

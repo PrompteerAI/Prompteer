@@ -30,6 +30,6 @@ The default local command path creates demo users, challenges, board posts, shar
 
 The schema source of truth remains Alembic. Local startup invokes Alembic; it does not directly create tables from metadata outside the migration system.
 
-## Alternatives Considered
+## Alternatives considered
 
 Keeping `make seed` as a required manual step was simpler, but it violated the zero-extra-step local contract. Running `SQLModel.metadata.create_all()` directly on startup was also simpler, but it would blur the migration boundary the rebuild is trying to preserve.

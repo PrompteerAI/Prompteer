@@ -31,7 +31,7 @@ Backend dependency PRs are expected to modify `uv.lock` directly. If GitHub
 changes uv support semantics, the Dependabot config should be revisited rather
 than falling back to pip by default.
 
-## Alternatives Considered
+## Alternatives considered
 
 Using `package-ecosystem: pip` would satisfy older generic Python guidance, but
 it would make the bot less explicit about `uv.lock` ownership and would diverge

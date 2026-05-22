@@ -24,7 +24,7 @@ checkout/webhook row mapping are isolated from route handlers. Future route
 changes should add service methods first and keep direct SQLModel access inside
 repositories.
 
-## Alternatives Considered
+## Alternatives considered
 
 Leaving the route-level persistence in place would be simpler in the short
 term, but it would keep growing API handlers into mixed transport, business,

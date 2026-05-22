@@ -8,7 +8,7 @@ Prompteer uses ADRs to preserve the reasoning behind autonomous rebuild decision
 | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | Monorepo structure, core stack, and shared toolchain                 | [0001 - Monorepo Stack](0001-monorepo-stack.md)                                                   |
 | Mock-first provider architecture and zero-key local development      | [0002 - Mock-First External Integrations](0002-mock-first-integrations.md)                        |
-| Auth.js as the identity authority and FastAPI JWKS validation        | [0003 - Auth.js JWT Validation Through JWKS](0003-auth-js-jwks-api-validation.md)                 |
+| Auth.js as the identity authority and FastAPI JWKS validation        | [0003 - Auth.js API Bearer Validation Through JWKS](0003-auth-js-jwks-api-validation.md)          |
 | Local runtime startup model, now superseded by single-origin Compose | [0004 - Local Dev Runtime Contract](0004-local-dev-runtime-contract.md)                           |
 | Rebuilt domain persistence model and Alembic-owned schema            | [0005 - Domain Schema Foundation](0005-domain-schema-foundation.md)                               |
 | Local Google OIDC mock instead of browser-only fake login            | [0006 - Local Google OIDC Mock](0006-local-google-oidc-mock.md)                                   |
@@ -27,6 +27,7 @@ Prompteer uses ADRs to preserve the reasoning behind autonomous rebuild decision
 | Root `.gitignore` provenance and verification contract               | [0019 - Gitignore Patterns](0019-gitignore-patterns.md)                                           |
 | Dependabot tracking backend dependencies with uv                     | [0020 - Dependabot Uses The uv Ecosystem](0020-dependabot-uv-ecosystem.md)                        |
 | FastAPI route, service, repository boundaries                        | [0021 - API Repository Boundaries](0021-api-repository-boundaries.md)                             |
+| Pre-release destructive cleanup for unique prompt shares             | [0022 - Share Uniqueness Migration](0022-share-uniqueness-migration.md)                           |
 
 ## Gitignore Note
 

@@ -16,6 +16,6 @@ Each external integration has a protocol/interface, a real implementation, a sch
 
 Development and CI can exercise full flows without secret provisioning. Mocks must be maintained against vendor API documentation and documented under `docs/integrations/`.
 
-## Alternatives Considered
+## Alternatives considered
 
 Hard-coded stubs would be faster initially but would not catch schema drift or integration mistakes.

@@ -20,8 +20,8 @@ Client components never read or store auth tokens. API mutations can be rate-lim
 
 Next.js needs an internal API base URL for server route handlers. Local development defaults to `http://localhost:8000/api/v1`; Compose sets `API_INTERNAL_URL=http://api:8000/api/v1`.
 
-Auth.js JWT signing uses `AUTH_JWT_PRIVATE_KEY` in production. Development falls back to a process-global RSA key so separate Next.js dev route bundles can verify the same session cookies and API bearers without committing a private key.
+API bearer signing uses `AUTH_JWT_PRIVATE_KEY` in production. Development falls back to a process-global RSA key so separate Next.js dev route bundles can mint and verify the same short-lived bearer tokens without committing a private key. Auth.js session cookie encryption remains handled by Auth.js using `AUTH_SECRET`.
 
-## Alternatives Considered
+## Alternatives considered
 
 Direct browser calls with a readable token endpoint were rejected because they would expose bearer tokens to client JavaScript. Making every mutation a Server Action was viable, but a narrow proxy keeps the existing client components and typed API helper intact while preserving the same security boundary.

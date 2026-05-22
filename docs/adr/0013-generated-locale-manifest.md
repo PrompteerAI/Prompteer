@@ -30,7 +30,7 @@ generated TypeScript file is ignored by Git because it is derived state.
 Every build environment must run the generator before invoking Next.js; package
 scripts and the web Dockerfile both do that.
 
-## Alternatives Considered
+## Alternatives considered
 
 Keeping `routing.locales` hand-written was simpler but made locale additions
 code changes. Loading locales with filesystem APIs at runtime was rejected

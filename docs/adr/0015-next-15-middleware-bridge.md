@@ -33,7 +33,7 @@ Next.js 16 and keep `proxy.ts` as the single entry point.
 The bridge is intentionally thin: all behavior lives in `proxy.ts`, so tests and
 future maintenance do not split routing logic across two files.
 
-## Alternatives Considered
+## Alternatives considered
 
 Moving all logic back to `middleware.ts` would match Next.js 15 but drift from
 the target structure. Waiting for a Next.js 16 upgrade before preserving

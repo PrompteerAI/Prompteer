@@ -48,7 +48,7 @@ The endpoint may perform outbound network calls in real mode, so each provider
 probe uses a two-second timeout and no retries. Operators should keep readiness
 probe intervals conservative enough for external dependency checks.
 
-## Alternatives Considered
+## Alternatives considered
 
 Credential-presence checks were faster but did not satisfy the reachability
 contract. Full end-to-end API calls, such as creating checkout sessions or

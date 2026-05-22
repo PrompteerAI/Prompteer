@@ -16,6 +16,6 @@ Prompteer is rebuilt as a single monorepo with Next.js App Router, TypeScript, T
 
 The repository has one root setup path and one root CI surface. JavaScript and Python tooling remain native to their ecosystems, with `Makefile` targets as the common entrypoint.
 
-## Alternatives Considered
+## Alternatives considered
 
 Keeping the split repositories would preserve history boundaries but make the local zero-key contract, CI, shared docs, and generated API types harder to keep coherent.

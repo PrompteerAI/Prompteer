@@ -32,12 +32,17 @@ flowchart LR
   changed in `.env`. Compose injects the same public origin into Auth.js, API
   JWT issuer checks, and mock OAuth settings.
 - The Compose web and API containers stay on the Docker network without publishing host ports 3000 or 8000.
+- nginx routes both product API paths (`/api/*`) and provider-compatible local
+  mock paths such as `/v1/chat/completions`, `/v1/messages`,
+  `/v1/checkout/sessions`, `/v3/mail/send`, and `/dev/stripe/complete` to the
+  API container so the default Compose origin exposes the same mocks as direct
+  API development.
 - The API container is supervised by Gunicorn with `uvicorn_worker.UvicornWorker`; `API_UVICORN_WORKERS` controls the number of Uvicorn worker processes and defaults to `1`, bounded by `API_UVICORN_WORKERS_MAX`.
 - `pnpm dev` starts hot-reload Next.js and FastAPI dev servers on `WEB_PORT` and `API_PORT`, which default to `3000` and `8000`.
 - `apps/web-legacy` is a non-authoritative preview frontend for the legacy visual design. It depends on the primary `apps/web` service for Auth.js sessions, JWKS, and the `/api/backend/*` API proxy, so it does not issue tokens or define backend contracts.
 - Compose publishes nginx, PostgreSQL, and Redis through `HTTP_PORT`, `POSTGRES_PORT`, and `REDIS_PORT`, which default to `80`, `55432`, and `56379`.
 - Server-rendered web reads call the API through `API_INTERNAL_URL`.
-- Browser mutations call the same-origin Next.js `/api/backend/*` proxy, which attaches a short-lived Auth.js RS256 bearer token before forwarding to FastAPI.
+- Browser mutations call the same-origin Next.js `/api/backend/*` proxy, which attaches a short-lived RS256 API bearer token before forwarding to FastAPI.
 - External providers are selected by environment variables. Empty credentials select schema-faithful mocks.
 
 ## Product domain
@@ -53,7 +58,7 @@ The rebuild keeps those domain concepts while replacing password auth with Auth.
 
 ## Authentication
 
-The Next.js app is the SSO surface. Auth.js signs JWT sessions with RS256 through custom encode/decode hooks and exposes the public key set at `/api/auth/jwks`. FastAPI validates `Authorization: Bearer <token>` credentials against that JWKS endpoint, issuer, and audience before constructing a `Principal`. Browser-side mutations do not read Auth.js cookies directly; they use a same-origin Next.js API proxy that mints a five-minute API bearer from the active session.
+The Next.js app is the SSO surface. Auth.js keeps sessions in HTTP-only encrypted cookies owned by the web app. FastAPI never reads those cookies directly. Browser-side mutations call a same-origin Next.js API proxy, and that server-side proxy mints a five-minute RS256 API bearer from the active Auth.js session. The web app exposes the API bearer public key set at `/api/auth/jwks`, and FastAPI validates `Authorization: Bearer <token>` credentials against that JWKS endpoint, issuer, and audience before constructing a `Principal`.
 
 FastAPI caches the Auth.js JWKS for five minutes to avoid a web-app round trip on every authenticated API request. If a bearer token references an unknown `kid`, the API refreshes the JWKS once immediately so normal key rotation does not wait for cache expiry.
 
@@ -72,17 +77,18 @@ Next.js uses `@sentry/nextjs` instrumentation for server, edge, router, and clie
 ## Health probes
 
 FastAPI exposes `/api/v1/health/live` for process liveness, `/api/v1/health/ready`
-for PostgreSQL, Redis, and selected integration readiness, and
+for PostgreSQL, Redis, Auth.js JWKS, and selected integration readiness, and
 `/api/v1/health/startup` for Alembic head matching. Integration readiness reports
 each provider's `mode`, `status`, and diagnostic `detail`; mock integrations fail
 readiness when dev routes are disabled and no real provider credentials are
 configured. Real integrations perform low-cost upstream reachability checks:
 Google OIDC discovery plus JWKS, OpenAI model retrieve, Anthropic token count,
-Stripe balance retrieve, and SendGrid scope retrieve. Compose requires both
-readiness and startup probes to pass for the API and nginx health checks so
-dependency loss, unreachable local mocks, unavailable real providers, or
-migration drift turns the local stack unhealthy instead of only proving the
-process is still alive. CI also runs `make compose-health`, which parses
+Stripe balance retrieve, and SendGrid scope retrieve. The API container's own
+Docker health check uses live and startup probes so Compose can start the web app
+that serves JWKS; nginx and CI then verify the public readiness probe once the
+full stack is up. This catches dependency loss, unreachable local mocks,
+unavailable real providers, missing Auth.js JWKS, or migration drift instead of
+only proving the process is still alive. CI also runs `make compose-health`, which parses
 `docker compose ps --format json` and requires every expected service to be
 `running` and `healthy`.
 
