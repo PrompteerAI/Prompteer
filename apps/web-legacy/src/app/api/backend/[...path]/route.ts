@@ -56,6 +56,7 @@ async function forwardToGateway(
   request: NextRequest,
   context: RouteContext,
 ): Promise<Response> {
+  const requestId = proxyRequestId(request);
   const params = await context.params;
   const upstream = new URL(
     `/api/backend/${params.path.map(encodeURIComponent).join("/")}`,
@@ -67,7 +68,7 @@ async function forwardToGateway(
   try {
     upstreamResponse = await fetch(upstream, {
       method: request.method,
-      headers: gatewayHeaders(request),
+      headers: gatewayHeaders(request, requestId),
       body:
         request.method === "GET" || request.method === "HEAD"
           ? undefined
@@ -76,20 +77,14 @@ async function forwardToGateway(
       redirect: "manual",
     });
   } catch {
-    return Response.json(
-      {
-        type: "https://prompteer.dev/errors/auth-gateway-unavailable",
-        title: "Bad Gateway",
-        status: 502,
-        detail: "The primary web auth gateway is unavailable.",
-        instance: request.nextUrl.pathname,
-        code: "auth_gateway_unavailable",
-      },
-      {
-        status: 502,
-        headers: { "content-type": "application/problem+json" },
-      },
-    );
+    return problemResponse({
+      status: 502,
+      title: "Bad Gateway",
+      detail: "The primary web auth gateway is unavailable.",
+      code: "auth_gateway_unavailable",
+      instance: request.nextUrl.pathname,
+      requestId,
+    });
   }
 
   const headers = new Headers();
@@ -99,6 +94,9 @@ async function forwardToGateway(
       headers.set(header, value);
     }
   }
+  if (!headers.has("x-request-id")) {
+    headers.set("x-request-id", requestId);
+  }
 
   return new Response(upstreamResponse.body, {
     status: upstreamResponse.status,
@@ -107,12 +105,11 @@ async function forwardToGateway(
   });
 }
 
-function gatewayHeaders(request: NextRequest): Headers {
+function gatewayHeaders(request: NextRequest, requestId: string): Headers {
   const headers = new Headers();
   const accept = request.headers.get("accept");
   const contentType = request.headers.get("content-type");
   const cookie = request.headers.get("cookie");
-  const requestId = request.headers.get("x-request-id");
 
   headers.set("accept", accept ?? "application/json");
   if (contentType) {
@@ -121,9 +118,43 @@ function gatewayHeaders(request: NextRequest): Headers {
   if (cookie) {
     headers.set("cookie", cookie);
   }
-  if (requestId) {
-    headers.set("x-request-id", requestId);
-  }
+  headers.set("x-request-id", requestId);
 
   return headers;
+}
+
+function proxyRequestId(request: NextRequest): string {
+  const requestId = request.headers.get("x-request-id")?.trim();
+  if (requestId) {
+    return requestId.slice(0, 128);
+  }
+  return crypto.randomUUID();
+}
+
+function problemResponse(input: {
+  status: number;
+  title: string;
+  detail: string;
+  code: string;
+  instance: string;
+  requestId: string;
+}): Response {
+  return Response.json(
+    {
+      type: `https://prompteer.dev/errors/${input.code.replaceAll("_", "-")}`,
+      title: input.title,
+      status: input.status,
+      detail: input.detail,
+      instance: input.instance,
+      code: input.code,
+      request_id: input.requestId,
+    },
+    {
+      status: input.status,
+      headers: {
+        "content-type": "application/problem+json",
+        "x-request-id": input.requestId,
+      },
+    },
+  );
 }

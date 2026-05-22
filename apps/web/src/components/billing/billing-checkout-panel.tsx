@@ -15,7 +15,7 @@ import { useMemo, useState } from "react";
 
 import { Badge, Button, Card, useToast } from "@/components/ui";
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
-import { normalizeError } from "@/lib/errors";
+import { formatMutationError, normalizeError } from "@/lib/errors";
 import type { components } from "@prompteer/shared-types";
 
 type CheckoutSession = components["schemas"]["CheckoutSessionRead"];
@@ -136,16 +136,19 @@ export function BillingCheckoutPanel({
               seconds: normalizedError.retryAfterSeconds,
             })
           : t("errors.rateLimited");
-        setError(message);
+        const formattedMessage = formatMutationError(normalizedError, message);
+        setError(formattedMessage);
         toast({
           title: t("errors.rateLimitedTitle"),
-          description: message,
+          description: formattedMessage,
           variant: "warning",
         });
       } else if (normalizedError.status === 401) {
-        setError(t("errors.startUnauthorized"));
+        setError(
+          formatMutationError(normalizedError, t("errors.startUnauthorized")),
+        );
       } else {
-        setError(t("errors.startFailed"));
+        setError(formatMutationError(normalizedError, t("errors.startFailed")));
       }
     }
   }
@@ -177,16 +180,24 @@ export function BillingCheckoutPanel({
               seconds: normalizedError.retryAfterSeconds,
             })
           : t("errors.rateLimited");
-        setError(message);
+        const formattedMessage = formatMutationError(normalizedError, message);
+        setError(formattedMessage);
         toast({
           title: t("errors.rateLimitedTitle"),
-          description: message,
+          description: formattedMessage,
           variant: "warning",
         });
       } else if (normalizedError.status === 401) {
-        setError(t("errors.completeUnauthorized"));
+        setError(
+          formatMutationError(
+            normalizedError,
+            t("errors.completeUnauthorized"),
+          ),
+        );
       } else {
-        setError(t("errors.completeFailed"));
+        setError(
+          formatMutationError(normalizedError, t("errors.completeFailed")),
+        );
       }
     }
   }

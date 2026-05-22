@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 
 import { ApiResponseError, unwrapApiResponse } from "./api-client";
-import { normalizeError } from "./errors";
+import { formatMutationError, normalizeError } from "./errors";
 
 const problem = {
   type: "https://prompteer.dev/errors/rate-limited",
@@ -40,6 +40,7 @@ describe("normalizeError", () => {
     const response = new Response(null, {
       status: 502,
       statusText: "Bad Gateway",
+      headers: { "x-request-id": "req-header-502" },
     });
 
     await expect(
@@ -48,13 +49,42 @@ describe("normalizeError", () => {
       code: "http_error",
       message: "Bad Gateway",
       status: 502,
+      requestId: "req-header-502",
     });
   });
 
   it("parses Problem Details from an unconsumed response body", async () => {
+    const problemWithoutRequestId = {
+      type: problem.type,
+      title: problem.title,
+      status: problem.status,
+      detail: problem.detail,
+      instance: problem.instance,
+      code: problem.code,
+    };
     const response = new Response(JSON.stringify(problem), {
       status: 429,
-      headers: { "content-type": "application/problem+json" },
+      headers: {
+        "content-type": "application/problem+json",
+        "x-request-id": "req-header-429",
+      },
+    });
+    const responseWithoutBodyRequestId = new Response(
+      JSON.stringify(problemWithoutRequestId),
+      {
+        status: 429,
+        headers: {
+          "content-type": "application/problem+json",
+          "x-request-id": "req-header-429",
+        },
+      },
+    );
+
+    await expect(
+      normalizeError(new ApiResponseError(responseWithoutBodyRequestId)),
+    ).resolves.toMatchObject({
+      code: "rate_limited",
+      requestId: "req-header-429",
     });
 
     await expect(
@@ -63,6 +93,7 @@ describe("normalizeError", () => {
       code: "rate_limited",
       message: "Slow down.",
       status: 429,
+      requestId: "req-123",
     });
   });
 
@@ -82,5 +113,20 @@ describe("normalizeError", () => {
       retryAfterSeconds: 17,
       status: 429,
     });
+  });
+
+  it("formats mutation errors with detail and request id", () => {
+    expect(
+      formatMutationError(
+        {
+          code: "rate_limited",
+          message: "Try again in 17 seconds.",
+          requestId: "req-format",
+        },
+        "Prompt run failed.",
+      ),
+    ).toBe(
+      "Prompt run failed. Detail: Try again in 17 seconds. Request ID: req-format",
+    );
   });
 });

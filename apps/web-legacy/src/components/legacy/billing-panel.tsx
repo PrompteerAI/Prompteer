@@ -12,7 +12,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
-import { normalizeError } from "@/lib/errors";
+import { formatMutationError, normalizeError } from "@/lib/errors";
 import type { components } from "@prompteer/shared-types";
 
 type CheckoutSession = components["schemas"]["CheckoutSessionRead"];
@@ -67,9 +67,12 @@ export function LegacyBillingPanel({
     } catch (caughtError) {
       const normalized = await normalizeError(caughtError);
       setError(
-        normalized.status === 401
-          ? t("errors.signInBeforeCheckout")
-          : normalized.message,
+        formatMutationError(
+          normalized,
+          normalized.status === 401
+            ? t("errors.signInBeforeCheckout")
+            : normalized.message,
+        ),
       );
     } finally {
       setIsLoading(false);
@@ -98,7 +101,7 @@ export function LegacyBillingPanel({
       });
     } catch (caughtError) {
       const normalized = await normalizeError(caughtError);
-      setError(normalized.message);
+      setError(formatMutationError(normalized, normalized.message));
     } finally {
       setIsLoading(false);
     }

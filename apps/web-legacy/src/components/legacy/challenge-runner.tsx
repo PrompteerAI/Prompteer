@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
-import { normalizeError } from "@/lib/errors";
+import { formatMutationError, normalizeError } from "@/lib/errors";
 import {
   challengeReferencePreview,
   levelClass,
@@ -74,9 +74,9 @@ export function LegacyChallengeRunner({
     } catch (caughtError) {
       const normalized = await normalizeError(caughtError);
       if (normalized.status === 401) {
-        setError(t("errors.unauthorized"));
+        setError(formatMutationError(normalized, t("errors.unauthorized")));
       } else {
-        setError(normalized.message);
+        setError(formatMutationError(normalized, normalized.message));
       }
     } finally {
       setIsRunning(false);

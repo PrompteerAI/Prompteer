@@ -29,6 +29,7 @@ export async function normalizeError(error: unknown): Promise<NormalizedError> {
         `HTTP ${String(error.response.status)} request failed.`,
       retryAfterSeconds: retryAfterSeconds(error.response),
       status: error.response.status,
+      requestId: responseRequestId(error.response),
     };
   }
 
@@ -48,9 +49,27 @@ function normalizeProblemDetails(
     message: problem.detail,
     retryAfterSeconds: response ? retryAfterSeconds(response) : undefined,
     status: problem.status,
-    requestId: problem.request_id,
+    requestId:
+      problem.request_id ??
+      (response ? responseRequestId(response) : undefined),
     problem,
   };
+}
+
+export function formatMutationError(
+  normalized: NormalizedError,
+  fallback: string,
+): string {
+  const detail = normalized.message.trim();
+  const message = fallback.trim() || detail || "Something went wrong.";
+  const parts = [message];
+  if (detail && detail !== message) {
+    parts.push(`Detail: ${detail}`);
+  }
+  if (normalized.requestId) {
+    parts.push(`Request ID: ${normalized.requestId}`);
+  }
+  return parts.join(" ");
 }
 
 function retryAfterSeconds(response: Response): number | undefined {
@@ -70,6 +89,10 @@ function retryAfterSeconds(response: Response): number | undefined {
   }
   const deltaSeconds = Math.ceil((retryAt - Date.now()) / 1_000);
   return deltaSeconds > 0 ? deltaSeconds : undefined;
+}
+
+function responseRequestId(response: Response): string | undefined {
+  return response.headers.get("x-request-id")?.trim() || undefined;
 }
 
 async function problemDetailsFromResponse(

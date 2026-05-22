@@ -13,7 +13,7 @@ import { z } from "zod";
 import { Badge, Button, Card, useToast } from "@/components/ui";
 import { Link } from "@/i18n/navigation";
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
-import { normalizeError } from "@/lib/errors";
+import { formatMutationError, normalizeError } from "@/lib/errors";
 import type { components } from "@prompteer/shared-types";
 
 export type Challenge = components["schemas"]["ChallengeRead"];
@@ -97,14 +97,18 @@ export function CodingChallengeRunner({
               seconds: normalizedError.retryAfterSeconds,
             })
           : t("errors.rateLimited");
-        setError(message);
+        const formattedMessage = formatMutationError(normalizedError, message);
+        setError(formattedMessage);
         toast({
           title: t("errors.rateLimitedTitle"),
-          description: message,
+          description: formattedMessage,
           variant: "warning",
         });
       } else if (normalizedError.code === "quota_exceeded") {
-        const message = normalizedError.message || t("errors.quotaExceeded");
+        const message = formatMutationError(
+          normalizedError,
+          normalizedError.message || t("errors.quotaExceeded"),
+        );
         setError(message);
         toast({
           title: t("errors.quotaExceededTitle"),
@@ -112,9 +116,11 @@ export function CodingChallengeRunner({
           variant: "warning",
         });
       } else if (normalizedError.status === 401) {
-        setError(t("errors.unauthorized"));
+        setError(
+          formatMutationError(normalizedError, t("errors.unauthorized")),
+        );
       } else {
-        setError(t("errors.failed"));
+        setError(formatMutationError(normalizedError, t("errors.failed")));
       }
     }
   }

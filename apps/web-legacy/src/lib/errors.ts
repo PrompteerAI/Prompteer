@@ -15,13 +15,17 @@ export async function normalizeError(error: unknown): Promise<NormalizedError> {
       return {
         code: body.code,
         message: body.detail,
-        requestId: body.request_id ?? undefined,
+        requestId:
+          body.request_id ??
+          error.response.headers.get("x-request-id") ??
+          undefined,
         status: body.status,
       };
     }
     return {
       code: "api_error",
       message: error.response.statusText || "API request failed.",
+      requestId: error.response.headers.get("x-request-id") ?? undefined,
       status: error.response.status,
     };
   }
@@ -31,6 +35,22 @@ export async function normalizeError(error: unknown): Promise<NormalizedError> {
   }
 
   return { code: "unknown_error", message: "An unknown error occurred." };
+}
+
+export function formatMutationError(
+  normalized: NormalizedError,
+  fallback: string,
+): string {
+  const detail = normalized.message.trim();
+  const message = fallback.trim() || detail || "An unknown error occurred.";
+  const parts = [message];
+  if (detail && detail !== message) {
+    parts.push(`Detail: ${detail}`);
+  }
+  if (normalized.requestId) {
+    parts.push(`Request ID: ${normalized.requestId}`);
+  }
+  return parts.join(" ");
 }
 
 async function safeJson(response: Response): Promise<unknown> {
