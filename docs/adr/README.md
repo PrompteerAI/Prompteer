@@ -32,6 +32,7 @@ Prompteer uses ADRs to preserve the reasoning behind autonomous rebuild decision
 | Pre-release timestamp type migration for UTC persistence             | [0024 - Pre-release Timestamp Type Migration](0024-pre-release-timestamp-type-migration.md)       |
 | Compose API healthcheck exception for readiness dependency cycle     | [0025 - Compose Healthcheck Readiness Cycle](0025-compose-healthcheck-readiness-cycle.md)         |
 | Production-safe public env values for the published web image        | [0026 - Production Web Image Build Configuration](0026-production-web-image-build-config.md)      |
+| Node.js 24 runtime for Docker GitHub Actions                         | [0027 - Node 24 GitHub Actions Runtime](0027-node-24-github-actions.md)                           |
 
 ## Gitignore Note
 
