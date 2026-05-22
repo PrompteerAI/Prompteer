@@ -12,17 +12,10 @@ Prompteer is a clean monorepo rebuild of a prompt challenge and sharing prototyp
 
 ## Quick Start
 
-No external API keys are required; blank provider credentials automatically select local mocks.
+No external API keys are required. Blank provider credentials automatically use
+local mocks for login, LLM calls, payments, and email.
 
-Prerequisite for the containerized quick start:
-
-- Docker Engine with Docker Compose v2
-
-Docker is required for the local database, Redis broker, and nginx origin. The
-project does not provide a no-Docker fallback; install and start Docker before
-running the Compose-backed commands.
-
-Fresh clone demo:
+Prerequisite: Docker Engine with Docker Compose v2.
 
 ```sh
 git clone https://github.com/PrompteerAI/Prompteer.git
@@ -31,14 +24,11 @@ cp .env.example .env
 docker compose up -d
 ```
 
-Open `http://localhost`. The default Compose stack serves the app through nginx as one origin, with `/` routed to the web app and `/api/` routed to FastAPI. If `HTTP_PORT` is changed in `.env`, open `http://localhost:<HTTP_PORT>`.
+Open `http://localhost`. The root Compose stack serves the web app and API
+through nginx as one origin and seeds demo data on first boot. If `HTTP_PORT` is
+changed in `.env`, open `http://localhost:<HTTP_PORT>`.
 
-Provider-compatible mock endpoints such as `/v1/chat/completions`,
-`/v1/messages`, `/v1/checkout/sessions`, and `/v3/mail/send` are also exposed
-through the same local origin when dev routes and mock mode are enabled.
-
-For hot-reload workflows, leave Compose running and start `pnpm dev`; this is
-also verified in CI from a fresh checkout. See [Development](#development).
+For hot-reload workflows, see [Development](#development).
 
 ## Screenshots & Demo
 
@@ -120,7 +110,7 @@ packages/
 infra/
   nginx/        Single-origin reverse proxy
   postgres/     PostgreSQL initialization hooks
-  compose/      Compose overlays
+  compose/      Compose support docs
 docs/           Public architecture, ADR, runbook, integration, and screenshot docs
 scripts/        Root developer and verification entrypoints
 ```
