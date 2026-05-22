@@ -1,15 +1,12 @@
 """API v1 billing routes; no sibling billing API version exists yet."""
 
-import json
 from typing import Annotated, Any
 
-import structlog
 from fastapi import APIRouter, Depends, Header, HTTPException, Path, Request, Response, status
 from sqlmodel import Session
 
 from app.api.deps import get_current_principal
-from app.core.config import integration_modes, settings
-from app.core.feature_flags import dev_routes_enabled, feature_enabled, require_feature_enabled
+from app.core.feature_flags import require_feature_enabled
 from app.core.ratelimit import (
     GENERAL_RATE_LIMIT,
     PAYMENTS_RATE_LIMIT,
@@ -18,15 +15,7 @@ from app.core.ratelimit import (
 )
 from app.core.security import Principal
 from app.db.session import get_session
-from app.integrations.email import get_email_client
-from app.integrations.payments import get_payments_client
-from app.integrations.payments.mock import (
-    MockStripeClient,
-    MockStripeError,
-    complete_checkout_session_payload,
-)
-from app.integrations.payments.webhooks import StripeWebhookSignatureError, construct_stripe_event
-from app.models.domain import User
+from app.integrations.payments.webhooks import StripeWebhookSignatureError
 from app.schemas.billing import (
     BillingSubscriptionRead,
     CheckoutCreateRequest,
@@ -34,19 +23,21 @@ from app.schemas.billing import (
     StripeWebhookRead,
 )
 from app.services.billing import (
+    BillingSubscription,
+    CheckoutSessionInvalidError,
+    CheckoutSessionNotFoundError,
+    CheckoutSessionResult,
+    MockCheckoutUnavailableError,
     StripeWebhookResult,
-    apply_signed_stripe_webhook_payload,
-    apply_stripe_webhook_event,
-    get_recorded_checkout_session_payload,
-    record_checkout_session,
-    update_checkout_session_record,
+    complete_mock_checkout_for_user,
+    create_checkout_session_for_user,
+    get_billing_subscription,
+    process_signed_stripe_webhook_payload,
+    retrieve_checkout_session_for_user,
 )
-from app.services.llm_quota import normalized_email, resolve_user_for_principal
+from app.services.llm_quota import resolve_user_for_principal
 
 router = APIRouter(prefix="/billing", tags=["billing"])
-logger = structlog.get_logger(__name__)
-
-PRO_MONTHLY_PRICE_CENTS = 1200
 
 
 @router.get("/subscription")
@@ -60,7 +51,7 @@ async def read_subscription(
     del request, response
     require_feature_enabled("payments")
     user = resolve_user_for_principal(db_session, principal)
-    return billing_subscription_to_read(user)
+    return billing_subscription_to_read(get_billing_subscription(user))
 
 
 @router.post("/checkout")
@@ -75,16 +66,12 @@ async def create_checkout(
     del request, response
     require_feature_enabled("payments")
     user = resolve_user_for_principal(db_session, principal)
-    client = get_payments_client()
-    session = await client.create_checkout_session(checkout_payload(checkout_request, user=user))
-    record_checkout_session(
+    result = await create_checkout_session_for_user(
         db_session,
-        session,
         user=user,
-        provider=client.provider,
         plan=checkout_request.plan,
     )
-    return checkout_session_to_read(session, provider=client.provider)
+    return checkout_session_result_to_read(result)
 
 
 @router.get("/checkout/{session_id}")
@@ -99,16 +86,15 @@ async def retrieve_checkout(
     del request, response
     require_feature_enabled("payments")
     user = resolve_user_for_principal(db_session, principal)
-    client = get_payments_client()
-    if isinstance(client, MockStripeClient):
-        session = get_recorded_checkout_or_404(db_session, session_id)
-    else:
-        try:
-            session = await client.retrieve_checkout_session(session_id)
-        except MockStripeError as exc:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    require_checkout_owner(session, user)
-    return checkout_session_to_read(session, provider=client.provider)
+    try:
+        result = await retrieve_checkout_session_for_user(
+            db_session,
+            user=user,
+            session_id=session_id,
+        )
+    except CheckoutSessionNotFoundError as exc:
+        raise checkout_session_not_found(exc) from exc
+    return checkout_session_result_to_read(result)
 
 
 @router.post("/checkout/{session_id}/complete")
@@ -123,19 +109,17 @@ async def complete_mock_checkout(
     del request, response
     require_feature_enabled("payments")
     user = resolve_user_for_principal(db_session, principal)
-    if not dev_routes_enabled() or integration_modes()["stripe"] != "mock":
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     try:
-        session = get_recorded_checkout_or_404(db_session, session_id)
-        require_checkout_owner(session, user)
-        result = complete_checkout_session_payload(session)
-    except MockStripeError as exc:
+        result = await complete_mock_checkout_for_user(
+            db_session,
+            user=user,
+            session_id=session_id,
+        )
+    except (CheckoutSessionNotFoundError, MockCheckoutUnavailableError) as exc:
+        raise checkout_session_not_found(exc) from exc
+    except CheckoutSessionInvalidError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-    update_checkout_session_record(db_session, result["session"])
-    checkout_session = result["session"]
-    webhook_result = process_mock_checkout_webhook(db_session, result["event"])
-    await send_checkout_receipt_email(checkout_session, webhook_result=webhook_result)
-    return checkout_session_to_read(checkout_session, provider="mock")
+    return checkout_session_result_to_read(result)
 
 
 @router.post("/webhooks/stripe")
@@ -160,157 +144,23 @@ async def stripe_webhook(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Stripe webhook payload must be UTF-8 encoded.",
         ) from exc
-    event = construct_stripe_webhook_event(payload, stripe_signature)
-    result = apply_stripe_webhook_event(db_session, event)
-    checkout_session = checkout_session_from_stripe_event(event)
-    if checkout_session is not None:
-        await send_checkout_receipt_email(checkout_session, webhook_result=result)
+    try:
+        result = await process_signed_stripe_webhook_payload(
+            db_session,
+            payload,
+            stripe_signature,
+        )
+    except StripeWebhookSignatureError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return stripe_webhook_to_read(result)
 
 
-def process_mock_checkout_webhook(
-    db_session: Session,
-    event: dict[str, object],
-) -> StripeWebhookResult:
-    payload = stripe_event_payload(event)
-    signature = MockStripeClient().sign_webhook_payload(payload)
-    return handle_stripe_webhook_payload(db_session, payload, signature)
+def checkout_session_not_found(exc: Exception) -> HTTPException:
+    return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
 
 
-def handle_stripe_webhook_payload(
-    db_session: Session,
-    payload: str,
-    stripe_signature: str,
-) -> StripeWebhookResult:
-    try:
-        return apply_signed_stripe_webhook_payload(db_session, payload, stripe_signature)
-    except StripeWebhookSignatureError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-
-
-def construct_stripe_webhook_event(payload: str, stripe_signature: str) -> dict[str, Any]:
-    try:
-        return construct_stripe_event(payload, stripe_signature)
-    except StripeWebhookSignatureError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-
-
-def checkout_session_from_stripe_event(event: dict[str, Any]) -> dict[str, Any] | None:
-    data = event.get("data")
-    checkout_session = data.get("object") if isinstance(data, dict) else None
-    return checkout_session if isinstance(checkout_session, dict) else None
-
-
-def stripe_event_payload(event: dict[str, object]) -> str:
-    return json.dumps(event, separators=(",", ":"), sort_keys=True)
-
-
-def get_recorded_checkout_or_404(db_session: Session, session_id: str) -> dict[str, Any]:
-    session = get_recorded_checkout_session_payload(db_session, session_id)
-    if session is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="No such checkout.session."
-        )
-    return session
-
-
-async def send_checkout_receipt_email(
-    checkout_session: dict[str, Any],
-    *,
-    webhook_result: StripeWebhookResult,
-) -> None:
-    if (
-        not webhook_result.processed
-        or not webhook_result.customer_email
-        or not feature_enabled("email")
-    ):
-        return
-    try:
-        await get_email_client().send(
-            checkout_receipt_payload(
-                checkout_session,
-                customer_email=webhook_result.customer_email,
-                event_id=webhook_result.event_id,
-                event_type=webhook_result.event_type,
-            )
-        )
-    except Exception as exc:
-        logger.warning(
-            "checkout_receipt_email_failed",
-            event_id=webhook_result.event_id,
-            checkout_session_id=checkout_session.get("id"),
-            exc_info=exc,
-        )
-
-
-def checkout_receipt_payload(
-    checkout_session: dict[str, Any],
-    *,
-    customer_email: str,
-    event_id: str,
-    event_type: str,
-) -> dict[str, Any]:
-    amount = checkout_session.get("amount_total")
-    currency = checkout_session.get("currency")
-    amount_text = format_checkout_amount(amount, currency)
-    session_id = str(checkout_session.get("id", "unknown"))
-    return {
-        "personalizations": [{"to": [{"email": customer_email}]}],
-        "from": {"email": settings.sendgrid_from_email},
-        "subject": "Prompteer Pro receipt",
-        "content": [
-            {
-                "type": "text/plain",
-                "value": (
-                    "Your Prompteer Pro checkout is complete.\n\n"
-                    f"Checkout session: {session_id}\n"
-                    f"Stripe event: {event_id}\n"
-                    f"Event type: {event_type}\n"
-                    f"Amount: {amount_text}\n"
-                    f"Status: {checkout_session.get('status')}\n"
-                    f"Payment status: {checkout_session.get('payment_status')}\n"
-                ),
-            }
-        ],
-    }
-
-
-def format_checkout_amount(amount: Any, currency: Any) -> str:
-    if isinstance(amount, int) and isinstance(currency, str) and currency:
-        return f"{amount / 100:.2f} {currency.upper()}"
-    return "unknown"
-
-
-def checkout_payload(request: CheckoutCreateRequest, *, user: User) -> dict[str, Any]:
-    return {
-        "mode": "subscription",
-        "success_url": f"{settings.app_url}/en/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
-        "cancel_url": f"{settings.app_url}/en/billing",
-        "customer_email": user.email,
-        "client_reference_id": user.id,
-        "metadata": {"plan": request.plan, "user_id": user.id},
-        "line_items": [
-            {
-                "quantity": 1,
-                "price_data": {
-                    "currency": "usd",
-                    "unit_amount": PRO_MONTHLY_PRICE_CENTS,
-                    "recurring": {"interval": "month"},
-                    "product_data": {"name": "Prompteer Pro"},
-                },
-            }
-        ],
-    }
-
-
-def require_checkout_owner(session: dict[str, Any], user: User) -> None:
-    customer_email = session.get("customer_email")
-    if isinstance(customer_email, str) and normalized_email(customer_email) == user.email:
-        return
-    client_reference_id = session.get("client_reference_id")
-    if isinstance(client_reference_id, str) and client_reference_id == user.id:
-        return
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such checkout.session.")
+def checkout_session_result_to_read(result: CheckoutSessionResult) -> CheckoutSessionRead:
+    return checkout_session_to_read(result.session, provider=result.provider)
 
 
 def checkout_session_to_read(session: dict[str, Any], *, provider: str) -> CheckoutSessionRead:
@@ -329,12 +179,12 @@ def checkout_session_to_read(session: dict[str, Any], *, provider: str) -> Check
     )
 
 
-def billing_subscription_to_read(user: User) -> BillingSubscriptionRead:
+def billing_subscription_to_read(subscription: BillingSubscription) -> BillingSubscriptionRead:
     return BillingSubscriptionRead(
-        plan=user.plan,
-        status="active" if user.plan == "paid" else "inactive",
-        customer_email=user.email,
-        provider="stripe" if integration_modes()["stripe"] == "real" else "mock",
+        plan=subscription.plan,
+        status=subscription.status,
+        customer_email=subscription.customer_email,
+        provider=subscription.provider,
     )
 
 
