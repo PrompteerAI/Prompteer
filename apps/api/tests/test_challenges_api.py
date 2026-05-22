@@ -14,7 +14,6 @@ from starlette.requests import Request
 # Import model modules so SQLModel metadata is populated for test databases.
 import app.models  # noqa: F401  # Register SQLModel tables before creating test metadata.
 from app.api.deps import get_current_principal
-from app.api.v1 import challenges as challenge_routes
 from app.core.config import settings
 from app.core.security import Principal
 from app.db.seed import seed
@@ -22,6 +21,7 @@ from app.db.session import get_session
 from app.integrations.llm.base import LLMProviderError
 from app.main import create_app
 from app.models.domain import Challenge, LLMUsageDay, Share, User
+from app.services import challenges as challenge_service
 from app.services.llm_quota import current_usage_date
 from tests.support import reset_limiter_storage
 
@@ -183,7 +183,7 @@ def test_challenge_run_rolls_back_usage_when_share_creation_fails(
     def fail_share_creation(*args: object, **kwargs: object) -> Share:
         raise RuntimeError("share storage unavailable")
 
-    monkeypatch.setattr(challenge_routes, "create_prompt_share", fail_share_creation)
+    monkeypatch.setattr(challenge_service, "create_prompt_share", fail_share_creation)
 
     with pytest.raises(RuntimeError, match="share storage unavailable"):
         client.post(
@@ -255,7 +255,7 @@ def test_mock_challenge_run_returns_within_acceptance_budget() -> None:
 def test_challenge_run_uses_configured_openai_model(monkeypatch: pytest.MonkeyPatch) -> None:
     client, _engine, challenge_id = create_seeded_challenge_client()
     fake_client = CapturingOpenAIClient()
-    monkeypatch.setattr(challenge_routes, "get_llm_client", lambda: fake_client)
+    monkeypatch.setattr(challenge_service, "get_llm_client", lambda: fake_client)
     monkeypatch.setattr(settings, "openai_chat_model", "gpt-4.1-mini")
 
     response = client.post(
@@ -285,7 +285,7 @@ def test_challenge_run_supports_real_anthropic_provider(
 ) -> None:
     client, _engine, challenge_id = create_seeded_challenge_client()
     fake_client = CapturingAnthropicClient()
-    monkeypatch.setattr(challenge_routes, "get_llm_client", lambda: fake_client)
+    monkeypatch.setattr(challenge_service, "get_llm_client", lambda: fake_client)
     monkeypatch.setattr(settings, "anthropic_model", "claude-sonnet-4-20250514")
 
     response = client.post(
@@ -317,7 +317,7 @@ def test_challenge_run_returns_problem_details_for_provider_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     client, _engine, challenge_id = create_seeded_challenge_client()
-    monkeypatch.setattr(challenge_routes, "get_llm_client", lambda: FailingOpenAIClient())
+    monkeypatch.setattr(challenge_service, "get_llm_client", lambda: FailingOpenAIClient())
 
     response = client.post(
         f"/api/v1/challenges/{challenge_id}/run",
