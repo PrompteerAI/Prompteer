@@ -30,6 +30,7 @@ Prompteer uses ADRs to preserve the reasoning behind autonomous rebuild decision
 | Pre-release destructive cleanup for unique prompt shares             | [0022 - Share Uniqueness Migration](0022-share-uniqueness-migration.md)                           |
 | Production fail-fast runtime configuration guardrails                | [0023 - Production Runtime Configuration Guardrails](0023-production-runtime-configuration.md)    |
 | Pre-release timestamp type migration for UTC persistence             | [0024 - Pre-release Timestamp Type Migration](0024-pre-release-timestamp-type-migration.md)       |
+| Compose API healthcheck exception for readiness dependency cycle     | [0025 - Compose Healthcheck Readiness Cycle](0025-compose-healthcheck-readiness-cycle.md)         |
 
 ## Gitignore Note
 

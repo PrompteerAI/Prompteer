@@ -90,7 +90,8 @@ full stack is up. This catches dependency loss, unreachable local mocks,
 unavailable real providers, missing Auth.js JWKS, or migration drift instead of
 only proving the process is still alive. CI also runs `make compose-health`, which parses
 `docker compose ps --format json` and requires every expected service to be
-`running` and `healthy`.
+`running` and `healthy`. The Compose healthcheck exception is recorded in
+[ADR 0025](adr/0025-compose-healthcheck-readiness-cycle.md).
 
 ## API types
 
