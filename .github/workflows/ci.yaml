@@ -250,7 +250,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-uv-
       - run: cp .env.example .env
-      - run: scripts/compose-up.sh postgres redis
+      - run: docker compose up -d
+      - run: make compose-health
+      - name: Verify containerized fresh clone
+        run: |
+          curl --fail --silent --show-error http://localhost/api/v1/health/live
+          curl --fail --silent --show-error http://localhost/api/v1/health/ready
+          curl --fail --location --silent --show-error http://localhost/
       - name: Start pnpm dev from fresh checkout
         run: |
           set -euo pipefail

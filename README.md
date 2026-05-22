@@ -37,7 +37,8 @@ Provider-compatible mock endpoints such as `/v1/chat/completions`,
 `/v1/messages`, `/v1/checkout/sessions`, and `/v3/mail/send` are also exposed
 through the same local origin when dev routes and mock mode are enabled.
 
-For hot-reload workflows, see [Development](#development).
+For hot-reload workflows, leave Compose running and start `pnpm dev`; this is
+also verified in CI from a fresh checkout. See [Development](#development).
 
 ## Screenshots & Demo
 
@@ -170,7 +171,7 @@ Additional prerequisites for hot-reload development:
 - Corepack enabled so `packageManager: pnpm@10.12.1` is honored: `corepack enable`
 - `uv` for Python dependency management
 
-`./scripts/compose-up.sh --build` is an optional helper when you want a scripted rebuild or only want to start selected services. The explicit fresh-clone contract remains `cp .env.example .env` followed by `docker compose up -d`.
+`./scripts/compose-up.sh --build` is an optional helper when you want a scripted rebuild or only want to start selected services. The containerized fresh-clone demo remains `cp .env.example .env` followed by `docker compose up -d`; the hot-reload development contract is the same fresh clone with `pnpm dev` started while Compose keeps PostgreSQL, Redis, and nginx available.
 
 Install dependencies:
 
