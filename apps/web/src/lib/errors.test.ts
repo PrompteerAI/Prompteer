@@ -65,4 +65,22 @@ describe("normalizeError", () => {
       status: 429,
     });
   });
+
+  it("parses Retry-After seconds from Problem Details responses", async () => {
+    const response = new Response(JSON.stringify(problem), {
+      status: 429,
+      headers: {
+        "content-type": "application/problem+json",
+        "retry-after": "17",
+      },
+    });
+
+    await expect(
+      normalizeError(new ApiResponseError(response)),
+    ).resolves.toMatchObject({
+      code: "rate_limited",
+      retryAfterSeconds: 17,
+      status: 429,
+    });
+  });
 });

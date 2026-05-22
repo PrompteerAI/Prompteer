@@ -10,7 +10,7 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-import { Badge, Button, Card } from "@/components/ui";
+import { Badge, Button, Card, useToast } from "@/components/ui";
 import { Link } from "@/i18n/navigation";
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
 import { normalizeError } from "@/lib/errors";
@@ -35,6 +35,7 @@ export function CodingChallengeRunner({
   llmEnabled,
 }: CodingChallengeRunnerProps): React.ReactElement {
   const t = useTranslations("coding.runner");
+  const { toast } = useToast();
   const promptFormSchema = useMemo(
     () =>
       z.object({
@@ -91,9 +92,25 @@ export function CodingChallengeRunner({
     } catch (caughtError) {
       const normalizedError = await normalizeError(caughtError);
       if (normalizedError.code === "rate_limited") {
-        setError(t("errors.rateLimited"));
+        const message = normalizedError.retryAfterSeconds
+          ? t("errors.rateLimitedWithRetry", {
+              seconds: normalizedError.retryAfterSeconds,
+            })
+          : t("errors.rateLimited");
+        setError(message);
+        toast({
+          title: t("errors.rateLimitedTitle"),
+          description: message,
+          variant: "warning",
+        });
       } else if (normalizedError.code === "quota_exceeded") {
-        setError(normalizedError.message);
+        const message = normalizedError.message || t("errors.quotaExceeded");
+        setError(message);
+        toast({
+          title: t("errors.quotaExceededTitle"),
+          description: message,
+          variant: "warning",
+        });
       } else if (normalizedError.status === 401) {
         setError(t("errors.unauthorized"));
       } else {

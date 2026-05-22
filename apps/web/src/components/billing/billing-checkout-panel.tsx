@@ -13,7 +13,7 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
-import { Badge, Button, Card } from "@/components/ui";
+import { Badge, Button, Card, useToast } from "@/components/ui";
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
 import { normalizeError } from "@/lib/errors";
 import type { components } from "@prompteer/shared-types";
@@ -36,6 +36,7 @@ export function BillingCheckoutPanel({
 }: BillingCheckoutPanelProps): React.ReactElement {
   const locale = useLocale();
   const t = useTranslations("billing");
+  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [session, setSession] = useState<CheckoutSession | null>(null);
   const [step, setStep] = useState<CheckoutStep>("idle");
@@ -130,7 +131,17 @@ export function BillingCheckoutPanel({
     } catch (caughtError) {
       const normalizedError = await normalizeError(caughtError);
       if (normalizedError.code === "rate_limited") {
-        setError(t("errors.rateLimited"));
+        const message = normalizedError.retryAfterSeconds
+          ? t("errors.rateLimitedWithRetry", {
+              seconds: normalizedError.retryAfterSeconds,
+            })
+          : t("errors.rateLimited");
+        setError(message);
+        toast({
+          title: t("errors.rateLimitedTitle"),
+          description: message,
+          variant: "warning",
+        });
       } else if (normalizedError.status === 401) {
         setError(t("errors.startUnauthorized"));
       } else {
@@ -161,7 +172,17 @@ export function BillingCheckoutPanel({
     } catch (caughtError) {
       const normalizedError = await normalizeError(caughtError);
       if (normalizedError.code === "rate_limited") {
-        setError(t("errors.rateLimited"));
+        const message = normalizedError.retryAfterSeconds
+          ? t("errors.rateLimitedWithRetry", {
+              seconds: normalizedError.retryAfterSeconds,
+            })
+          : t("errors.rateLimited");
+        setError(message);
+        toast({
+          title: t("errors.rateLimitedTitle"),
+          description: message,
+          variant: "warning",
+        });
       } else if (normalizedError.status === 401) {
         setError(t("errors.completeUnauthorized"));
       } else {

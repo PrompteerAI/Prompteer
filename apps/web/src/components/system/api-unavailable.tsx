@@ -1,6 +1,7 @@
 // Service-unavailable panel shown when backend data cannot be loaded.
 import { AlertTriangle, RefreshCw } from "lucide-react";
 
+import { getServerEnv } from "@/lib/env";
 import type { NormalizedError } from "@/lib/errors";
 
 type ApiUnavailableProps = {
@@ -18,7 +19,7 @@ export function ApiUnavailable({
   requestIdLabel,
   error,
 }: ApiUnavailableProps): React.ReactElement {
-  const showDetail = process.env.NODE_ENV !== "production";
+  const showDetail = getServerEnv().ENV !== "production";
 
   return (
     <section className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-950">

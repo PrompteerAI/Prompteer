@@ -112,7 +112,9 @@
     },
     "errors": {
       "disabled": "Payments are disabled for this environment.",
+      "rateLimitedTitle": "Checkout rate limit reached",
       "rateLimited": "Checkout is temporarily rate limited. Wait a moment, then try again.",
+      "rateLimitedWithRetry": "Checkout is temporarily rate limited. Try again in {seconds, plural, one {# second} other {# seconds}}.",
       "startUnauthorized": "Sign in before starting checkout.",
       "completeUnauthorized": "Sign in before completing checkout.",
       "startFailed": "Checkout could not be started. Check that the API server is running.",
@@ -173,7 +175,11 @@
         "disabled": "Prompt runs are disabled for this environment.",
         "noChallenge": "Choose a challenge before running a prompt.",
         "shortPrompt": "Write a prompt with at least 10 characters.",
+        "rateLimitedTitle": "Prompt rate limit reached",
         "rateLimited": "Prompt runs are temporarily rate limited. Wait a moment, then try again.",
+        "rateLimitedWithRetry": "Prompt runs are temporarily rate limited. Try again in {seconds, plural, one {# second} other {# seconds}}.",
+        "quotaExceededTitle": "Prompt quota reached",
+        "quotaExceeded": "This account has reached its prompt run quota.",
         "unauthorized": "Sign in before running a prompt.",
         "failed": "The prompt run failed. Check that the API server and seed data are running."
       }

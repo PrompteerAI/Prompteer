@@ -9,3 +9,4 @@ export {
   CardHeader,
   CardTitle,
 } from "./card";
+export { ToastProvider, useToast } from "./toast";
