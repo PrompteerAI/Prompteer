@@ -24,6 +24,7 @@ out/
 next-env.d.ts
 *.tsbuildinfo
 apps/web/src/i18n/locales.generated.ts
+apps/web-legacy/src/i18n/locales.generated.ts
 
 # Turborepo
 .turbo/

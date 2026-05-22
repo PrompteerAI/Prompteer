@@ -15,5 +15,7 @@ if [[ -z "${GOOGLE_CLIENT_ID:-}" || -z "${GOOGLE_CLIENT_SECRET:-}" ]]; then
   printf 'Mock Google OAuth is ON\n'
 fi
 
+pnpm --filter @prompteer/web run locales
+
 cd apps/web
 exec pnpm exec next dev --port "$WEB_PORT"

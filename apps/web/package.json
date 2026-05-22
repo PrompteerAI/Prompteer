@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "locales": "node ../../scripts/generate-web-locales.mjs",
-    "dev": "pnpm run locales && ../../scripts/web-dev.sh",
+    "dev": "../../scripts/web-dev.sh",
     "build": "pnpm run locales && ../../scripts/web-build.sh",
     "lint": "pnpm run locales && eslint .",
     "typecheck": "pnpm run locales && tsc --noEmit",

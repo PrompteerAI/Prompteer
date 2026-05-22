@@ -14,5 +14,7 @@ export WEB_LEGACY_PORT
 
 printf 'Prompteer legacy web: http://localhost:%s\n' "$WEB_LEGACY_PORT"
 
+pnpm --filter @prompteer/web-legacy run locales
+
 cd apps/web-legacy
 exec pnpm exec next dev --port "$WEB_LEGACY_PORT"
