@@ -1,4 +1,4 @@
-FROM node:22-alpine@sha256:968df39aedcea65eeb078fb336ed7191baf48f972b4479711397108be0966920 AS deps
+FROM node:26-alpine@sha256:7c6af15abe4e3de859690e7db171d0d711bf37d27528eddfe625b2fe89e097f8 AS deps
 WORKDIR /app
 RUN corepack enable
 ENV HUSKY=0
@@ -36,7 +36,7 @@ RUN export NODE_ENV=production \
     pnpm --filter @prompteer/web locales && \
     pnpm --filter @prompteer/web exec next build
 
-FROM node:22-alpine@sha256:968df39aedcea65eeb078fb336ed7191baf48f972b4479711397108be0966920 AS runtime
+FROM node:26-alpine@sha256:7c6af15abe4e3de859690e7db171d0d711bf37d27528eddfe625b2fe89e097f8 AS runtime
 WORKDIR /app
 ARG APP_VERSION=0.1.0
 LABEL org.opencontainers.image.source="https://github.com/PrompteerAI/Prompteer" \
