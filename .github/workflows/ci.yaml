@@ -212,6 +212,7 @@ jobs:
         with:
           name: integration-artifacts
           if-no-files-found: ignore
+          include-hidden-files: true
           path: |
             .verify/compose-ps.txt
             .verify/compose.log
@@ -305,6 +306,7 @@ jobs:
         with:
           name: dev-contract-artifacts
           if-no-files-found: ignore
+          include-hidden-files: true
           path: |
             .verify/pnpm-dev.log
             .verify/pnpm-dev-legacy.log

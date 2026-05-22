@@ -70,6 +70,7 @@ jobs:
         with:
           name: build-verification-artifacts
           if-no-files-found: ignore
+          include-hidden-files: true
           path: |
             .verify/
             apps/web/playwright-report/

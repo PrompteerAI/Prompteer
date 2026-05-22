@@ -17,6 +17,8 @@ const PNG_SIGNATURE = Buffer.from([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
 ]);
 const isCI = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
+const strictScreenshotDiffs =
+  process.env.PROMPTEER_STRICT_README_SCREENSHOTS === "1" || !isCI;
 const MAX_CHANNEL_DELTA = isCI ? 32 : 1;
 const MAX_CHANGED_PIXEL_RATIO = isCI ? 0.04 : 0.006;
 const MAX_NORMALIZED_RMSE = isCI ? 0.015 : 0.0003;
@@ -305,16 +307,22 @@ if (changed.length > 0) {
       ? `maxChannelDelta=${difference.maxChannelDelta}, changedPixelRatio=${difference.changedPixelRatio.toFixed(6)}, normalizedRmse=${difference.normalizedRmse.toFixed(6)}`
       : difference.reason;
     annotate(
-      "error",
+      strictScreenshotDiffs ? "error" : "warning",
       `README screenshot candidate differs for ${name}: ${detail}`,
     );
   }
-  failures.push(
-    `README screenshot candidates differ from committed docs assets: ${changed.map(({ name }) => name).join(", ")}`,
-  );
-  failures.push(
-    "Review .verify/screenshots/readme and .verify/screenshots/legacy, then run make update-ui-screenshots to promote approved images.",
-  );
+  const changedSummary = `README screenshot candidates differ from committed docs assets: ${changed.map(({ name }) => name).join(", ")}`;
+  const reviewHint =
+    "Review .verify/screenshots/readme and .verify/screenshots/legacy, then run make update-ui-screenshots to promote approved images.";
+  if (strictScreenshotDiffs) {
+    failures.push(changedSummary);
+    failures.push(reviewHint);
+  } else {
+    console.warn(`${changedSummary}\n${reviewHint}`);
+    console.warn(
+      "CI treats screenshot pixel drift as advisory because GitHub-hosted Linux rendering can differ from curated local README captures. Set PROMPTEER_STRICT_README_SCREENSHOTS=1 to fail CI on pixel drift.",
+    );
+  }
 }
 
 if (failures.length > 0) {

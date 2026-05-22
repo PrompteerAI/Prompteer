@@ -58,6 +58,7 @@ jobs:
         with:
           name: e2e-artifacts
           if-no-files-found: ignore
+          include-hidden-files: true
           path: |
             .verify/compose-ps.txt
             .verify/compose.log
