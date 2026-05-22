@@ -1,7 +1,7 @@
 """Typed application settings loaded from environment variables and .env files."""
 
 from functools import lru_cache
-from typing import Literal, Self, TypedDict
+from typing import Any, Literal, Self, TypedDict
 from urllib.parse import unquote, urlsplit
 
 from pydantic import Field, model_validator
@@ -16,6 +16,11 @@ DEV_DATABASE_URLS = frozenset(
         "postgresql+psycopg://prompteer:prompteer@postgres:5432/prompteer",
     },
 )
+DEV_ONLY_BOOLEAN_FIELDS = {
+    "AUTO_SEED_ON_STARTUP": "auto_seed_on_startup",
+    "AUTH_ALLOW_SEED_LOGIN": "auth_allow_seed_login",
+    "ENABLE_DEV_ROUTES": "enable_dev_routes",
+}
 
 
 class IntegrationModes(TypedDict):
@@ -86,11 +91,11 @@ class Settings(BaseSettings):
     email_rate_limit: str = Field(default="5/minute;20/day", alias="EMAIL_RATE_LIMIT")
     llm_free_daily_token_cap: int = Field(default=50_000, alias="LLM_FREE_DAILY_TOKEN_CAP")
     llm_paid_daily_token_cap: int = Field(default=500_000, alias="LLM_PAID_DAILY_TOKEN_CAP")
-    auto_seed_on_startup: bool = Field(default=False, alias="AUTO_SEED_ON_STARTUP")
+    auto_seed_on_startup: bool = Field(default=True, alias="AUTO_SEED_ON_STARTUP")
     dev_bootstrap_retries: int = Field(default=30, alias="DEV_BOOTSTRAP_RETRIES")
     dev_bootstrap_retry_seconds: float = Field(default=1.0, alias="DEV_BOOTSTRAP_RETRY_SECONDS")
-    auth_allow_seed_login: bool = Field(default=False, alias="AUTH_ALLOW_SEED_LOGIN")
-    enable_dev_routes: bool = Field(default=False, alias="ENABLE_DEV_ROUTES")
+    auth_allow_seed_login: bool = Field(default=True, alias="AUTH_ALLOW_SEED_LOGIN")
+    enable_dev_routes: bool = Field(default=True, alias="ENABLE_DEV_ROUTES")
     auth_jwks_url: str = Field(
         default="http://localhost:3000/api/auth/jwks",
         alias="AUTH_JWKS_URL",
@@ -135,6 +140,21 @@ class Settings(BaseSettings):
     feature_llm_enabled: bool = Field(default=True, alias="FEATURE_LLM_ENABLED")
     feature_payments_enabled: bool = Field(default=True, alias="FEATURE_PAYMENTS_ENABLED")
     feature_email_enabled: bool = Field(default=True, alias="FEATURE_EMAIL_ENABLED")
+
+    @model_validator(mode="before")
+    @classmethod
+    def apply_environment_defaults(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+
+        values: dict[str, Any] = dict(data)
+        raw_env = values.get("ENV", values.get("env", "development"))
+        normalized_env = str(raw_env or "development").strip().lower()
+        default_dev_only_value = normalized_env != "production"
+        for alias, field_name in DEV_ONLY_BOOLEAN_FIELDS.items():
+            if alias not in values and field_name not in values:
+                values[alias] = default_dev_only_value
+        return values
 
     @property
     def is_production(self) -> bool:

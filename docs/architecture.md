@@ -64,6 +64,12 @@ FastAPI caches the Auth.js JWKS for five minutes to avoid a web-app round trip o
 
 When Google credentials are blank, Auth.js uses the local mock OIDC provider. In hot-reload dev the mock issuer and endpoints are derived from `API_PORT`. In Compose the issuer is the public nginx origin `http://localhost`, while discovery publishes container-internal token, userinfo, and JWKS endpoints so server-to-server Auth.js calls do not leave the Docker network.
 
+For local automation, `/dev/login-as/<email>` is implemented in the Next.js
+Auth.js app rather than FastAPI because issuing the encrypted session cookie is
+an Auth.js concern. The route is gated by `AUTH_ALLOW_SEED_LOGIN` and
+`ENABLE_DEV_ROUTES`, defaults on in development, defaults off in production, and
+only accepts seeded demo accounts.
+
 ## Error model
 
 The API returns RFC 9457 Problem Details for all errors. Domain failures use explicit stable codes such as `quota_exceeded` and `feature_disabled`; generic FastAPI HTTP errors use status-specific codes for common cases such as `unauthorized`, `not_found`, and `bad_request` before falling back to `http_error`. Frontend code normalizes API, network, and parse errors through one typed helper.

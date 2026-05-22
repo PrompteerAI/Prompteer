@@ -62,6 +62,20 @@ def test_database_engine_kwargs_reflect_pool_settings(monkeypatch: pytest.Monkey
     }
 
 
+def test_development_settings_default_dev_only_flags_on(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("AUTH_ALLOW_SEED_LOGIN", raising=False)
+    monkeypatch.delenv("ENABLE_DEV_ROUTES", raising=False)
+    monkeypatch.delenv("AUTO_SEED_ON_STARTUP", raising=False)
+
+    config = Settings(_env_file=None, ENV="development")
+
+    assert config.auth_allow_seed_login is True
+    assert config.enable_dev_routes is True
+    assert config.auto_seed_on_startup is True
+
+
 def test_production_settings_accept_real_secrets() -> None:
     config = valid_production_settings()
 
