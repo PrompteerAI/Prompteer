@@ -13,6 +13,7 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from fastapi.testclient import TestClient
 from httpx import Response
 
+from app import main as app_main
 from app.core.config import settings
 from app.integrations.google_oauth import get_google_oauth_client
 from app.integrations.google_oauth import mock as google_mock
@@ -83,6 +84,9 @@ def test_mock_google_private_key_is_initialized_on_startup(
 ) -> None:
     generated = False
 
+    async def skip_development_bootstrap() -> None:
+        return None
+
     def fake_load_or_create_private_key(
         path: Path = google_mock.MOCK_GOOGLE_PRIVATE_KEY_PATH,
     ) -> RSAPrivateKey:
@@ -92,6 +96,7 @@ def test_mock_google_private_key_is_initialized_on_startup(
 
     google_mock.dev_private_key.cache_clear()
     monkeypatch.setattr(google_mock, "load_or_create_private_key", fake_load_or_create_private_key)
+    monkeypatch.setattr(app_main, "bootstrap_development_state", skip_development_bootstrap)
 
     try:
         assert not generated
