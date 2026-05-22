@@ -7,11 +7,14 @@ from dataclasses import dataclass
 from typing import Any
 
 import structlog
+from fastapi import status
 from sqlmodel import Session
 
 from app.core.config import integration_modes, settings
+from app.core.errors import ProblemException
 from app.core.feature_flags import dev_routes_enabled, feature_enabled
 from app.integrations.email import get_email_client
+from app.integrations.payments.base import PaymentsProviderError
 from app.integrations.payments.webhooks import construct_stripe_event
 from app.models.domain import StripeCheckoutSession, User
 from app.repositories import billing as billing_repository
@@ -88,7 +91,10 @@ async def create_checkout_session_for_user(
     from app.integrations.payments import get_payments_client
 
     client = get_payments_client()
-    checkout_session = await client.create_checkout_session(checkout_payload(plan, user=user))
+    try:
+        checkout_session = await client.create_checkout_session(checkout_payload(plan, user=user))
+    except PaymentsProviderError as exc:
+        raise payments_provider_problem(exc) from exc
     record_checkout_session(
         db_session,
         checkout_session,
@@ -111,7 +117,10 @@ async def retrieve_checkout_session_for_user(
     if client.provider == "mock":
         checkout_session = require_recorded_checkout_session(db_session, session_id)
     else:
-        checkout_session = await client.retrieve_checkout_session(session_id)
+        try:
+            checkout_session = await client.retrieve_checkout_session(session_id)
+        except PaymentsProviderError as exc:
+            raise payments_provider_problem(exc) from exc
     require_checkout_owner(checkout_session, user)
     return CheckoutSessionResult(session=checkout_session, provider=client.provider)
 
@@ -447,6 +456,15 @@ def get_recorded_checkout_session_payload(
     session_id: str,
 ) -> dict[str, Any] | None:
     return billing_repository.get_recorded_checkout_session_payload(db_session, session_id)
+
+
+def payments_provider_problem(exc: PaymentsProviderError) -> ProblemException:
+    return ProblemException(
+        status_code=status.HTTP_502_BAD_GATEWAY,
+        title="Payments Provider Error",
+        detail=exc.detail,
+        code="payments_provider_error",
+    )
 
 
 def update_checkout_session_record(

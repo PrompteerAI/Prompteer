@@ -17,6 +17,7 @@ import app.models  # noqa: F401  # Register SQLModel tables before creating test
 from app.core.config import settings
 from app.db.session import get_session
 from app.integrations.payments import get_payments_client
+from app.integrations.payments.base import PaymentsProviderError
 from app.integrations.payments.mock import (
     STORE,
     MockStripeClient,
@@ -298,3 +299,58 @@ async def test_stripe_real_client_posts_checkout_form_payload() -> None:
     assert form["customer_email"] == ["paid@prompteer.dev"]
     assert form["metadata[user_id]"] == ["00000000-0000-4000-8000-000000000002"]
     assert form["line_items[0][price_data][unit_amount]"] == ["1200"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("status_code", "message"),
+    [
+        (402, "Your card was declined."),
+        (500, "An internal server error occurred."),
+    ],
+)
+async def test_stripe_real_client_wraps_checkout_http_errors(
+    status_code: int,
+    message: str,
+) -> None:
+    with respx.mock:
+        route = respx.post("https://stripe.example/v1/checkout/sessions").mock(
+            return_value=httpx.Response(
+                status_code,
+                json={
+                    "error": {
+                        "type": "api_error",
+                        "code": "provider_error",
+                        "message": message,
+                    }
+                },
+            )
+        )
+        client = StripeClient(api_key="sk_test", base_url="https://stripe.example")
+
+        with pytest.raises(PaymentsProviderError) as exc_info:
+            await client.create_checkout_session(CHECKOUT_PAYLOAD)
+
+    assert route.called
+    error = exc_info.value
+    assert error.provider == "stripe"
+    assert error.status_code == status_code
+    assert error.detail == f"stripe provider returned HTTP {status_code}. {message}"
+
+
+@pytest.mark.asyncio
+async def test_stripe_real_client_wraps_checkout_transport_errors() -> None:
+    with respx.mock:
+        route = respx.post("https://stripe.example/v1/checkout/sessions").mock(
+            side_effect=httpx.ConnectError("network down")
+        )
+        client = StripeClient(api_key="sk_test", base_url="https://stripe.example")
+
+        with pytest.raises(PaymentsProviderError) as exc_info:
+            await client.create_checkout_session(CHECKOUT_PAYLOAD)
+
+    assert route.called
+    error = exc_info.value
+    assert error.provider == "stripe"
+    assert error.status_code is None
+    assert error.detail == "stripe provider is unavailable."

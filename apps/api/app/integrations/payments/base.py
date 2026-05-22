@@ -1,6 +1,24 @@
 """Protocol for checkout and webhook-capable payment clients."""
 
+from __future__ import annotations
+
 from typing import Any, Protocol
+
+
+class PaymentsProviderError(Exception):
+    """Safe, user-facing wrapper for live payments provider failures."""
+
+    def __init__(
+        self,
+        *,
+        provider: str,
+        detail: str,
+        status_code: int | None = None,
+    ) -> None:
+        super().__init__(detail)
+        self.provider = provider
+        self.detail = detail
+        self.status_code = status_code
 
 
 class PaymentsClient(Protocol):

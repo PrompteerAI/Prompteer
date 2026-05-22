@@ -4,6 +4,7 @@ import asyncio
 import json
 from collections.abc import Generator
 from pathlib import Path
+from typing import Any
 
 import pytest
 from fastapi import FastAPI
@@ -11,7 +12,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine, select
 
-# Import model modules so SQLModel metadata is populated for test databases.
+import app.integrations.payments as payments_integration
 import app.models  # noqa: F401  # Register SQLModel tables before creating test metadata.
 from app.api.deps import get_current_principal
 from app.core.config import settings
@@ -19,6 +20,7 @@ from app.core.security import Principal
 from app.db.seed import seed
 from app.db.session import get_session
 from app.integrations.email import mock as email_mock
+from app.integrations.payments.base import PaymentsProviderError
 from app.integrations.payments.mock import STORE, MockStripeClient
 from app.integrations.payments.webhooks import (
     MOCK_STRIPE_WEBHOOK_SECRET,
@@ -84,6 +86,30 @@ def test_billing_checkout_requires_authentication() -> None:
     )
 
     assert response.status_code == 401
+
+
+def test_billing_checkout_returns_problem_details_for_provider_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = create_billing_test_app()
+    monkeypatch.setattr(
+        payments_integration,
+        "get_payments_client",
+        lambda: FailingStripeClient(),
+    )
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/v1/billing/checkout",
+        json={"plan": "pro_monthly"},
+    )
+
+    assert response.status_code == 502
+    assert response.headers["content-type"].startswith("application/problem+json")
+    problem = response.json()
+    assert problem["code"] == "payments_provider_error"
+    assert problem["title"] == "Payments Provider Error"
+    assert problem["detail"] == "stripe provider returned HTTP 500. provider unavailable"
 
 
 def test_checkout_create_ignores_spoofed_legacy_customer_email() -> None:
@@ -630,3 +656,23 @@ async def override_admin_principal() -> Principal:
         email="admin@prompteer.dev",
         is_admin=True,
     )
+
+
+class FailingStripeClient:
+    provider = "stripe"
+
+    async def create_checkout_session(self, payload: dict[str, Any]) -> dict[str, Any]:
+        del payload
+        raise PaymentsProviderError(
+            provider=self.provider,
+            detail="stripe provider returned HTTP 500. provider unavailable",
+            status_code=500,
+        )
+
+    async def retrieve_checkout_session(self, session_id: str) -> dict[str, Any]:
+        del session_id
+        raise AssertionError("retrieve_checkout_session should not be called")
+
+    async def expire_checkout_session(self, session_id: str) -> dict[str, Any]:
+        del session_id
+        raise AssertionError("expire_checkout_session should not be called")
