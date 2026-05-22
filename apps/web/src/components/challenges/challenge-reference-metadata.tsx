@@ -1,8 +1,9 @@
-// Read-only metadata cards for media challenge references. Previews are local
-// deterministic compositions, not fetched media files.
+// Read-only metadata cards for media challenge references. Public references
+// render directly; seeded references use tracked local demo assets.
 import type { CSSProperties } from "react";
 
 import { FileImage, FileVideo, Play, Sparkles } from "lucide-react";
+import Image from "next/image";
 
 import {
   referenceMetadata,
@@ -104,16 +105,18 @@ function ReferencePreviewPanel({
     background: metadata.preview.background,
   } as CSSProperties;
   const isVideo = metadata.kind === "video";
+  const hasAsset = metadata.preview.assetUrl !== null;
 
   return (
     <div
       aria-label={`${statusLabel}: ${metadata.preview.title}`}
       className="relative aspect-video overflow-hidden border-b border-zinc-200"
-      role="img"
+      role={hasAsset ? undefined : "img"}
       style={previewStyle}
     >
-      <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.7),transparent_42%,rgba(255,255,255,0.28))]" />
-      <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-zinc-800 shadow-sm ring-1 ring-black/5 backdrop-blur">
+      {hasAsset ? <BrowserReferenceAsset metadata={metadata} /> : null}
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.7),transparent_42%,rgba(255,255,255,0.28))]" />
+      <div className="pointer-events-none absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-zinc-800 shadow-sm ring-1 ring-black/5 backdrop-blur">
         {isVideo ? (
           <Play aria-hidden="true" className="h-3.5 w-3.5" />
         ) : (
@@ -121,7 +124,7 @@ function ReferencePreviewPanel({
         )}
         <span>{statusLabel}</span>
       </div>
-      {metadata.preview.variant === "product-hero" ? (
+      {hasAsset ? null : metadata.preview.variant === "product-hero" ? (
         <ProductHeroPreview metadata={metadata} />
       ) : metadata.preview.variant === "launch-teaser" ? (
         <LaunchTeaserPreview metadata={metadata} />
@@ -129,6 +132,39 @@ function ReferencePreviewPanel({
         <GenericReferencePreview metadata={metadata} />
       )}
     </div>
+  );
+}
+
+function BrowserReferenceAsset({
+  metadata,
+}: {
+  metadata: ChallengeReferenceMetadataValue;
+}): React.ReactElement | null {
+  if (metadata.preview.assetUrl === null) {
+    return null;
+  }
+  if (metadata.preview.assetKind === "video") {
+    return (
+      <video
+        className="h-full w-full object-cover"
+        controls
+        muted
+        playsInline
+        preload="metadata"
+        src={metadata.preview.assetUrl}
+      />
+    );
+  }
+
+  return (
+    <Image
+      alt=""
+      className="object-cover"
+      fill
+      sizes="(max-width: 768px) 100vw, 50vw"
+      src={metadata.preview.assetUrl}
+      unoptimized
+    />
   );
 }
 

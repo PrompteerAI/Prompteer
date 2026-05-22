@@ -1,5 +1,6 @@
-// Helpers for presenting challenge reference metadata without assuming files
-// are publicly served by the web app.
+// Helpers for presenting challenge reference metadata. Publicly reachable
+// references render as media; seeded references fall back to tracked local
+// assets so the demo is inspectable without external storage.
 import type { components } from "@prompteer/shared-types";
 
 export type Challenge = components["schemas"]["ChallengeRead"];
@@ -21,6 +22,8 @@ export type ChallengeReferencePreview = {
   background: string;
   eyebrow: string;
   seed: number;
+  assetKind: "image" | "video" | null;
+  assetUrl: string | null;
   subtitle: string;
   title: string;
   variant: "generic-image" | "generic-video" | "launch-teaser" | "product-hero";
@@ -48,11 +51,20 @@ const SEEDED_PREVIEWS: Record<
   string,
   Pick<
     ChallengeReferencePreview,
-    "accentColor" | "background" | "eyebrow" | "subtitle" | "title" | "variant"
+    | "accentColor"
+    | "assetKind"
+    | "assetUrl"
+    | "background"
+    | "eyebrow"
+    | "subtitle"
+    | "title"
+    | "variant"
   >
 > = {
   "seed/references/launch-teaser.mp4": {
     accentColor: "#2563eb",
+    assetKind: "image",
+    assetUrl: "/references/launch-teaser-poster.svg",
     background:
       "radial-gradient(circle at 74% 18%, rgba(96, 165, 250, 0.38), transparent 24%), linear-gradient(135deg, #111827 0%, #1d4ed8 48%, #f97316 100%)",
     eyebrow: "Video reference",
@@ -62,6 +74,8 @@ const SEEDED_PREVIEWS: Record<
   },
   "seed/references/product-hero.png": {
     accentColor: "#059669",
+    assetKind: "image",
+    assetUrl: "/references/product-hero.svg",
     background:
       "radial-gradient(circle at 20% 22%, rgba(16, 185, 129, 0.32), transparent 24%), linear-gradient(135deg, #f8fafc 0%, #d1fae5 45%, #bfdbfe 100%)",
     eyebrow: "Image reference",
@@ -136,6 +150,10 @@ export function referencePreview(
   const normalizedPath = normalizeStoredPath(reference.file_path);
   const seededPreview = SEEDED_PREVIEWS[normalizedPath];
   const seed = hashReference(`${normalizedPath}:${reference.kind}`);
+  const browserAsset = browserReferenceAsset(
+    reference.file_path,
+    reference.kind,
+  );
 
   if (seededPreview) {
     return {
@@ -152,6 +170,8 @@ export function referencePreview(
 
   return {
     accentColor: palette.accentColor,
+    assetKind: browserAsset?.assetKind ?? null,
+    assetUrl: browserAsset?.assetUrl ?? null,
     background: palette.background,
     eyebrow: isVideo ? "Video reference" : "Image reference",
     seed,
@@ -161,6 +181,62 @@ export function referencePreview(
     title,
     variant: isVideo ? "generic-video" : "generic-image",
   };
+}
+
+function browserReferenceAsset(
+  filePath: string,
+  kind: ChallengeReference["kind"],
+): Pick<ChallengeReferencePreview, "assetKind" | "assetUrl"> | null {
+  const trimmedPath = filePath.trim();
+  if (!trimmedPath) {
+    return null;
+  }
+
+  const assetKind = browserAssetKind(trimmedPath, kind);
+  if (assetKind === null) {
+    return null;
+  }
+
+  try {
+    const url = new URL(trimmedPath);
+    if (url.protocol === "blob:" || url.protocol === "data:") {
+      return { assetKind, assetUrl: trimmedPath };
+    }
+    if (url.protocol === "http:" || url.protocol === "https:") {
+      return { assetKind, assetUrl: trimmedPath };
+    }
+    return null;
+  } catch {
+    return trimmedPath.startsWith("/")
+      ? { assetKind, assetUrl: trimmedPath }
+      : null;
+  }
+}
+
+function browserAssetKind(
+  filePath: string,
+  kind: ChallengeReference["kind"],
+): "image" | "video" | null {
+  const normalizedPath = filePath.split(/[?#]/, 1)[0]?.toLowerCase() ?? "";
+  if (filePath.startsWith("data:image/")) {
+    return "image";
+  }
+  if (filePath.startsWith("data:video/")) {
+    return "video";
+  }
+  if (
+    kind === "img" &&
+    /\.(apng|avif|bmp|gif|ico|jpe?g|png|svg|webp)$/.test(normalizedPath)
+  ) {
+    return "image";
+  }
+  if (
+    kind === "video" &&
+    /\.(m4v|mov|mp4|ogv|ogg|webm)$/.test(normalizedPath)
+  ) {
+    return "video";
+  }
+  return null;
 }
 
 function normalizeStoredPath(filePath: string): string {

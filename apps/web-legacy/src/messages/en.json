@@ -103,7 +103,8 @@
         "emptyFeatured": "Seed algorithm challenges to start.",
         "searchPlaceholder": "Search challenges",
         "difficulty": "Difficulty",
-        "recent": "Recent"
+        "recent": "Recent",
+        "noResults": "No algorithm challenges match this search."
       },
       "image": {
         "title": "Image Challenges",
@@ -145,13 +146,22 @@
         "share": "Share",
         "question": "Question"
       },
+      "noResults": "No board entries match this filter.",
       "write": {
         "title": "Write post",
-        "description": "The legacy write surface is present; write APIs are not exposed yet.",
+        "description": "Compose a local board draft in the legacy layout.",
         "titleLabel": "Title",
         "titleValue": "Legacy preview draft",
         "contentLabel": "Content",
-        "contentValue": "Board creation will be wired once the rebuilt API exposes mutation endpoints for community posts."
+        "contentValue": "Capture a question or prompt-run note before publishing support is added to the community API.",
+        "typeLabel": "Post type",
+        "typeQuestion": "Question",
+        "typeShare": "Share",
+        "submit": "Save draft",
+        "reset": "Reset",
+        "previewTitle": "Draft preview",
+        "draftSaved": "Draft saved locally",
+        "validationError": "Add both a title and content before saving the draft."
       },
       "detail": {
         "postNotFoundTitle": "Post not found",

@@ -441,6 +441,15 @@ button {
   color: var(--legacy-white);
 }
 
+.legacy-empty-list {
+  border: 1px solid var(--legacy-border);
+  border-radius: 8px;
+  background: var(--legacy-white);
+  padding: 24px;
+  color: var(--legacy-muted);
+  font-weight: 600;
+}
+
 .legacy-challenge-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -646,6 +655,65 @@ button {
 
 .legacy-panel {
   padding: 24px;
+}
+
+.legacy-form-grid,
+.legacy-form-label {
+  display: grid;
+  gap: 10px;
+}
+
+.legacy-form-grid {
+  gap: 18px;
+}
+
+.legacy-form-label {
+  color: var(--legacy-text);
+  font-weight: 700;
+}
+
+.legacy-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.legacy-inline-alert {
+  border-radius: 8px;
+  background: #fff5f5;
+  padding: 12px 14px;
+  color: var(--legacy-danger);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.legacy-draft-preview {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--legacy-border);
+  border-radius: 8px;
+  background: #f8fbff;
+  padding: 16px;
+}
+
+.legacy-draft-preview span {
+  color: var(--legacy-blue-strong);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.legacy-draft-preview em {
+  color: var(--legacy-muted);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.legacy-draft-preview strong,
+.legacy-draft-preview p {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .legacy-billing-grid,

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Product hero reference</title>
+  <desc id="desc">A clean product hero scene with a centered green product block, blue glass panels, and soft studio lighting.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset="0.52" stop-color="#d1fae5"/>
+      <stop offset="1" stop-color="#bfdbfe"/>
+    </linearGradient>
+    <linearGradient id="product" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#34d399"/>
+      <stop offset="1" stop-color="#047857"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="28" stdDeviation="24" flood-color="#0f172a" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <circle cx="218" cy="148" r="138" fill="#10b981" opacity="0.18"/>
+  <circle cx="1012" cy="132" r="116" fill="#2563eb" opacity="0.17"/>
+  <rect x="170" y="118" width="260" height="430" rx="28" fill="#ffffff" opacity="0.62"/>
+  <rect x="850" y="132" width="244" height="408" rx="28" fill="#ffffff" opacity="0.54"/>
+  <rect x="482" y="210" width="316" height="316" rx="58" fill="url(#product)" filter="url(#shadow)"/>
+  <circle cx="660" cy="300" r="78" fill="#ffffff" opacity="0.34"/>
+  <rect x="530" y="562" width="220" height="18" rx="9" fill="#0f172a" opacity="0.12"/>
+  <rect x="238" y="422" width="160" height="18" rx="9" fill="#0f172a" opacity="0.12"/>
+  <rect x="238" y="462" width="112" height="18" rx="9" fill="#0f172a" opacity="0.08"/>
+  <rect x="908" y="416" width="126" height="18" rx="9" fill="#0f172a" opacity="0.11"/>
+  <rect x="908" y="456" width="84" height="18" rx="9" fill="#0f172a" opacity="0.08"/>
+</svg>

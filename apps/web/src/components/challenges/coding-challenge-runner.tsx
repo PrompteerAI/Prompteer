@@ -262,7 +262,7 @@ export function CodingChallengeRunner({
                   {t("resultTitle")}
                 </div>
                 <span className="text-xs text-zinc-500">
-                  {t("tokenCount", { count: result.usage.total_tokens })}
+                  {t("tokenCount", { count: totalTokenCount(result.usage) })}
                 </span>
               </div>
               <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-zinc-700">
@@ -315,4 +315,24 @@ async function runChallengePrompt(
       },
     }),
   );
+}
+
+function totalTokenCount(usage: ChallengeRunResponse["usage"]): number {
+  if (usage.total_tokens !== undefined) {
+    return usage.total_tokens;
+  }
+
+  const promptCompletionTokens =
+    (usage.prompt_tokens ?? 0) + (usage.completion_tokens ?? 0);
+  if (promptCompletionTokens > 0) {
+    return promptCompletionTokens;
+  }
+
+  const inputOutputTokens =
+    (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0);
+  if (inputOutputTokens > 0) {
+    return inputOutputTokens;
+  }
+
+  return Object.values(usage).reduce((sum, value) => sum + value, 0);
 }

@@ -4,7 +4,7 @@ import { getTranslations } from "next-intl/server";
 
 import { ChallengeCard } from "@/components/legacy/challenge-card";
 import { Link } from "@/i18n/navigation";
-import { readChallenges } from "@/lib/data";
+import { type Challenge, readChallenges } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +15,11 @@ export default async function HomePage(): Promise<React.ReactElement> {
     readChallenges("img"),
     readChallenges("video"),
   ]);
-  const topChallenges = [coding[0], image[0], video[0]].filter(Boolean);
+  const topChallenges: Challenge[] = [
+    coding.at(0),
+    image.at(0),
+    video.at(0),
+  ].filter((challenge): challenge is Challenge => challenge !== undefined);
 
   return (
     <main className="legacy-main">
