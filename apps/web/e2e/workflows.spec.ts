@@ -104,6 +104,17 @@ test("seeded user can browse media challenge lists and details", async ({
   await expect(
     page.getByText("seed/references/product-hero.png"),
   ).toBeVisible();
+  await page
+    .getByRole("textbox", { name: "Prompt" })
+    .fill(
+      "Create a product hero prompt with lighting, composition, and accessibility-safe copy space.",
+    );
+  await page.getByRole("button", { name: "Run media prompt" }).click();
+  await expect(page.getByText("Mock media run result")).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(page.getByText(/Mock Prompteer response/)).toBeVisible();
+  await expect(page.getByText("Published to board")).toBeVisible();
 
   await page.getByRole("link", { name: "Back to image challenges" }).click();
   await expect(page).toHaveURL(/\/en\/challenges\/image$/);
@@ -141,6 +152,17 @@ test("seeded user can browse media challenge lists and details", async ({
   await expect(
     page.getByText("seed/references/launch-teaser.mp4"),
   ).toBeVisible();
+  await page
+    .getByRole("textbox", { name: "Prompt" })
+    .fill(
+      "Create a launch teaser video prompt with scene beats, motion notes, and a clear call to action.",
+    );
+  await page.getByRole("button", { name: "Run media prompt" }).click();
+  await expect(page.getByText("Mock media run result")).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(page.getByText(/Mock Prompteer response/)).toBeVisible();
+  await expect(page.getByText("Published to board")).toBeVisible();
 });
 
 test("paid demo user can complete mock checkout", async ({ page }) => {

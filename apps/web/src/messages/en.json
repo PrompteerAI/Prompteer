@@ -213,7 +213,7 @@
     "image": {
       "eyebrow": "Image",
       "title": "Image prompt challenges",
-      "description": "Review image prompt briefs with deterministic local previews and attached reference metadata.",
+      "description": "Review image prompt briefs, inspect deterministic local previews, and run prompt drafts against the seeded media context.",
       "emptyTitle": "Image challenges",
       "emptyDescription": "No image challenges are available yet. Run the API seed task to create demo data.",
       "openDetail": "View details",
@@ -222,11 +222,40 @@
     "video": {
       "eyebrow": "Video",
       "title": "Video prompt challenges",
-      "description": "Review video prompt briefs with deterministic local previews and attached reference metadata.",
+      "description": "Review video prompt briefs, inspect deterministic local previews, and run prompt drafts against the seeded media context.",
       "emptyTitle": "Video challenges",
       "emptyDescription": "No video challenges are available yet. Run the API seed task to create demo data.",
       "openDetail": "View details",
       "backToList": "Back to video challenges"
+    },
+    "runner": {
+      "eyebrow": "{kind} runner",
+      "title": "Prompt execution",
+      "description": "Draft a prompt for this {kind} brief and run it through the local LLM mock.",
+      "defaultPrompt": "Create a concise production-ready prompt for the {kind} challenge \"{title}\". Include composition, constraints, and quality checks.",
+      "promptLabel": "Prompt",
+      "publishLabel": "Publish to board",
+      "publishDescription": "Save this media run as a public prompt share for review.",
+      "run": "Run media prompt",
+      "disabledNotice": "Prompt runs are disabled by the environment feature flags.",
+      "resultTitle": "Mock media run result",
+      "tokenCount": "{count} tokens",
+      "published": "Published to board",
+      "publishedPrompt": "Published prompt",
+      "viewBoard": "View board",
+      "notPublished": "Run kept private",
+      "emptyResult": "Run a media prompt to see deterministic feedback from the local LLM mock.",
+      "errors": {
+        "disabled": "Prompt runs are disabled for this environment.",
+        "shortPrompt": "Write a prompt with at least 10 characters.",
+        "rateLimitedTitle": "Prompt rate limit reached",
+        "rateLimited": "Prompt runs are temporarily rate limited. Wait a moment, then try again.",
+        "rateLimitedWithRetry": "Prompt runs are temporarily rate limited. Try again in {seconds, plural, one {# second} other {# seconds}}.",
+        "quotaExceededTitle": "Prompt quota reached",
+        "quotaExceeded": "This account has reached its prompt run quota.",
+        "unauthorized": "Sign in before running a prompt.",
+        "failed": "The prompt run failed. Check that the API server and seed data are running."
+      }
     }
   },
   "profile": {

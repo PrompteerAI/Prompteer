@@ -50,7 +50,7 @@ flowchart LR
 The legacy product centered on prompt challenges:
 
 - Programming/problem-solving challenges with generated code scoring.
-- Image and video prompt challenges with reference media.
+- Image and video prompt challenges with reference media and the same run/share workflow as coding challenges.
 - Shared challenge submissions, board posts, comments, and likes.
 - User profiles and progress pages.
 

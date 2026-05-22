@@ -128,6 +128,7 @@ const routes = [
     expectedUrl: /\/en\/challenges\/image\/[^/]+$/,
     expectedText: [
       "Product hero image prompt",
+      "Prompt execution",
       "Product hero",
       "Hero composition with product focus",
     ],
@@ -148,6 +149,7 @@ const routes = [
     expectedUrl: /\/en\/challenges\/video\/[^/]+$/,
     expectedText: [
       "Launch teaser video prompt",
+      "Prompt execution",
       "Launch teaser",
       "16:9 launch teaser storyboard",
     ],

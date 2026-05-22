@@ -1,4 +1,4 @@
-// Read-only image challenge detail sourced from the API detail endpoint.
+// Image challenge detail sourced from the API detail endpoint.
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
@@ -24,13 +24,20 @@ export default async function ImageChallengeDetailPage({
   const errors = await getTranslations("errors");
   const api = createPrompteerApiClient();
   let challenge: Challenge;
+  let features: { llm: boolean };
 
   try {
-    const challengeResult = await api.GET("/api/v1/challenges/{challenge_id}", {
-      params: { path: { challenge_id: challengeId } },
-      cache: "no-store",
-    });
+    const [challengeResult, featuresResult] = await Promise.all([
+      api.GET("/api/v1/challenges/{challenge_id}", {
+        params: { path: { challenge_id: challengeId } },
+        cache: "no-store",
+      }),
+      api.GET("/api/v1/config/features", {
+        cache: "no-store",
+      }),
+    ]);
     challenge = unwrapApiResponse(challengeResult) satisfies Challenge;
+    features = unwrapApiResponse(featuresResult);
   } catch (error) {
     const normalizedError = await normalizeError(error);
     if (normalizedError.status === 404) {
@@ -91,6 +98,7 @@ export default async function ImageChallengeDetailPage({
           }}
           kind="img"
           locale={locale}
+          llmEnabled={features.llm}
         />
       </div>
     </main>

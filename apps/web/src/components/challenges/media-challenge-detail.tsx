@@ -1,7 +1,8 @@
-// Read-only detail page for image and video prompt challenges.
+// Detail page for inspecting and running image/video prompt challenges.
 import { ArrowLeft, FileImage, FileVideo } from "lucide-react";
 
 import { ChallengeReferenceMetadata } from "./challenge-reference-metadata";
+import { MediaChallengeRunner } from "./media-challenge-runner";
 import { localizedPath } from "@/i18n/paths";
 import {
   type ChallengeMediaChallenge,
@@ -33,6 +34,7 @@ type MediaChallengeDetailProps = {
   copy: MediaChallengeDetailCopy;
   kind: ChallengeMediaKind;
   locale: string;
+  llmEnabled: boolean;
 };
 
 export function MediaChallengeDetail({
@@ -40,6 +42,7 @@ export function MediaChallengeDetail({
   copy,
   kind,
   locale,
+  llmEnabled,
 }: MediaChallengeDetailProps): React.ReactElement {
   const Icon = kind === "img" ? FileImage : FileVideo;
   const listPath =
@@ -106,6 +109,11 @@ export function MediaChallengeDetail({
           </p>
         </section>
       </div>
+      <MediaChallengeRunner
+        challenge={challenge}
+        kindLabel={copy.kindLabel}
+        llmEnabled={llmEnabled}
+      />
       <section className="mt-6">
         <h2 className="text-xl font-semibold text-zinc-950">
           {copy.referencesTitle}
