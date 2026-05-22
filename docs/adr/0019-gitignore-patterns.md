@@ -44,11 +44,11 @@ Run:
 
 ```bash
 make env-check
-git check-ignore -v .env .env.local .env.production node_modules apps/web/.next apps/api/.venv .verify .mock/email AGENTS.md .codex/
-git check-ignore -v docs/screenshots/01-landing.png
+git check-ignore --no-index -v .env .env.local .env.production node_modules apps/web/.next apps/api/.venv .verify .mock/email AGENTS.md .codex/
+git check-ignore --no-index -v docs/screenshots/01-landing.png
 ```
 
-`make env-check` verifies the canonical environment documentation and the defensive ignore contract. The first `git check-ignore` command should print matching ignore rules for every local-only path. The second command should print nothing and exit with status `1`, confirming curated screenshots are not ignored.
+`make env-check` verifies the canonical environment documentation and the defensive ignore contract. The first `git check-ignore --no-index` command should print matching ignore rules for every local-only path, including paths that do not exist yet in a clean clone. The second command should print nothing and exit with status `1`, confirming curated screenshots are not ignored.
 
 ## Alternatives considered
 

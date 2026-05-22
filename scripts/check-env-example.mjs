@@ -206,13 +206,13 @@ function checkGitIgnoreContract() {
   ];
 
   for (const [path, message] of ignoredPaths) {
-    if (!gitSucceeds(["check-ignore", "-q", path])) {
+    if (!gitSucceeds(["check-ignore", "--no-index", "-q", path])) {
       failures.push(message);
     }
   }
 
   for (const [path, message] of allowedPaths) {
-    if (gitSucceeds(["check-ignore", "-q", path])) {
+    if (gitSucceeds(["check-ignore", "--no-index", "-q", path])) {
       failures.push(message);
     }
   }
