@@ -92,10 +92,12 @@ test("seeded user can browse media challenge lists and details", async ({
   ).toBeVisible();
   await expect(page.getByText("Local preview", { exact: true })).toBeVisible();
 
-  await page
-    .getByRole("link", { name: /View details: Product hero image prompt/ })
-    .click();
-  await expect(page).toHaveURL(/\/en\/challenges\/image\/[^/]+$/);
+  await Promise.all([
+    page.waitForURL(/\/en\/challenges\/image\/[^/]+$/),
+    page
+      .getByRole("link", { name: /View details: Product hero image prompt/ })
+      .click(),
+  ]);
   await expect(
     page.getByRole("heading", { name: "Product hero image prompt" }),
   ).toBeVisible();
@@ -140,10 +142,12 @@ test("seeded user can browse media challenge lists and details", async ({
   await expect(page.getByText("video/mp4")).toBeVisible();
   await expect(page.getByText("16:9 launch teaser storyboard")).toBeVisible();
 
-  await page
-    .getByRole("link", { name: /View details: Launch teaser video prompt/ })
-    .click();
-  await expect(page).toHaveURL(/\/en\/challenges\/video\/[^/]+$/);
+  await Promise.all([
+    page.waitForURL(/\/en\/challenges\/video\/[^/]+$/),
+    page
+      .getByRole("link", { name: /View details: Launch teaser video prompt/ })
+      .click(),
+  ]);
   await expect(
     page.getByRole("heading", { name: "Launch teaser video prompt" }),
   ).toBeVisible();
