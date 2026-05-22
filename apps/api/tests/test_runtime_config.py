@@ -22,8 +22,12 @@ def valid_production_settings(**overrides: object) -> Settings:
         "ENABLE_DEV_ROUTES": False,
         "AUTO_SEED_ON_STARTUP": False,
     }
-    values.update(overrides)
-    return Settings(**cast(dict[str, Any], values))
+    for key, value in overrides.items():
+        if value is None:
+            values.pop(key, None)
+        else:
+            values[key] = value
+    return Settings(_env_file=None, **cast(dict[str, Any], values))
 
 
 @pytest.mark.parametrize(
@@ -62,12 +66,33 @@ def test_production_settings_accept_real_secrets() -> None:
     config = valid_production_settings()
 
     assert config.is_production is True
+    assert config.auth_allow_seed_login is False
+    assert config.enable_dev_routes is False
+    assert config.auto_seed_on_startup is False
     assert integration_modes(config) == {
         "llm": "real",
         "google_oauth": "real",
         "stripe": "real",
         "email": "real",
     }
+
+
+def test_production_settings_default_dev_only_flags_are_off(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("AUTH_ALLOW_SEED_LOGIN", raising=False)
+    monkeypatch.delenv("ENABLE_DEV_ROUTES", raising=False)
+    monkeypatch.delenv("AUTO_SEED_ON_STARTUP", raising=False)
+
+    config = valid_production_settings(
+        AUTH_ALLOW_SEED_LOGIN=None,
+        ENABLE_DEV_ROUTES=None,
+        AUTO_SEED_ON_STARTUP=None,
+    )
+
+    assert config.auth_allow_seed_login is False
+    assert config.enable_dev_routes is False
+    assert config.auto_seed_on_startup is False
 
 
 def test_production_settings_reject_mock_and_dev_defaults() -> None:

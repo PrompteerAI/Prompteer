@@ -86,11 +86,11 @@ class Settings(BaseSettings):
     email_rate_limit: str = Field(default="5/minute;20/day", alias="EMAIL_RATE_LIMIT")
     llm_free_daily_token_cap: int = Field(default=50_000, alias="LLM_FREE_DAILY_TOKEN_CAP")
     llm_paid_daily_token_cap: int = Field(default=500_000, alias="LLM_PAID_DAILY_TOKEN_CAP")
-    auto_seed_on_startup: bool = Field(default=True, alias="AUTO_SEED_ON_STARTUP")
+    auto_seed_on_startup: bool = Field(default=False, alias="AUTO_SEED_ON_STARTUP")
     dev_bootstrap_retries: int = Field(default=30, alias="DEV_BOOTSTRAP_RETRIES")
     dev_bootstrap_retry_seconds: float = Field(default=1.0, alias="DEV_BOOTSTRAP_RETRY_SECONDS")
-    auth_allow_seed_login: bool = Field(default=True, alias="AUTH_ALLOW_SEED_LOGIN")
-    enable_dev_routes: bool = Field(default=True, alias="ENABLE_DEV_ROUTES")
+    auth_allow_seed_login: bool = Field(default=False, alias="AUTH_ALLOW_SEED_LOGIN")
+    enable_dev_routes: bool = Field(default=False, alias="ENABLE_DEV_ROUTES")
     auth_jwks_url: str = Field(
         default="http://localhost:3000/api/auth/jwks",
         alias="AUTH_JWKS_URL",
