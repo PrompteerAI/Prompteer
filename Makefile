@@ -17,6 +17,7 @@ dev-legacy: compose-dev-deps ## Start Docker deps, API, primary web, and legacy-
 	pnpm dev:legacy
 
 lint: ## Run JavaScript and Python lint checks.
+	node scripts/check-source-headers.mjs
 	pnpm lint
 	cd apps/api && uv run ruff check .
 	cd apps/api && uv run ruff format --check .
@@ -90,7 +91,7 @@ e2e: ## Run Playwright end-to-end tests against Docker Compose.
 	bash -lc 'source scripts/lib/load-env.sh; load_env_file ".env"; apply_compose_verification_env; env -u NO_COLOR CI=1 PLAYWRIGHT_BASE_URL="$$PLAYWRIGHT_BASE_URL" pnpm --filter @prompteer/web test:e2e'
 
 verify-ui: ## Assert README UI screenshots across primary and legacy frontends.
-	docker compose down -v
+	scripts/compose-down.sh -v
 	rm -rf .mock/email
 	$(MAKE) verify-ui-primary PROMPTEER_UPDATE_README_SCREENSHOTS=0
 	$(MAKE) verify-ui-legacy
@@ -106,7 +107,7 @@ verify-ui-legacy: ## Capture README legacy-preview screenshots against pnpm dev:
 	bash -lc 'set -euo pipefail; source scripts/lib/load-env.sh; load_env_file ".env"; apply_local_port_env; WEB_LEGACY_PORT="$${WEB_LEGACY_PORT:-3001}"; mkdir -p .verify; setsid pnpm dev:legacy > .verify/pnpm-dev-legacy.log 2>&1 & dev_pid=$$!; cleanup() { kill -TERM "-$$dev_pid" >/dev/null 2>&1 || true; kill "$$dev_pid" >/dev/null 2>&1 || true; wait "$$dev_pid" >/dev/null 2>&1 || true; }; trap cleanup EXIT; for _ in $$(seq 1 120); do if curl --fail --silent --show-error "http://localhost:$$WEB_PORT/api/health" >/dev/null && curl --fail --silent --show-error "http://localhost:$$API_PORT/api/v1/health/live" >/dev/null && curl --fail --location --silent --show-error "http://localhost:$$WEB_LEGACY_PORT/en" >/dev/null; then env PROMPTEER_LEGACY_SCREENSHOT_DIR=".verify/screenshots/legacy" PROMPTEER_LEGACY_WEB_URL="http://localhost:$$WEB_LEGACY_PORT/en" node scripts/verify-ui-legacy.mjs; exit 0; fi; sleep 2; done; cat .verify/pnpm-dev-legacy.log; exit 1'
 
 update-ui-screenshots: ## Promote current primary and legacy UI captures into docs/screenshots.
-	docker compose down -v
+	scripts/compose-down.sh -v
 	rm -rf .mock/email
 	$(MAKE) verify-ui-primary PROMPTEER_UPDATE_README_SCREENSHOTS=1
 	$(MAKE) verify-ui-legacy
@@ -135,4 +136,4 @@ reset-db: ## Reset local Docker database and Redis containers.
 	scripts/reset-db.sh
 
 logs: ## Follow local Docker Compose logs.
-	docker compose logs -f
+	scripts/compose-logs.sh -f

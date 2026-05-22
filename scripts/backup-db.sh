@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Creates a compressed PostgreSQL backup using the configured database URL.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

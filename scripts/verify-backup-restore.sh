@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Exercises backup and restore scripts against disposable PostgreSQL databases.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

@@ -10,6 +10,7 @@ from sqlmodel import Session
 
 from app.core.config import integration_modes as configured_integration_modes
 from app.core.config import settings
+from app.core.logging import configure_logging
 from app.core.migrations import alembic_config
 from app.db.seed import seed, seed_mock_emails
 from app.db.session import engine
@@ -52,6 +53,7 @@ def run_development_bootstrap() -> None:
 
 
 def main() -> None:
+    configure_logging()
     asyncio.run(bootstrap_development_state())
 
 

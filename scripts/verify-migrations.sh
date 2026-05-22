@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Verifies Alembic upgrades and downgrades against a throwaway PostgreSQL database.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

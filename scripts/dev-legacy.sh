@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Runs the API, primary web app, and legacy-preview app in hot-reload mode.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

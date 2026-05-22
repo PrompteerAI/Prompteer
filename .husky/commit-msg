@@ -1,1 +1,3 @@
+#!/usr/bin/env sh
+# Validates commit messages against the Conventional Commits config.
 pnpm commitlint --edit "$1"

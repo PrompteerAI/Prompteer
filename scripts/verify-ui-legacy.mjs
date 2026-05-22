@@ -100,12 +100,14 @@ const captures = [
     path: "/en",
     viewport: mobile,
     expectedText: ["Top Challenges", "Challenge Category"],
+    readme: false,
   },
   {
     name: "16-legacy-mobile-coding",
     path: "/en/category/coding",
     viewport: mobile,
     expectedText: ["Algorithm", "FizzBuzz prompt repair"],
+    readme: false,
   },
   {
     name: "legacy-error-boundary",

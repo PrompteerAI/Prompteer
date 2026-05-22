@@ -18,6 +18,10 @@ Prerequisite for the containerized quick start:
 
 - Docker Engine with Docker Compose v2
 
+Docker is required for the local database, Redis broker, and nginx origin. The
+project does not provide a no-Docker fallback; install and start Docker before
+running the Compose-backed commands.
+
 Fresh clone demo:
 
 ```sh
@@ -61,6 +65,9 @@ The verified local demo covers seed login, prompt execution through the LLM mock
 
 Legacy-design preview:
 
+Run this preview with `pnpm dev:legacy`; it opens at `http://localhost:3001/en`
+by default while the primary web app remains the Auth.js gateway.
+
 | Legacy home                                                 | Legacy coding category                                                    | Legacy board                                          |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------- |
 | ![Legacy preview home](docs/screenshots/09-legacy-home.png) | ![Legacy coding category](docs/screenshots/10-legacy-coding-category.png) | ![Legacy board](docs/screenshots/11-legacy-board.png) |
@@ -68,10 +75,6 @@ Legacy-design preview:
 | Legacy login                                          | Legacy prompt runner                                                   | Legacy billing flow                                       |
 | ----------------------------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------- |
 | ![Legacy login](docs/screenshots/12-legacy-login.png) | ![Legacy prompt runner](docs/screenshots/13-legacy-problem-runner.png) | ![Legacy billing](docs/screenshots/14-legacy-billing.png) |
-
-| Legacy mobile home                                                | Legacy mobile coding category                                         |
-| ----------------------------------------------------------------- | --------------------------------------------------------------------- |
-| ![Legacy mobile home](docs/screenshots/15-legacy-mobile-home.png) | ![Legacy mobile coding](docs/screenshots/16-legacy-mobile-coding.png) |
 
 ## Architecture
 

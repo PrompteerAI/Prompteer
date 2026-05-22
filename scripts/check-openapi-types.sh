@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Verifies generated OpenAPI and shared TypeScript API types are up to date.
 set -euo pipefail
 
 tmpdir="$(mktemp -d)"

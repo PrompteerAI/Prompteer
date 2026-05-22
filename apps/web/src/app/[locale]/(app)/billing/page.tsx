@@ -6,6 +6,7 @@ import { ApiUnavailable } from "@/components/system/api-unavailable";
 import { auth } from "@/lib/auth";
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
 import { normalizeError } from "@/lib/errors";
+import { getServerEnv } from "@/lib/env";
 import { apiTokenForSession } from "@/server/api-token";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +25,7 @@ export default async function BillingPage({
     searchParams,
   ]);
   if (
-    process.env.ENV !== "production" &&
+    getServerEnv().ENV !== "production" &&
     query.__verify_error_boundary === "app"
   ) {
     throw new Error("Primary app boundary verification failure.");

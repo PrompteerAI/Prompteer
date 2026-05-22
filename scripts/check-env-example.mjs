@@ -4,46 +4,42 @@
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 
-const ENV_EXAMPLE_PATH = ".env.example";
+const envExamplePath = ".env.example";
 
-const SCAN_FILES = [
-  "apps/api/app/core/config.py",
-  "apps/web/src/lib/env.ts",
-  "apps/web-legacy/src/lib/env.ts",
-  "apps/web/src/instrumentation-client.ts",
-  "apps/web/src/sentry.edge.config.ts",
-  "apps/web/src/sentry.server.config.ts",
-  "apps/web/next.config.ts",
-  "apps/web/playwright.config.ts",
-  "apps/api/scripts/start.sh",
-  "apps/api/Dockerfile",
-  "apps/web/Dockerfile",
-  ".github/workflows/ci.yaml",
-  ".github/workflows/build.yaml",
-  ".github/workflows/e2e.yaml",
-  "scripts/backup-db.sh",
-  "scripts/bootstrap.sh",
-  "scripts/check-compose-health.sh",
-  "scripts/check-openapi-types.sh",
-  "scripts/compose-up.sh",
-  "scripts/dev.sh",
-  "scripts/lib/load-env.sh",
-  "scripts/reset-db.sh",
-  "scripts/api-dev.sh",
-  "scripts/api-test.sh",
-  "scripts/web-dev.sh",
-  "scripts/web-build.sh",
-  "scripts/dev-legacy.sh",
-  "scripts/web-legacy-dev.sh",
-  "scripts/web-legacy-build.sh",
-  "scripts/restore-db.sh",
-  "scripts/verify-backup-restore.sh",
-  "scripts/verify-ui.mjs",
-  "scripts/verify-ui-legacy.mjs",
+const SCANNED_EXTENSIONS = new Set([
+  ".js",
+  ".json",
+  ".mjs",
+  ".py",
+  ".sh",
+  ".ts",
+  ".tsx",
+  ".yaml",
+  ".yml",
+]);
+
+const SCANNED_FILENAMES = new Set([
+  ".dockerignore",
+  ".env.example",
+  "Dockerfile",
+  "Makefile",
   "compose.yaml",
   "package.json",
-  "apps/web/package.json",
-  "apps/web-legacy/package.json",
+]);
+
+const SCANNED_ROOT_PREFIXES = [
+  ".github/workflows/",
+  "apps/",
+  "infra/",
+  "packages/",
+  "scripts/",
+];
+
+const IGNORED_SCAN_PATHS = [
+  /^apps\/api\/uv\.lock$/,
+  /^docs\//,
+  /^packages\/shared-types\/src\/api\.ts$/,
+  /^pnpm-lock\.yaml$/,
 ];
 
 const SYSTEM_ENV_KEYS = new Set([
@@ -67,6 +63,44 @@ const SYSTEM_ENV_KEYS = new Set([
   "SHORT_SHA",
 ]);
 
+function gitLsFiles() {
+  const result = spawnSync("git", ["ls-files"], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  if (result.status !== 0) {
+    throw new Error(result.stderr || "git ls-files failed");
+  }
+  return result.stdout.split("\n").filter(Boolean);
+}
+
+function extension(path) {
+  const index = path.lastIndexOf(".");
+  return index === -1 ? "" : path.slice(index);
+}
+
+function filename(path) {
+  return path.slice(path.lastIndexOf("/") + 1);
+}
+
+function shouldScan(path) {
+  if (IGNORED_SCAN_PATHS.some((pattern) => pattern.test(path))) {
+    return false;
+  }
+  if (
+    !SCANNED_ROOT_PREFIXES.some((prefix) => path.startsWith(prefix)) &&
+    !SCANNED_FILENAMES.has(path) &&
+    !SCANNED_FILENAMES.has(filename(path))
+  ) {
+    return false;
+  }
+  return (
+    SCANNED_EXTENSIONS.has(extension(path)) ||
+    SCANNED_FILENAMES.has(path) ||
+    SCANNED_FILENAMES.has(filename(path))
+  );
+}
+
 function readText(path) {
   return readFileSync(path, "utf8");
 }
@@ -75,7 +109,7 @@ function exampleKeys() {
   const keys = new Set();
   const duplicates = new Set();
 
-  for (const line of readText(ENV_EXAMPLE_PATH).split("\n")) {
+  for (const line of readText(envExamplePath).split("\n")) {
     const match = /^([A-Z][A-Z0-9_]*)=/.exec(line);
     if (!match) {
       continue;
@@ -147,7 +181,9 @@ function main() {
   const missing = new Map();
   const gitIgnoreFailures = checkGitIgnoreContract();
 
-  for (const path of SCAN_FILES) {
+  const scanFiles = gitLsFiles().filter(shouldScan);
+
+  for (const path of scanFiles) {
     for (const key of referencedKeys(path)) {
       if (!documented.has(key)) {
         const paths = missing.get(key) ?? [];
@@ -160,11 +196,11 @@ function main() {
   if (duplicates.size > 0 || missing.size > 0 || gitIgnoreFailures.length > 0) {
     if (duplicates.size > 0) {
       console.error(
-        `Duplicate keys in ${ENV_EXAMPLE_PATH}: ${[...duplicates].sort().join(", ")}`,
+        `Duplicate keys in ${envExamplePath}: ${[...duplicates].sort().join(", ")}`,
       );
     }
     if (missing.size > 0) {
-      console.error(`Missing keys in ${ENV_EXAMPLE_PATH}:`);
+      console.error(`Missing keys in ${envExamplePath}:`);
       for (const [key, paths] of [...missing.entries()].sort()) {
         console.error(`  - ${key} referenced by ${paths.join(", ")}`);
       }
@@ -176,7 +212,7 @@ function main() {
   }
 
   console.log(
-    `${ENV_EXAMPLE_PATH} documents ${documented.size} environment variables; .env is ignored and .env.example is tracked.`,
+    `${envExamplePath} documents ${documented.size} environment variables; .env is ignored and .env.example is tracked.`,
   );
 }
 

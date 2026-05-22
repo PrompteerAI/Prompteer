@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
+# Confirms readiness reports structured diagnostics when Redis is unavailable.
 set -euo pipefail
 
 source scripts/lib/load-env.sh
 
 load_env_file ".env"
+apply_local_port_env
+require_docker_compose
 
 mkdir -p .verify
 origin="$(compose_http_origin)"

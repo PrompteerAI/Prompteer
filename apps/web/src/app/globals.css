@@ -1,3 +1,4 @@
+/* Global Tailwind theme tokens and base document styles for the primary app. */
 @import "tailwindcss";
 
 @theme inline {

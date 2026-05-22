@@ -1,28 +1,22 @@
 #!/usr/bin/env bash
+# Bootstraps a contributor machine by installing deps, starting Compose, and seeding data.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
-require_command() {
-  local command_name="$1"
-  if ! command -v "$command_name" >/dev/null 2>&1; then
-    printf 'Missing required command: %s\n' "$command_name" >&2
-    exit 127
-  fi
-}
+# shellcheck source=scripts/lib/load-env.sh
+source scripts/lib/load-env.sh
 
 require_command pnpm
 require_command uv
-require_command docker
+require_docker_compose
 
 if [[ ! -f .env ]]; then
   cp .env.example .env
   printf 'Created .env from .env.example\n'
 fi
 
-# shellcheck source=scripts/lib/load-env.sh
-source scripts/lib/load-env.sh
 load_env_file ".env"
 apply_local_port_env
 

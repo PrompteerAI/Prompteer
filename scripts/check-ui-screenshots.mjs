@@ -43,6 +43,7 @@ function trackedScreenshotNames() {
   return result.stdout
     .split("\n")
     .filter(Boolean)
+    .filter((path) => existsSync(path))
     .map((path) => basename(path))
     .sort();
 }

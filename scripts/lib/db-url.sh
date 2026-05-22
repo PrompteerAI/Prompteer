@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Shared helpers for deriving maintenance PostgreSQL URLs from app DATABASE_URL.
 
 DEFAULT_DATABASE_URL="postgresql+psycopg://prompteer:prompteer@localhost:55432/prompteer"
 

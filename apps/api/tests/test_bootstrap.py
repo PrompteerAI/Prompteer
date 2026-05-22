@@ -41,3 +41,26 @@ def test_development_bootstrap_runs_migrations_and_seed(
         "seed-subscription-paid-paid@prompteer.dev.eml",
         "seed-welcome-admin-admin@prompteer.dev.eml",
     ]
+
+
+def test_bootstrap_main_configures_logging_before_work(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str] = []
+
+    def fake_configure_logging() -> None:
+        calls.append("logging")
+
+    async def fake_bootstrap_development_state() -> None:
+        calls.append("bootstrap")
+
+    monkeypatch.setattr(bootstrap, "configure_logging", fake_configure_logging)
+    monkeypatch.setattr(
+        bootstrap,
+        "bootstrap_development_state",
+        fake_bootstrap_development_state,
+    )
+
+    bootstrap.main()
+
+    assert calls == ["logging", "bootstrap"]

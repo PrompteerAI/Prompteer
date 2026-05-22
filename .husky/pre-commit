@@ -1,1 +1,3 @@
+#!/usr/bin/env sh
+# Runs the same pre-commit checks contributors can invoke from package scripts.
 pnpm run hooks:pre-commit

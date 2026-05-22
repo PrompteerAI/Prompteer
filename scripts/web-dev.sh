@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Starts the primary Next.js app in hot-reload mode on WEB_PORT.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

@@ -13,6 +13,7 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { localizedPath } from "@/i18n/paths";
 import { auth, signOut } from "@/lib/auth";
+import { getServerEnv } from "@/lib/env";
 
 const entrypoints = [
   { key: "login", icon: LogIn, href: "/login" },
@@ -32,7 +33,7 @@ export default async function HomePage({
 }: Props): Promise<React.ReactElement> {
   const [{ locale }, query] = await Promise.all([params, searchParams]);
   if (
-    process.env.ENV !== "production" &&
+    getServerEnv().ENV !== "production" &&
     query.__verify_error_boundary === "locale"
   ) {
     throw new Error("Primary route boundary verification failure.");

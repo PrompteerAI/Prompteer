@@ -1,4 +1,6 @@
 #!/usr/bin/env sh
+# Starts the production-style API container with optional dev bootstrap before
+# handing the process to Gunicorn-managed Uvicorn workers.
 set -eu
 
 api_uvicorn_workers="${API_UVICORN_WORKERS:-1}"

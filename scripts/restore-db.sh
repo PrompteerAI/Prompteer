@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Restores a PostgreSQL custom-format backup into an explicit target database.
 set -euo pipefail
 
 input="${1:?usage: scripts/restore-db.sh <dump-file>}"

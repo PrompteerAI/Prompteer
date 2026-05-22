@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Starts the FastAPI development server after loading the local .env contract.
+# Stops the local Docker Compose stack after confirming Docker is available.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -9,6 +9,6 @@ cd "$repo_root"
 source scripts/lib/load-env.sh
 load_env_file ".env"
 apply_local_port_env
+require_docker_compose
 
-cd apps/api
-exec uv run fastapi dev app/main.py --port "$API_PORT"
+docker compose down "$@"

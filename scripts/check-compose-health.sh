@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
+# Polls Docker Compose services until the required local stack is healthy.
 set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_root"
+
+# shellcheck source=scripts/lib/load-env.sh
+source scripts/lib/load-env.sh
+load_env_file ".env"
+apply_local_port_env
+require_docker_compose
 
 services="${COMPOSE_HEALTH_SERVICES:-postgres redis api worker web nginx}"
 timeout_seconds="${COMPOSE_HEALTH_TIMEOUT:-60}"

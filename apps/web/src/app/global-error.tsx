@@ -7,13 +7,15 @@ import * as Sentry from "@sentry/nextjs";
 import NextError from "next/error";
 import { useEffect } from "react";
 
+import { publicEnv } from "@/lib/env";
+
 export default function GlobalError({
   error,
 }: {
   error: Error & { digest?: string };
 }): React.ReactElement {
   useEffect(() => {
-    if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+    if (publicEnv.NEXT_PUBLIC_SENTRY_DSN) {
       Sentry.captureException(error);
     }
   }, [error]);

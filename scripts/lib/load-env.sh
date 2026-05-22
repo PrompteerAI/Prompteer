@@ -1,4 +1,33 @@
 #!/usr/bin/env bash
+# Shared local .env loading and port derivation helpers for shell entrypoints.
+
+require_command() {
+  local command_name="$1"
+  if ! command -v "$command_name" >/dev/null 2>&1; then
+    printf 'Missing required command: %s\n' "$command_name" >&2
+    exit 127
+  fi
+}
+
+require_docker_compose() {
+  if ! command -v docker >/dev/null 2>&1; then
+    printf 'Docker Engine with Docker Compose v2 is required.\n' >&2
+    printf 'Install Docker Desktop with WSL integration enabled, or install Docker Engine, before running this command.\n' >&2
+    exit 127
+  fi
+
+  if ! docker compose version >/dev/null 2>&1; then
+    printf 'Docker Compose v2 is required, but `docker compose` is not available.\n' >&2
+    printf 'Install or update Docker Desktop / Docker Engine with the Compose v2 plugin before running this command.\n' >&2
+    exit 127
+  fi
+
+  if ! docker info >/dev/null 2>&1; then
+    printf 'Docker Engine is installed but not reachable.\n' >&2
+    printf 'Start Docker Desktop, enable WSL integration if applicable, then rerun this command.\n' >&2
+    exit 1
+  fi
+}
 
 load_env_file() {
   local env_file="${1:-.env}"

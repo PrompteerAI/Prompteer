@@ -32,10 +32,10 @@ for the target commit have been pushed to GHCR.
 
 ## Repository Hooks
 
-`package.json` intentionally keeps `prepare` as `husky || true`. Docker image
-builds run `pnpm install` from a context where `.git` is ignored, so Husky cannot
-install hooks there; the tolerant prepare script prevents that expected
-container-only state from blocking image builds. Local hook bodies are wired
+`package.json` keeps `prepare` strict as `husky` so hook installation problems
+are visible on contributor machines. Docker image builds set `HUSKY=0` before
+`pnpm install` because `.git` is intentionally ignored in the image context and
+container layers should not install local Git hooks. Local hook bodies are wired
 through package scripts, currently `pnpm run hooks:pre-commit`, so contributors
 can run the same checks manually without invoking Git.
 

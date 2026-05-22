@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Builds the primary Next.js app with the local environment contract loaded.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Resets local Docker database and Redis volumes, then recreates seed data.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -8,6 +9,7 @@ cd "$repo_root"
 source scripts/lib/load-env.sh
 load_env_file ".env"
 apply_local_port_env
+require_docker_compose
 
 docker compose down -v
 scripts/compose-up.sh postgres redis
