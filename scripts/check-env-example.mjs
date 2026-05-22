@@ -169,19 +169,19 @@ function checkGitIgnoreContract() {
       ".env.production must be ignored so environment-specific secrets never get staged.",
     ],
     [
-      "node_modules",
+      "node_modules/",
       "node_modules must be ignored so installed dependencies never get staged.",
     ],
     [
-      "apps/web/.next",
+      "apps/web/.next/",
       "apps/web/.next must be ignored so Next.js build output never gets staged.",
     ],
     [
-      "apps/api/.venv",
+      "apps/api/.venv/",
       "apps/api/.venv must be ignored so local Python virtualenvs never get staged.",
     ],
     [
-      ".verify",
+      ".verify/",
       ".verify must be ignored so verification artifacts never get staged.",
     ],
     [

@@ -44,7 +44,7 @@ Run:
 
 ```bash
 make env-check
-git check-ignore --no-index -v .env .env.local .env.production node_modules apps/web/.next apps/api/.venv .verify .mock/email AGENTS.md .codex/
+git check-ignore --no-index -v .env .env.local .env.production node_modules/ apps/web/.next/ apps/api/.venv/ .verify/ .mock/email AGENTS.md .codex/
 git check-ignore --no-index -v docs/screenshots/01-landing.png
 ```
 
