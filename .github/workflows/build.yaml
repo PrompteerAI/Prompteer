@@ -50,8 +50,16 @@ jobs:
       - run: pnpm --filter @prompteer/web exec playwright install --with-deps chromium
       - name: Run Compose e2e gate
         run: make e2e
-      - name: Verify README UI screenshots
-        run: make verify-ui
+      - name: Reset UI verification state
+        run: |
+          scripts/compose-down.sh -v
+          rm -rf .mock/email
+      - name: Verify primary UI screenshots
+        run: make verify-ui-primary PROMPTEER_UPDATE_README_SCREENSHOTS=0
+      - name: Verify legacy-preview UI screenshots
+        run: make verify-ui-legacy
+      - name: Check README screenshot assets
+        run: node scripts/check-ui-screenshots.mjs
       - name: Upload verification artifacts
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0

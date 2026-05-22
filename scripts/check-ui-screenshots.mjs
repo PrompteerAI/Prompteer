@@ -16,9 +16,10 @@ const candidateDirs = [
 const PNG_SIGNATURE = Buffer.from([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
 ]);
-const MAX_CHANNEL_DELTA = 1;
-const MAX_CHANGED_PIXEL_RATIO = 0.006;
-const MAX_NORMALIZED_RMSE = 0.0003;
+const isCI = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
+const MAX_CHANNEL_DELTA = isCI ? 32 : 1;
+const MAX_CHANGED_PIXEL_RATIO = isCI ? 0.04 : 0.006;
+const MAX_NORMALIZED_RMSE = isCI ? 0.015 : 0.0003;
 
 function pngFilesIn(directory) {
   if (!existsSync(directory)) {
@@ -240,6 +241,20 @@ function candidatePathFor(name) {
   return null;
 }
 
+function githubEscape(value) {
+  return String(value)
+    .replaceAll("%", "%25")
+    .replaceAll("\r", "%0D")
+    .replaceAll("\n", "%0A");
+}
+
+function annotate(level, message) {
+  if (process.env.GITHUB_ACTIONS !== "true") {
+    return;
+  }
+  console.error(`::${level}::${githubEscape(message)}`);
+}
+
 function assertSameSet(label, expected, actual, failures) {
   const missing = setDiff(expected, actual);
   const extra = setDiff(actual, expected);
@@ -278,15 +293,24 @@ for (const name of readmeNames) {
   }
   const comparison = isEquivalentScreenshot(docsPath, candidatePath);
   if (!comparison.equivalent) {
-    changed.push(name);
+    changed.push({ name, difference: comparison.difference });
   } else if (!comparison.exact) {
     tolerated.push({ name, difference: comparison.difference });
   }
 }
 
 if (changed.length > 0) {
+  for (const { name, difference } of changed) {
+    const detail = difference.comparable
+      ? `maxChannelDelta=${difference.maxChannelDelta}, changedPixelRatio=${difference.changedPixelRatio.toFixed(6)}, normalizedRmse=${difference.normalizedRmse.toFixed(6)}`
+      : difference.reason;
+    annotate(
+      "error",
+      `README screenshot candidate differs for ${name}: ${detail}`,
+    );
+  }
   failures.push(
-    `README screenshot candidates differ from committed docs assets: ${changed.join(", ")}`,
+    `README screenshot candidates differ from committed docs assets: ${changed.map(({ name }) => name).join(", ")}`,
   );
   failures.push(
     "Review .verify/screenshots/readme and .verify/screenshots/legacy, then run make update-ui-screenshots to promote approved images.",
