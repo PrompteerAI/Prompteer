@@ -1,6 +1,5 @@
 """JWT principal validation against Auth.js-issued RS256 API tokens."""
 
-import asyncio
 from dataclasses import dataclass
 from time import monotonic
 from typing import Any
@@ -9,11 +8,18 @@ import httpx
 import jwt
 
 from app.core.config import settings
+from app.integrations.http import RetryPolicy
+from app.integrations.http import request as outbound_request
 
 JWKS_CACHE_SECONDS = 300.0
 JWKS_UNKNOWN_KID_REFRESH_BACKOFF_SECONDS = 5.0
 JWKS_FETCH_ATTEMPTS = 2
 JWKS_FETCH_TIMEOUT_SECONDS = 5.0
+JWKS_RETRY_POLICY = RetryPolicy(
+    max_attempts=JWKS_FETCH_ATTEMPTS,
+    base_delay_seconds=0.2,
+    jitter_seconds=0.05,
+)
 NO_MATCHING_KID_ERROR = "No JWKS key matched the JWT kid."
 SIGNATURE_MISMATCH_ERROR = "JWT signature did not match the JWKS key."
 
@@ -123,24 +129,22 @@ def should_refresh_signature_mismatch() -> bool:
 
 
 async def fetch_jwks(jwks_url: str) -> dict[str, Any]:
-    body: Any = None
-    for attempt in range(1, JWKS_FETCH_ATTEMPTS + 1):
-        try:
-            async with httpx.AsyncClient(timeout=JWKS_FETCH_TIMEOUT_SECONDS) as client:
-                response = await client.get(jwks_url)
-                response.raise_for_status()
-                try:
-                    body = response.json()
-                except ValueError as exc:
-                    raise AuthTokenError("JWKS endpoint returned invalid JSON.") from exc
-        except httpx.TransportError as exc:
-            if attempt < JWKS_FETCH_ATTEMPTS:
-                await asyncio.sleep(0.2 * attempt)
-                continue
-            raise AuthTokenError("JWKS endpoint was unreachable.") from exc
-        except httpx.HTTPStatusError as exc:
-            raise AuthTokenError("JWKS endpoint returned an error.") from exc
-        break
+    try:
+        response = await outbound_request(
+            provider="auth_jwks",
+            method="GET",
+            url=jwks_url,
+            timeout_seconds=JWKS_FETCH_TIMEOUT_SECONDS,
+            retry_policy=JWKS_RETRY_POLICY,
+        )
+        response.raise_for_status()
+        body = response.json()
+    except httpx.TransportError as exc:
+        raise AuthTokenError("JWKS endpoint was unreachable.") from exc
+    except httpx.HTTPStatusError as exc:
+        raise AuthTokenError("JWKS endpoint returned an error.") from exc
+    except ValueError as exc:
+        raise AuthTokenError("JWKS endpoint returned invalid JSON.") from exc
     if not isinstance(body, dict) or not isinstance(body.get("keys"), list):
         raise AuthTokenError("JWKS endpoint did not return a key set.")
     return body

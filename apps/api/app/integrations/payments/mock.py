@@ -116,7 +116,13 @@ async def create_checkout_session(request: Request, response: Response) -> dict[
 
 
 @router.get("/v1/checkout/sessions/{session_id}")
-async def retrieve_checkout_session(session_id: str) -> dict[str, Any]:
+@limiter.limit(PAYMENTS_RATE_LIMIT)
+async def retrieve_checkout_session(
+    request: Request,
+    response: Response,
+    session_id: str,
+) -> dict[str, Any]:
+    del request, response
     require_mock_routes()
     require_feature_enabled("payments")
     try:

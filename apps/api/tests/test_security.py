@@ -7,6 +7,7 @@ from typing import Any
 import httpx
 import jwt
 import pytest
+import respx
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPublicKey
 from fastapi import HTTPException
@@ -21,6 +22,7 @@ from app.core.security import (
     verify_bearer_token,
     verify_jwt_with_jwks,
 )
+from app.integrations.http import RetryPolicy
 
 
 @pytest.fixture(autouse=True)
@@ -300,82 +302,57 @@ async def test_verify_bearer_token_backs_off_repeated_unknown_kid_refreshes(
 async def test_fetch_jwks_retries_transient_transport_errors(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    class FlakyAsyncClient:
-        calls = 0
+    jwks_url = "http://localhost:3000/api/auth/jwks"
+    monkeypatch.setattr(
+        security,
+        "JWKS_RETRY_POLICY",
+        RetryPolicy(max_attempts=2, base_delay_seconds=0, jitter_seconds=0),
+    )
 
-        def __init__(self, *, timeout: float) -> None:
-            assert timeout == security.JWKS_FETCH_TIMEOUT_SECONDS
+    with respx.mock:
+        route = respx.get(jwks_url).mock(
+            side_effect=[
+                httpx.ReadTimeout("cold JWKS route"),
+                httpx.Response(200, json={"keys": []}),
+            ]
+        )
 
-        async def __aenter__(self) -> "FlakyAsyncClient":
-            return self
+        assert await security.fetch_jwks(jwks_url) == {"keys": []}
 
-        async def __aexit__(self, *_args: object) -> None:
-            return None
-
-        async def get(self, _url: str) -> httpx.Response:
-            type(self).calls += 1
-            if type(self).calls == 1:
-                raise httpx.ReadTimeout("cold JWKS route")
-            return httpx.Response(
-                200,
-                json={"keys": []},
-                request=httpx.Request("GET", _url),
-            )
-
-    monkeypatch.setattr(httpx, "AsyncClient", FlakyAsyncClient)
-
-    assert await security.fetch_jwks("http://localhost:3000/api/auth/jwks") == {"keys": []}
-    assert FlakyAsyncClient.calls == 2
+    assert len(route.calls) == 2
 
 
 @pytest.mark.asyncio
 async def test_fetch_jwks_wraps_transport_failures(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    class FailingAsyncClient:
-        def __init__(self, *, timeout: float) -> None:
-            assert timeout == security.JWKS_FETCH_TIMEOUT_SECONDS
+    jwks_url = "http://localhost:3000/api/auth/jwks"
+    monkeypatch.setattr(
+        security,
+        "JWKS_RETRY_POLICY",
+        RetryPolicy(max_attempts=2, base_delay_seconds=0, jitter_seconds=0),
+    )
 
-        async def __aenter__(self) -> "FailingAsyncClient":
-            return self
+    with respx.mock:
+        route = respx.get(jwks_url).mock(side_effect=httpx.ReadTimeout("unreachable JWKS route"))
 
-        async def __aexit__(self, *_args: object) -> None:
-            return None
+        with pytest.raises(AuthTokenError, match="JWKS endpoint was unreachable"):
+            await security.fetch_jwks(jwks_url)
 
-        async def get(self, _url: str) -> httpx.Response:
-            raise httpx.ReadTimeout("unreachable JWKS route")
-
-    monkeypatch.setattr(httpx, "AsyncClient", FailingAsyncClient)
-
-    with pytest.raises(AuthTokenError, match="JWKS endpoint was unreachable"):
-        await security.fetch_jwks("http://localhost:3000/api/auth/jwks")
+    assert len(route.calls) == 2
 
 
 @pytest.mark.asyncio
-async def test_fetch_jwks_wraps_malformed_json(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    class InvalidJsonAsyncClient:
-        def __init__(self, *, timeout: float) -> None:
-            assert timeout == security.JWKS_FETCH_TIMEOUT_SECONDS
+async def test_fetch_jwks_wraps_malformed_json() -> None:
+    jwks_url = "http://localhost:3000/api/auth/jwks"
 
-        async def __aenter__(self) -> "InvalidJsonAsyncClient":
-            return self
+    with respx.mock:
+        route = respx.get(jwks_url).mock(return_value=httpx.Response(200, content=b"not-json"))
 
-        async def __aexit__(self, *_args: object) -> None:
-            return None
+        with pytest.raises(AuthTokenError, match="JWKS endpoint returned invalid JSON"):
+            await security.fetch_jwks(jwks_url)
 
-        async def get(self, url: str) -> httpx.Response:
-            return httpx.Response(
-                200,
-                content=b"not-json",
-                request=httpx.Request("GET", url),
-            )
-
-    monkeypatch.setattr(httpx, "AsyncClient", InvalidJsonAsyncClient)
-
-    with pytest.raises(AuthTokenError, match="JWKS endpoint returned invalid JSON"):
-        await security.fetch_jwks("http://localhost:3000/api/auth/jwks")
+    assert len(route.calls) == 1
 
 
 def request_for_auth() -> Request:

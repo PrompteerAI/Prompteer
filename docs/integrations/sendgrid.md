@@ -8,7 +8,7 @@ Source:
 - https://www.twilio.com/docs/sendgrid/api-reference/mail-send/mail-send
 - https://www.twilio.com/docs/sendgrid/api-reference/mail-send/errors
 
-Prompteer uses `SENDGRID_API_KEY` for real email delivery. Empty values select the mock email client, which writes captured messages under `.mock/email/` by default and exposes them through dev-only API routes. `MOCK_MAILBOX_DIR` can override the capture directory; Compose sets it to a writable in-container path.
+Prompteer uses `SENDGRID_API_KEY` for real email delivery. Empty values select the mock email client, which writes captured messages under `.mock/email/` by default and exposes them through dev-only API routes. `MOCK_MAILBOX_DIR` can override the capture directory; Compose bind-mounts the repo-local `.mock/email/` directory into API containers.
 
 ## Current Mock Behavior
 
@@ -31,10 +31,11 @@ template supplies it. Captured template emails include the template id and dynam
 template data in the `.eml` body so local debugging remains useful.
 
 Accepted messages are written as `.eml` files under the configured mock mailbox
-directory. Native dev defaults to `.mock/email/`; Docker Compose sets
-`MOCK_MAILBOX_DIR` to a writable in-container path and exposes those messages
-through the dev mailbox routes. The mock also exposes the upstream-shaped Mail
-Send endpoint locally:
+directory. Native dev defaults to `.mock/email/`; Docker Compose uses a one-shot
+init service to create the repo-local `.mock/email/` bind mount, owned by the
+API runtime UID with the host group from `PROMPTEER_HOST_GID`, before API and
+worker startup. The same files are exposed through the dev mailbox routes. The
+mock also exposes the upstream-shaped Mail Send endpoint locally:
 
 ```http
 POST /v3/mail/send

@@ -10,7 +10,12 @@ from sqlmodel import Session
 from app.api.deps import get_current_principal
 from app.core.config import integration_modes, settings
 from app.core.feature_flags import dev_routes_enabled, feature_enabled, require_feature_enabled
-from app.core.ratelimit import GENERAL_RATE_LIMIT, PAYMENTS_RATE_LIMIT, limiter
+from app.core.ratelimit import (
+    GENERAL_RATE_LIMIT,
+    PAYMENTS_RATE_LIMIT,
+    STRIPE_WEBHOOK_RATE_LIMIT,
+    limiter,
+)
 from app.core.security import Principal
 from app.db.session import get_session
 from app.integrations.email import get_email_client
@@ -134,11 +139,14 @@ async def complete_mock_checkout(
 
 
 @router.post("/webhooks/stripe")
+@limiter.limit(STRIPE_WEBHOOK_RATE_LIMIT)
 async def stripe_webhook(
     request: Request,
+    response: Response,
     db_session: Annotated[Session, Depends(get_session)],
     stripe_signature: Annotated[str | None, Header(alias="Stripe-Signature")] = None,
 ) -> StripeWebhookRead:
+    del response
     require_feature_enabled("payments")
     if not stripe_signature:
         raise HTTPException(

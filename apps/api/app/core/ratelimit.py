@@ -109,4 +109,5 @@ GENERAL_RATE_LIMIT = settings.general_rate_limit
 AUTH_ATTEMPT_RATE_LIMIT = settings.auth_attempt_rate_limit
 LLM_RATE_LIMIT = settings.llm_rate_limit
 PAYMENTS_RATE_LIMIT = settings.payments_rate_limit
+STRIPE_WEBHOOK_RATE_LIMIT = settings.stripe_webhook_rate_limit
 EMAIL_RATE_LIMIT = settings.email_rate_limit

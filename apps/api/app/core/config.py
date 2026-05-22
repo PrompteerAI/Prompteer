@@ -51,6 +51,10 @@ class Settings(BaseSettings):
     auth_attempt_rate_limit: str = Field(default="120/minute", alias="AUTH_ATTEMPT_RATE_LIMIT")
     llm_rate_limit: str = Field(default="10/minute;200/hour", alias="LLM_RATE_LIMIT")
     payments_rate_limit: str = Field(default="5/minute", alias="PAYMENTS_RATE_LIMIT")
+    stripe_webhook_rate_limit: str = Field(
+        default="120/minute",
+        alias="STRIPE_WEBHOOK_RATE_LIMIT",
+    )
     email_rate_limit: str = Field(default="5/minute;20/day", alias="EMAIL_RATE_LIMIT")
     llm_free_daily_token_cap: int = Field(default=50_000, alias="LLM_FREE_DAILY_TOKEN_CAP")
     llm_paid_daily_token_cap: int = Field(default=500_000, alias="LLM_PAID_DAILY_TOKEN_CAP")

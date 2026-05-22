@@ -1,10 +1,12 @@
 """Tests for daily per-user LLM token quota accounting and enforcement."""
 
 from collections.abc import Generator
+from datetime import date
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from freezegun import freeze_time
 from sqlalchemy.engine import Engine
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine, select
@@ -185,6 +187,11 @@ def test_resolve_user_for_principal_matches_email_case_insensitively() -> None:
 
     assert user.email == "free@prompteer.dev"
     assert user.id == "00000000-0000-4000-8000-000000000003"
+
+
+def test_current_usage_date_uses_the_utc_clock() -> None:
+    with freeze_time("2026-05-22T23:30:00Z"):
+        assert current_usage_date() == date(2026, 5, 22)
 
 
 def seeded_engine() -> Engine:

@@ -92,7 +92,7 @@ process is still alive. CI also runs `make compose-health`, which parses
 
 ## Rate limits
 
-FastAPI uses `slowapi` for request rate limiting. Local Compose config points SlowAPI at Redis so counters are shared across API workers; Redis is a required dependency rather than an in-process fallback. Cost-sensitive routes have explicit configurable limits: LLM prompt runs and provider-compatible LLM mocks default to `10/minute;200/hour`, payment and checkout routes default to `5/minute`, and SendGrid-compatible mail send defaults to `5/minute;20/day`. General challenge and community reads default to `60/minute`. Keys are scoped by authenticated principal when a route resolves one, otherwise by client IP.
+FastAPI uses `slowapi` for request rate limiting. Local Compose config points SlowAPI at Redis so counters are shared across API workers; Redis is a required dependency rather than an in-process fallback. Cost-sensitive routes have explicit configurable limits: LLM prompt runs and provider-compatible LLM mocks default to `10/minute;200/hour`, payment and checkout routes default to `5/minute`, Stripe webhook deliveries default to `120/minute`, and SendGrid-compatible mail send defaults to `5/minute;20/day`. General challenge and community reads default to `60/minute`. Keys are scoped by authenticated principal when a route resolves one, otherwise by client IP.
 
 LLM token quotas are stored in `llm_usage_days` by UTC date. Free users default to 50,000 tokens/day, paid users default to 500,000 tokens/day, and admins are uncapped while still being auditable through usage rows. Quota exhaustion returns RFC 9457 Problem Details with `code: "quota_exceeded"`.
 
