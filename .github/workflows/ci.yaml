@@ -169,7 +169,17 @@ jobs:
           key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
+      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('apps/api/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
       - run: pnpm install --frozen-lockfile
+      - run: uv sync --project apps/api --dev
       - run: cp .env.example .env
       - run: docker compose up -d
       - run: make compose-health
