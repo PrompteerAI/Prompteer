@@ -1,13 +1,21 @@
 """Typed application settings loaded from environment variables and .env files."""
 
 from functools import lru_cache
-from typing import Literal, TypedDict
+from typing import Literal, Self, TypedDict
+from urllib.parse import unquote, urlsplit
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 RealMockIntegrationMode = Literal["mock", "real"]
 GoogleOAuthIntegrationMode = Literal["mock", "partial", "real"]
+DEV_DATABASE_PASSWORD = "prompteer"  # noqa: S105  # Public dev default rejected in production.
+DEV_DATABASE_URLS = frozenset(
+    {
+        "postgresql+psycopg://prompteer:prompteer@localhost:55432/prompteer",
+        "postgresql+psycopg://prompteer:prompteer@postgres:5432/prompteer",
+    },
+)
 
 
 class IntegrationModes(TypedDict):
@@ -15,6 +23,26 @@ class IntegrationModes(TypedDict):
     google_oauth: GoogleOAuthIntegrationMode
     stripe: RealMockIntegrationMode
     email: RealMockIntegrationMode
+
+
+def _credential_missing(value: str) -> bool:
+    return not value.strip()
+
+
+def _database_uses_dev_secret(database_url: str) -> bool:
+    if database_url in DEV_DATABASE_URLS:
+        return True
+
+    try:
+        parsed = urlsplit(database_url)
+    except ValueError:
+        return False
+
+    password = parsed.password
+    if password is None:
+        return True
+
+    return unquote(password) == DEV_DATABASE_PASSWORD
 
 
 class Settings(BaseSettings):
@@ -115,6 +143,39 @@ class Settings(BaseSettings):
     @property
     def is_development(self) -> bool:
         return self.env == "development"
+
+    @model_validator(mode="after")
+    def validate_production_contract(self) -> Self:
+        if not self.is_production:
+            return self
+
+        errors: list[str] = []
+        if _database_uses_dev_secret(self.database_url):
+            errors.append("DATABASE_URL must not use the default development database secret")
+        if _credential_missing(self.google_client_id) or _credential_missing(
+            self.google_client_secret,
+        ):
+            errors.append("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are required in production")
+        if _credential_missing(self.openai_api_key) and _credential_missing(self.anthropic_api_key):
+            errors.append("OPENAI_API_KEY or ANTHROPIC_API_KEY is required in production")
+        if _credential_missing(self.stripe_secret_key):
+            errors.append("STRIPE_SECRET_KEY is required in production")
+        if _credential_missing(self.stripe_webhook_secret):
+            errors.append("STRIPE_WEBHOOK_SECRET is required in production")
+        if _credential_missing(self.sendgrid_api_key):
+            errors.append("SENDGRID_API_KEY is required in production")
+        if self.auth_allow_seed_login:
+            errors.append("AUTH_ALLOW_SEED_LOGIN must be false in production")
+        if self.enable_dev_routes:
+            errors.append("ENABLE_DEV_ROUTES must be false in production")
+        if self.auto_seed_on_startup:
+            errors.append("AUTO_SEED_ON_STARTUP must be false in production")
+
+        if errors:
+            msg = "Invalid production API configuration: " + "; ".join(errors)
+            raise ValueError(msg)
+
+        return self
 
 
 @lru_cache

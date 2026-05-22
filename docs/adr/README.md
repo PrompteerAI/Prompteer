@@ -28,6 +28,7 @@ Prompteer uses ADRs to preserve the reasoning behind autonomous rebuild decision
 | Dependabot tracking backend dependencies with uv                     | [0020 - Dependabot Uses The uv Ecosystem](0020-dependabot-uv-ecosystem.md)                        |
 | FastAPI route, service, repository boundaries                        | [0021 - API Repository Boundaries](0021-api-repository-boundaries.md)                             |
 | Pre-release destructive cleanup for unique prompt shares             | [0022 - Share Uniqueness Migration](0022-share-uniqueness-migration.md)                           |
+| Production fail-fast runtime configuration guardrails                | [0023 - Production Runtime Configuration Guardrails](0023-production-runtime-configuration.md)    |
 
 ## Gitignore Note
 

@@ -6,6 +6,7 @@ import warnings
 
 from pytest import CaptureFixture, MonkeyPatch
 
+from app import main as api_main
 from app.core import logging as api_logging
 from app.core.config import settings
 
@@ -86,3 +87,22 @@ def test_stdlib_logs_use_structlog_processor_formatter(
     assert event["version"] == "test-version"
     assert event["env"] == "test"
     assert "request_id" in event
+
+
+def test_startup_log_payload_reports_runtime_modes(monkeypatch: MonkeyPatch) -> None:
+    modes = {"llm": "mock", "google_oauth": "mock", "stripe": "mock", "email": "mock"}
+    monkeypatch.setattr(api_main, "integration_modes", lambda: modes)
+    monkeypatch.setattr(settings, "enable_dev_routes", True)
+    monkeypatch.setattr(settings, "auto_seed_on_startup", True)
+    monkeypatch.setattr(settings, "rate_limit_enabled", True)
+    monkeypatch.setattr(settings, "rate_limit_strategy", "moving-window")
+    monkeypatch.setattr(settings, "auth_jwks_url", "http://localhost:3000/api/auth/jwks")
+
+    assert api_main.startup_log_payload() == {
+        "integrations": modes,
+        "dev_routes_enabled": True,
+        "auto_seed_on_startup": True,
+        "rate_limit_enabled": True,
+        "rate_limit_strategy": "moving-window",
+        "auth_jwks_url": "http://localhost:3000/api/auth/jwks",
+    }

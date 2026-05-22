@@ -7,6 +7,10 @@ for the target commit have been pushed to GHCR.
 
 - Confirm the release commit is on `main` and has passing `ci.yaml`,
   `build.yaml`, and `e2e.yaml` workflow runs.
+- For `ENV=production`, confirm the API has non-dev values for `DATABASE_URL`,
+  Google OAuth, one LLM provider, Stripe, SendGrid, and that dev-only switches
+  (`AUTH_ALLOW_SEED_LOGIN`, `ENABLE_DEV_ROUTES`, `AUTO_SEED_ON_STARTUP`) are
+  disabled. The API refuses to boot in production when these checks fail.
 - `build.yaml` publishes GHCR images only after its `required verification` job
   passes. That job repeats the lightweight release gate (`format:check`,
   environment documentation checks, dependency audit, lint, typecheck, unit

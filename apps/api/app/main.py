@@ -90,10 +90,23 @@ def inactive_mock_route_provider(path: str) -> str | None:
     return None
 
 
+def startup_log_payload(modes: dict[str, str] | None = None) -> dict[str, object]:
+    return {
+        "integrations": modes or integration_modes(),
+        "dev_routes_enabled": dev_routes_enabled(),
+        "auto_seed_on_startup": settings.auto_seed_on_startup,
+        "rate_limit_enabled": settings.rate_limit_enabled,
+        "rate_limit_strategy": settings.rate_limit_strategy,
+        "auth_jwks_url": settings.auth_jwks_url,
+    }
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     await bootstrap_development_state()
-    logger.info("integrations_selected", **integration_modes())
+    modes = integration_modes()
+    logger.info("api_startup", **startup_log_payload(modes))
+    logger.info("integrations_selected", **modes)
     yield
 
 

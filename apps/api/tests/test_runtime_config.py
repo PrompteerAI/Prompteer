@@ -1,9 +1,29 @@
 """Focused tests for runtime configuration helpers."""
 
+from typing import Any, cast
+
 import pytest
 
-from app.core.config import integration_modes, settings
+from app.core.config import Settings, integration_modes, settings
 from app.db import session as db_session
+
+
+def valid_production_settings(**overrides: object) -> Settings:
+    values: dict[str, object] = {
+        "ENV": "production",
+        "DATABASE_URL": "postgresql+psycopg://prompteer:strong-secret@db:5432/prompteer",
+        "GOOGLE_CLIENT_ID": "google-client",
+        "GOOGLE_CLIENT_SECRET": "google-secret",
+        "OPENAI_API_KEY": "sk-openai",
+        "STRIPE_SECRET_KEY": "sk_live_stripe",
+        "STRIPE_WEBHOOK_SECRET": "whsec_live",
+        "SENDGRID_API_KEY": "SG.live",
+        "AUTH_ALLOW_SEED_LOGIN": False,
+        "ENABLE_DEV_ROUTES": False,
+        "AUTO_SEED_ON_STARTUP": False,
+    }
+    values.update(overrides)
+    return Settings(**cast(dict[str, Any], values))
 
 
 @pytest.mark.parametrize(
@@ -36,3 +56,42 @@ def test_database_engine_kwargs_reflect_pool_settings(monkeypatch: pytest.Monkey
         "max_overflow": 11,
         "pool_timeout": 4.5,
     }
+
+
+def test_production_settings_accept_real_secrets() -> None:
+    config = valid_production_settings()
+
+    assert config.is_production is True
+    assert integration_modes(config) == {
+        "llm": "real",
+        "google_oauth": "real",
+        "stripe": "real",
+        "email": "real",
+    }
+
+
+def test_production_settings_reject_mock_and_dev_defaults() -> None:
+    with pytest.raises(ValueError) as error:
+        valid_production_settings(
+            DATABASE_URL="postgresql+psycopg://prompteer:prompteer@postgres:5432/prompteer",
+            GOOGLE_CLIENT_ID="",
+            GOOGLE_CLIENT_SECRET="",
+            OPENAI_API_KEY="",
+            STRIPE_SECRET_KEY="",
+            STRIPE_WEBHOOK_SECRET="",
+            SENDGRID_API_KEY="",
+            AUTH_ALLOW_SEED_LOGIN=True,
+            ENABLE_DEV_ROUTES=True,
+            AUTO_SEED_ON_STARTUP=True,
+        )
+
+    message = str(error.value)
+    assert "DATABASE_URL must not use the default development database secret" in message
+    assert "GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are required" in message
+    assert "OPENAI_API_KEY or ANTHROPIC_API_KEY is required" in message
+    assert "STRIPE_SECRET_KEY is required" in message
+    assert "STRIPE_WEBHOOK_SECRET is required" in message
+    assert "SENDGRID_API_KEY is required" in message
+    assert "AUTH_ALLOW_SEED_LOGIN must be false" in message
+    assert "ENABLE_DEV_ROUTES must be false" in message
+    assert "AUTO_SEED_ON_STARTUP must be false" in message
