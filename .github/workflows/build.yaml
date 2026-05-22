@@ -47,6 +47,21 @@ jobs:
       - run: make test
       - run: make types-check
       - run: make build
+      - run: pnpm --filter @prompteer/web exec playwright install --with-deps chromium
+      - name: Run Compose e2e gate
+        run: make e2e
+      - name: Verify README UI screenshots
+        run: make verify-ui
+      - name: Upload verification artifacts
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: build-verification-artifacts
+          if-no-files-found: ignore
+          path: |
+            .verify/
+            apps/web/playwright-report/
+            apps/web/test-results/
       - name: Stop verification services
         if: always()
         run: docker compose down -v
@@ -97,6 +112,13 @@ jobs:
           file: apps/web/Dockerfile
           push: true
           tags: ${{ env.WEB_IMAGE_TAGS }}
+          build-args: |
+            APP_VERSION=${{ github.sha }}
+            PUBLIC_ORIGIN=https://prompteer.example.invalid
+            NEXT_PUBLIC_API_URL=https://prompteer.example.invalid/api/v1
+            NEXT_PUBLIC_APP_VERSION=${{ github.sha }}
+            NEXT_PUBLIC_USE_MOCK_GOOGLE=false
+            NEXT_PUBLIC_SENTRY_DSN=
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Build api image

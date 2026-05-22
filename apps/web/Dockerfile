@@ -10,12 +10,33 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS build
 COPY apps/web apps/web
 COPY scripts scripts
-RUN export ENV=development \
-    APP_URL=http://localhost \
-    AUTH_URL=http://localhost \
-    AUTH_JWT_ISSUER=http://localhost \
-    AUTH_MOCK_GOOGLE_ISSUER=http://localhost \
-    NEXT_PUBLIC_API_URL=http://localhost/api/v1 \
+ARG APP_VERSION=0.1.0
+ARG PUBLIC_ORIGIN=https://prompteer.example.invalid
+ARG NEXT_PUBLIC_API_URL=https://prompteer.example.invalid/api/v1
+ARG NEXT_PUBLIC_APP_VERSION=0.1.0
+ARG NEXT_PUBLIC_USE_MOCK_GOOGLE=false
+ARG NEXT_PUBLIC_SENTRY_DSN=
+ARG AUTH_SECRET=build-time-not-a-secret
+ARG AUTH_JWT_PRIVATE_KEY=build-time-not-a-private-key
+ARG AUTH_JWT_KEY_ID=prompteer-build-auth
+ARG GOOGLE_CLIENT_ID=build-google-client-id
+ARG GOOGLE_CLIENT_SECRET=build-google-client-secret
+RUN export NODE_ENV=production \
+    ENV=production \
+    APP_VERSION="${APP_VERSION}" \
+    NEXT_PUBLIC_APP_VERSION="${NEXT_PUBLIC_APP_VERSION}" \
+    APP_URL="${PUBLIC_ORIGIN}" \
+    AUTH_URL="${PUBLIC_ORIGIN}" \
+    AUTH_JWT_ISSUER="${PUBLIC_ORIGIN}" \
+    AUTH_MOCK_GOOGLE_ISSUER="${PUBLIC_ORIGIN}" \
+    AUTH_SECRET="${AUTH_SECRET}" \
+    AUTH_JWT_PRIVATE_KEY="${AUTH_JWT_PRIVATE_KEY}" \
+    AUTH_JWT_KEY_ID="${AUTH_JWT_KEY_ID}" \
+    GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID}" \
+    GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET}" \
+    NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL}" \
+    NEXT_PUBLIC_USE_MOCK_GOOGLE="${NEXT_PUBLIC_USE_MOCK_GOOGLE}" \
+    NEXT_PUBLIC_SENTRY_DSN="${NEXT_PUBLIC_SENTRY_DSN}" \
     API_INTERNAL_URL=http://api:8000/api/v1 && \
     pnpm --filter @prompteer/web locales && \
     pnpm --filter @prompteer/web exec next build
