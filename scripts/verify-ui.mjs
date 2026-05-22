@@ -1,6 +1,6 @@
 // Playwright-based screenshot helper for manual UI verification. Captures the
 // main public, authenticated, and dev-only screens in desktop and mobile sizes.
-import { mkdir, readdir, unlink } from "node:fs/promises";
+import { mkdir, readdir, unlink, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 
 const webRequire = createRequire(
@@ -403,17 +403,19 @@ for (const viewport of viewports) {
         style: hideNextDevToolsStyle,
       });
       if (route.readme && viewport.name === "desktop") {
-        await page.screenshot({
-          path: new URL(`${route.name}.png`, readmeOutDir).pathname,
+        const readmeScreenshot = await page.screenshot({
           fullPage: true,
           style: hideNextDevToolsStyle,
         });
+        await writeFile(
+          new URL(`${route.name}.png`, readmeOutDir),
+          readmeScreenshot,
+        );
         if (updateReadmeScreenshots) {
-          await page.screenshot({
-            path: new URL(`${route.name}.png`, promotedReadmeOutDir).pathname,
-            fullPage: true,
-            style: hideNextDevToolsStyle,
-          });
+          await writeFile(
+            new URL(`${route.name}.png`, promotedReadmeOutDir),
+            readmeScreenshot,
+          );
         }
       }
     } finally {

@@ -113,6 +113,9 @@ test("seeded user can browse media challenge lists and details", async ({
     page.getByText("Hero composition with product focus"),
   ).toBeVisible();
   await expect(page.getByText("Local preview", { exact: true })).toBeVisible();
+  await expect(
+    page.locator('img[src="/references/product-hero.png"]').first(),
+  ).toBeVisible();
 
   await openLinkedRoute(
     page,
@@ -126,6 +129,9 @@ test("seeded user can browse media challenge lists and details", async ({
   await page.locator("summary", { hasText: "Stored path" }).click();
   await expect(
     page.getByText("seed/references/product-hero.png"),
+  ).toBeVisible();
+  await expect(
+    page.locator('img[src="/references/product-hero.png"]').first(),
   ).toBeVisible();
   await page
     .getByRole("textbox", { name: "Prompt" })
@@ -166,6 +172,12 @@ test("seeded user can browse media challenge lists and details", async ({
   ).toBeVisible();
   await expect(page.getByText("video/mp4")).toBeVisible();
   await expect(page.getByText("16:9 launch teaser storyboard")).toBeVisible();
+  const videoListPreview = page
+    .locator(
+      'video[src="/references/launch-teaser.mp4"][poster="/references/launch-teaser-poster.png"]',
+    )
+    .first();
+  await expect(videoListPreview).toBeVisible();
 
   await openLinkedRoute(
     page,
@@ -182,6 +194,12 @@ test("seeded user can browse media challenge lists and details", async ({
   await expect(
     page.getByText("seed/references/launch-teaser.mp4"),
   ).toBeVisible();
+  const videoDetailPreview = page
+    .locator(
+      'video[src="/references/launch-teaser.mp4"][poster="/references/launch-teaser-poster.png"]',
+    )
+    .first();
+  await expect(videoDetailPreview).toBeVisible();
   await page
     .getByRole("textbox", { name: "Prompt" })
     .fill(

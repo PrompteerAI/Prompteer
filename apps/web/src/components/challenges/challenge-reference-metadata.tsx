@@ -2,7 +2,15 @@
 // render directly; seeded references use tracked local demo assets.
 import type { CSSProperties } from "react";
 
-import { FileImage, FileVideo, Play, Sparkles } from "lucide-react";
+import {
+  FileImage,
+  FileVideo,
+  Maximize,
+  MoreVertical,
+  Play,
+  Sparkles,
+  VolumeX,
+} from "lucide-react";
 import Image from "next/image";
 
 import {
@@ -149,14 +157,18 @@ function BrowserReferenceAsset({
   }
   if (metadata.preview.assetKind === "video") {
     return (
-      <video
-        className="h-full w-full object-cover"
-        controls
-        muted
-        playsInline
-        preload="metadata"
-        src={metadata.preview.assetUrl}
-      />
+      <>
+        <video
+          aria-label={metadata.preview.title}
+          className="h-full w-full object-cover"
+          muted
+          playsInline
+          poster={metadata.preview.posterUrl ?? undefined}
+          preload="metadata"
+          src={metadata.preview.assetUrl}
+        />
+        <VideoPreviewChrome />
+      </>
     );
   }
 
@@ -169,6 +181,28 @@ function BrowserReferenceAsset({
       src={metadata.preview.assetUrl}
       unoptimized
     />
+  );
+}
+
+function VideoPreviewChrome(): React.ReactElement {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-x-4 bottom-4 text-white"
+    >
+      <div className="flex items-center gap-3 text-sm font-medium drop-shadow">
+        <Play className="h-4 w-4 fill-current" />
+        <span>0:00 / 0:03</span>
+        <div className="ml-auto flex items-center gap-4">
+          <VolumeX className="h-4 w-4" />
+          <Maximize className="h-4 w-4" />
+          <MoreVertical className="h-4 w-4" />
+        </div>
+      </div>
+      <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/40">
+        <div className="h-full w-0 rounded-full bg-white" />
+      </div>
+    </div>
   );
 }
 

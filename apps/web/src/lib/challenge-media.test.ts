@@ -123,6 +123,8 @@ describe("challenge media helpers", () => {
     expect(
       referencePreview(imageReference, undefined, previewLabels),
     ).toMatchObject({
+      assetKind: "image",
+      assetUrl: "/references/product-hero.png",
       eyebrow: "Image reference",
       subtitle: "Hero composition with product focus",
       title: "Product hero",
@@ -131,7 +133,10 @@ describe("challenge media helpers", () => {
     expect(
       referencePreview(videoReference, undefined, previewLabels),
     ).toMatchObject({
+      assetKind: "video",
+      assetUrl: "/references/launch-teaser.mp4",
       eyebrow: "Video reference",
+      posterUrl: "/references/launch-teaser-poster.png",
       subtitle: "16:9 launch teaser storyboard",
       title: "Launch teaser",
       variant: "launch-teaser",

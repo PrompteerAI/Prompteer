@@ -36,6 +36,7 @@ export type ChallengeReferencePreview = {
   seed: number;
   assetKind: "image" | "video" | null;
   assetUrl: string | null;
+  posterUrl: string | null;
   subtitle: string;
   title: string;
   variant: "generic-image" | "generic-video" | "launch-teaser" | "product-hero";
@@ -153,6 +154,7 @@ export function referencePreview(
     background: palette.background,
     eyebrow: isVideo ? labels.videoReference : labels.imageReference,
     seed,
+    posterUrl: null,
     subtitle: isVideo
       ? labels.generatedLocalVideoPreview
       : labels.generatedLocalImagePreview,
@@ -171,6 +173,7 @@ function seededReferencePreview(
   | "assetUrl"
   | "background"
   | "eyebrow"
+  | "posterUrl"
   | "subtitle"
   | "title"
   | "variant"
@@ -178,11 +181,12 @@ function seededReferencePreview(
   if (normalizedPath === "seed/references/launch-teaser.mp4") {
     return {
       accentColor: "#2563eb",
-      assetKind: "image",
-      assetUrl: "/references/launch-teaser-poster.svg",
+      assetKind: "video",
+      assetUrl: "/references/launch-teaser.mp4",
       background:
         "radial-gradient(circle at 74% 18%, rgba(96, 165, 250, 0.38), transparent 24%), linear-gradient(135deg, #111827 0%, #1d4ed8 48%, #f97316 100%)",
       eyebrow: labels.videoReference,
+      posterUrl: "/references/launch-teaser-poster.png",
       subtitle: labels.launchTeaserSubtitle,
       title: labels.launchTeaserTitle,
       variant: "launch-teaser",
@@ -192,10 +196,11 @@ function seededReferencePreview(
     return {
       accentColor: "#059669",
       assetKind: "image",
-      assetUrl: "/references/product-hero.svg",
+      assetUrl: "/references/product-hero.png",
       background:
         "radial-gradient(circle at 20% 22%, rgba(16, 185, 129, 0.32), transparent 24%), linear-gradient(135deg, #f8fafc 0%, #d1fae5 45%, #bfdbfe 100%)",
       eyebrow: labels.imageReference,
+      posterUrl: null,
       subtitle: labels.productHeroSubtitle,
       title: labels.productHeroTitle,
       variant: "product-hero",
