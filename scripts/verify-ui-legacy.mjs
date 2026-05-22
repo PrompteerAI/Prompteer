@@ -26,6 +26,8 @@ const extraOutDir = resolve(
 
 const desktop = { width: 1440, height: 900 };
 const mobile = { width: 390, height: 844 };
+const legacyRunnerPrompt =
+  "Explain the constraints, outline edge cases, and provide a concise implementation plan.";
 
 const hideNextDevToolsStyle = `
   nextjs-portal,
@@ -75,11 +77,7 @@ const captures = [
     afterGoto: async (page) => {
       await page.getByRole("link", { name: /challenge now/i }).click();
       await page.waitForURL(/\/en\/coding\/problem\//);
-      await page
-        .getByRole("textbox", { name: "Prompt" })
-        .fill(
-          "Explain the constraints, outline edge cases, and provide a concise implementation plan.",
-        );
+      await fillPromptForScreenshot(page, legacyRunnerPrompt);
       await page.getByRole("checkbox", { name: /publish this run/i }).uncheck();
       await page.getByRole("button", { name: "Run prompt" }).click();
       await page.getByText("Private run").waitFor({
@@ -131,11 +129,7 @@ const captures = [
     afterGoto: async (page) => {
       await page.getByRole("link", { name: /challenge now/i }).click();
       await page.waitForURL(/\/en\/coding\/problem\//);
-      await page
-        .getByRole("textbox", { name: "Prompt" })
-        .fill(
-          "Explain the constraints, outline edge cases, and provide a concise implementation plan.",
-        );
+      await fillPromptForScreenshot(page, legacyRunnerPrompt);
       await page.getByRole("checkbox", { name: /publish this run/i }).uncheck();
       await page.getByRole("button", { name: "Run prompt" }).click();
       await page.getByText("Private run").waitFor({
@@ -203,6 +197,27 @@ async function ensureSeedLogin(page) {
       `Legacy seed login did not redirect to /en; current URL is ${page.url()}.`,
     );
   }
+}
+
+async function fillPromptForScreenshot(page, value) {
+  const promptArea = page.getByRole("textbox", { name: "Prompt" });
+  await promptArea.waitFor({ state: "visible", timeout: 30_000 });
+  await page.waitForFunction(() => {
+    const element = document.querySelector('textarea[aria-label="Prompt"]');
+    return element instanceof HTMLTextAreaElement && element.value.length > 0;
+  });
+  await promptArea.fill(value);
+  await page.waitForFunction(
+    (expectedValue) => {
+      const element = document.querySelector('textarea[aria-label="Prompt"]');
+      return (
+        element instanceof HTMLTextAreaElement &&
+        element.value === expectedValue
+      );
+    },
+    value,
+    { timeout: 10_000 },
+  );
 }
 
 async function settleForScreenshot(page) {
