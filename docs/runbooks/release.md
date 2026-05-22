@@ -60,7 +60,16 @@ can run the same checks manually without invoking Git.
    ghcr.io/<owner>/prompteer-api:vX.Y.Z
    ```
 
-4. Create the GitHub release from the changelog entry and link the successful CI
+4. From a logged-out shell, confirm both tagged images can be pulled
+   anonymously, or document that the release is intentionally private and
+   requires `docker login ghcr.io`:
+
+   ```sh
+   docker pull ghcr.io/<owner>/prompteer-web:vX.Y.Z
+   docker pull ghcr.io/<owner>/prompteer-api:vX.Y.Z
+   ```
+
+5. Create the GitHub release from the changelog entry and link the successful CI
    and build workflow runs.
 
 ## Post-Release Checks

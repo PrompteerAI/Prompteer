@@ -6,7 +6,7 @@ Accepted on 2026-05-23.
 
 ## Context
 
-Prompteer publishes production web and API images to GHCR. GitHub's
+Prompteer is configured to publish production web and API images to GHCR. GitHub's
 [package linking documentation](https://docs.github.com/en/packages/learn-github-packages/connecting-a-repository-to-a-package)
 says container images published under a user or organization are not linked to a
 source repository by default, and recommends the `org.opencontainers.image.source`
@@ -37,8 +37,8 @@ permission inheritance is disabled.
 
 ## Alternatives considered
 
-Leaving images unlabeled was rejected because it weakens the README's GHCR
-availability claim and makes package-to-source provenance less obvious. Setting
-package visibility from the workflow was not chosen because GitHub exposes
+Leaving images unlabeled was rejected because it weakens package-to-source
+provenance and makes release verification less obvious. Setting package
+visibility from the workflow was not chosen because GitHub exposes
 visibility controls through package settings and owner policy, while OCI labels
 are a code-level contract that travels with every image.

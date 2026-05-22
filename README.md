@@ -2,7 +2,7 @@
 
 Prompt challenge workspace for practicing prompts, comparing deterministic mock outputs, and sharing reviewable challenge runs.
 
-[![CI](https://img.shields.io/github/actions/workflow/status/PrompteerAI/Prompteer/ci.yaml?branch=main&label=ci)](https://github.com/PrompteerAI/Prompteer/actions/workflows/ci.yaml) [![Build](https://img.shields.io/github/actions/workflow/status/PrompteerAI/Prompteer/build.yaml?branch=main&label=build)](https://github.com/PrompteerAI/Prompteer/actions/workflows/build.yaml) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Node](https://img.shields.io/badge/node-22-5FA04E)](.nvmrc) [![Python](https://img.shields.io/badge/python-3.12-3776AB)](apps/api/.python-version) [![GHCR](https://img.shields.io/badge/GHCR-prompteer-2496ED)](https://github.com/orgs/PrompteerAI/packages/container/package/prompteer-web) [![Commit activity](https://img.shields.io/github/commit-activity/m/PrompteerAI/Prompteer)](https://github.com/PrompteerAI/Prompteer/commits/main)
+[![CI](https://img.shields.io/github/actions/workflow/status/PrompteerAI/Prompteer/ci.yaml?branch=main&label=ci)](https://github.com/PrompteerAI/Prompteer/actions/workflows/ci.yaml) [![Build](https://img.shields.io/github/actions/workflow/status/PrompteerAI/Prompteer/build.yaml?branch=main&label=build)](https://github.com/PrompteerAI/Prompteer/actions/workflows/build.yaml) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Node](https://img.shields.io/badge/node-22-5FA04E)](.nvmrc) [![Python](https://img.shields.io/badge/python-3.12-3776AB)](apps/api/.python-version) [![Commit activity](https://img.shields.io/github/commit-activity/m/PrompteerAI/Prompteer)](https://github.com/PrompteerAI/Prompteer/commits/main)
 
 ![Prompteer landing workspace](docs/screenshots/01-landing.png)
 
@@ -151,7 +151,12 @@ Infrastructure:
 
 - [pnpm workspaces](https://pnpm.io/workspaces), [uv](https://docs.astral.sh/uv/), [Turborepo](https://turbo.build/repo)
 - [Docker Compose](https://docs.docker.com/compose/), [nginx](https://nginx.org/), [GitHub Actions](https://docs.github.com/actions)
-- Images are built for [GHCR](https://ghcr.io/) as `prompteer-web` and `prompteer-api`
+- CI is configured to publish [GHCR](https://ghcr.io/) images as
+  `ghcr.io/prompteerai/prompteer-web:{latest,sha-<short>,vX.Y.Z}` and
+  `ghcr.io/prompteerai/prompteer-api:{latest,sha-<short>,vX.Y.Z}` after the
+  verification gate passes. GitHub package visibility is controlled outside the
+  repo; first-published packages may require an owner to make them public before
+  anonymous `docker pull` works.
 
 ## Development
 
@@ -311,7 +316,7 @@ make reset
 
 ## Deployment
 
-Production runs behind nginx as one origin: `/` routes to the Next.js web app and `/api/` routes to FastAPI. GitHub Actions lint, typecheck, test, build, and publish images to GHCR. PostgreSQL backups, restores, and migration safety are documented in [docs/runbooks/backup-restore.md](docs/runbooks/backup-restore.md) and [docs/runbooks/migrations.md](docs/runbooks/migrations.md).
+Production runs behind nginx as one origin: `/` routes to the Next.js web app and `/api/` routes to FastAPI. GitHub Actions lint, typecheck, test, build, and publish GHCR images after verification; package visibility may still require an owner setting in GitHub Packages. PostgreSQL backups, restores, and migration safety are documented in [docs/runbooks/backup-restore.md](docs/runbooks/backup-restore.md) and [docs/runbooks/migrations.md](docs/runbooks/migrations.md).
 
 ## Contributing
 
