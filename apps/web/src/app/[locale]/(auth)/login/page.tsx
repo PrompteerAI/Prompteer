@@ -6,8 +6,10 @@ import { Button, Card } from "@/components/ui";
 import { Link } from "@/i18n/navigation";
 import { localizedPath } from "@/i18n/paths";
 import { signIn } from "@/lib/auth";
-import { getServerEnv, publicEnv } from "@/lib/env";
+import { getServerEnv } from "@/lib/env";
 import { safeLocalizedCallbackUrl } from "@/lib/redirects";
+
+export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -39,7 +41,7 @@ export default async function LoginPage({
   const serverEnv = getServerEnv();
   const useMockGoogle =
     serverEnv.ENV !== "production" &&
-    publicEnv.NEXT_PUBLIC_USE_MOCK_GOOGLE &&
+    serverEnv.NEXT_PUBLIC_USE_MOCK_GOOGLE &&
     !(serverEnv.GOOGLE_CLIENT_ID && serverEnv.GOOGLE_CLIENT_SECRET);
   const accounts = useMockGoogle
     ? [
