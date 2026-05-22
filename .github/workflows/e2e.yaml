@@ -42,6 +42,8 @@ jobs:
         run: pnpm --filter @prompteer/web test:e2e
         env:
           PLAYWRIGHT_BASE_URL: http://localhost
+      - name: Verify legacy-preview UI
+        run: make verify-ui-legacy
       - name: Capture Compose logs
         if: always()
         run: |
@@ -57,6 +59,8 @@ jobs:
           path: |
             .verify/compose-ps.txt
             .verify/compose.log
+            .verify/screenshots/legacy/
+            .verify/screenshots/legacy-extra/
             apps/web/playwright-report/
             apps/web/test-results/
       - name: Stop Compose

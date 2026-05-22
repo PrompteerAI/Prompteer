@@ -110,6 +110,50 @@ const captures = [
     readme: false,
   },
   {
+    name: "legacy-mobile-board",
+    path: "/en/board",
+    viewport: mobile,
+    expectedText: ["Board", "Shared questions and prompt runs"],
+    readme: false,
+  },
+  {
+    name: "legacy-mobile-login",
+    path: "/en/login",
+    viewport: mobile,
+    expectedText: ["Login", "Demo login"],
+    readme: false,
+  },
+  {
+    name: "legacy-mobile-problem-runner",
+    path: "/en/category/coding",
+    viewport: mobile,
+    authenticated: true,
+    afterGoto: async (page) => {
+      await page.getByRole("link", { name: /challenge now/i }).click();
+      await page.waitForURL(/\/en\/coding\/problem\//);
+      await page
+        .getByRole("textbox", { name: "Prompt" })
+        .fill(
+          "Explain the constraints, outline edge cases, and provide a concise implementation plan.",
+        );
+      await page.getByRole("checkbox", { name: /publish this run/i }).uncheck();
+      await page.getByRole("button", { name: "Run prompt" }).click();
+      await page.getByText("Private run").waitFor({
+        timeout: 15_000,
+      });
+    },
+    expectedText: ["Prompt editor", "Private run"],
+    readme: false,
+  },
+  {
+    name: "legacy-mobile-billing",
+    path: "/en/billing",
+    viewport: mobile,
+    authenticated: true,
+    expectedText: ["Prompteer Pro", "Billing email"],
+    readme: false,
+  },
+  {
     name: "legacy-error-boundary",
     path: "/en/coding/problem/not-a-real-challenge",
     viewport: desktop,
