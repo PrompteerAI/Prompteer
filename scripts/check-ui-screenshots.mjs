@@ -307,7 +307,7 @@ if (changed.length > 0) {
       ? `maxChannelDelta=${difference.maxChannelDelta}, changedPixelRatio=${difference.changedPixelRatio.toFixed(6)}, normalizedRmse=${difference.normalizedRmse.toFixed(6)}`
       : difference.reason;
     annotate(
-      strictScreenshotDiffs ? "error" : "warning",
+      strictScreenshotDiffs ? "error" : "notice",
       `README screenshot candidate differs for ${name}: ${detail}`,
     );
   }
