@@ -30,6 +30,9 @@ from app.core.logging import configure_logging
 from app.core.observability import init_observability
 from app.core.ratelimit import limiter
 from app.integrations.email.mock import router as mock_sendgrid_router
+from app.integrations.google_oauth.mock import (
+    dev_private_key as ensure_mock_google_private_key,
+)
 from app.integrations.google_oauth.mock import router as mock_google_oauth_router
 from app.integrations.llm.mock import router as mock_llm_router
 from app.integrations.payments.mock import router as mock_stripe_router
@@ -105,6 +108,8 @@ def startup_log_payload(modes: dict[str, str] | None = None) -> dict[str, object
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     await bootstrap_development_state()
     modes = integration_modes()
+    if modes["google_oauth"] == "mock" and dev_routes_enabled():
+        ensure_mock_google_private_key()
     logger.info("api_startup", **startup_log_payload(modes))
     logger.info("integrations_selected", **modes)
     yield

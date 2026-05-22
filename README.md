@@ -54,9 +54,9 @@ also verified in CI from a fresh checkout. See [Development](#development).
 | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | ![Mock mailbox showing captured SendGrid messages](docs/screenshots/07-mailbox.png) | ![Profile settings page with account details and logout](docs/screenshots/08-settings.png) |
 
-| Board prompt share detail                                                | Board question detail                                               |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------- |
-| ![Board prompt share detail](docs/screenshots/17-board-share-detail.png) | ![Board question detail](docs/screenshots/18-board-post-detail.png) |
+| Authenticated dashboard workspace                                                                     | Board prompt share detail                                                | Board question detail                                               |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| ![Authenticated dashboard workspace with seeded flow entry points](docs/screenshots/15-dashboard.png) | ![Board prompt share detail](docs/screenshots/17-board-share-detail.png) | ![Board question detail](docs/screenshots/18-board-post-detail.png) |
 
 | Image challenge reference metadata                                                           | Image challenge detail metadata                                                                                        |
 | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |

@@ -8,6 +8,7 @@ import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 
 import { publicEnv } from "@/lib/env";
+import enMessages from "@/messages/en.json";
 
 type ReportState = "idle" | "pending" | "success" | "error";
 
@@ -17,6 +18,7 @@ export default function GlobalError({
   error: Error & { digest?: string };
 }): React.ReactElement {
   const [reportState, setReportState] = useState<ReportState>("idle");
+  const t = enMessages.errors;
 
   useEffect(() => {
     if (publicEnv.NEXT_PUBLIC_SENTRY_DSN) {
@@ -68,10 +70,10 @@ export default function GlobalError({
             }}
           >
             <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>
-              Prompteer could not start this page
+              {t.rootTitle}
             </h1>
             <p style={{ color: "#52525b", lineHeight: 1.6, marginTop: 10 }}>
-              A root-level rendering error interrupted the app shell.
+              {t.rootDescription}
             </p>
             {error.digest ? (
               <p
@@ -82,7 +84,7 @@ export default function GlobalError({
                   overflowWrap: "anywhere",
                 }}
               >
-                Support ID: {error.digest}
+                {t.supportId}: {error.digest}
               </p>
             ) : null}
             <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
@@ -93,7 +95,7 @@ export default function GlobalError({
                 style={buttonStyle}
                 type="button"
               >
-                Retry
+                {t.retry}
               </button>
               <button
                 disabled={
@@ -106,15 +108,15 @@ export default function GlobalError({
                 type="button"
               >
                 {reportState === "pending"
-                  ? "Reporting"
+                  ? t.reporting
                   : reportState === "success"
-                    ? "Reported"
-                    : "Report"}
+                    ? t.reported
+                    : t.report}
               </button>
             </div>
             {reportState === "error" ? (
               <p role="alert" style={{ color: "#b91c1c", marginBottom: 0 }}>
-                Report failed. Please retry after refreshing the page.
+                {t.reportFailedDescription}
               </p>
             ) : null}
           </section>

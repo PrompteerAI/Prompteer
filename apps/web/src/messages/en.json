@@ -323,9 +323,26 @@
     "retry": "Retry",
     "report": "Report",
     "reported": "Reported",
-    "reportFailed": "Report failed"
+    "reporting": "Reporting",
+    "reportFailed": "Report failed",
+    "reportFailedDescription": "Report failed. Please retry after refreshing the page.",
+    "rootTitle": "Prompteer could not start this page",
+    "rootDescription": "A root-level rendering error interrupted the app shell."
   },
   "notFound": {
     "title": "Page not found"
+  },
+  "devMailbox": {
+    "title": "Mock Mailbox",
+    "heading": "Mock mailbox",
+    "brand": "Prompteer",
+    "openApp": "Open app",
+    "subject": "Subject",
+    "to": "To",
+    "from": "From",
+    "message": "Message",
+    "empty": "No captured messages yet.",
+    "back": "Back",
+    "unavailableTitle": "Mailbox unavailable"
   }
 }

@@ -27,6 +27,17 @@ const routes = [
     readme: true,
   },
   {
+    name: "15-dashboard",
+    path: "/en",
+    auth: true,
+    expectedText: [
+      "Prompt challenge workspace",
+      "Profile settings",
+      "Coding workspace",
+    ],
+    readme: true,
+  },
+  {
     name: "02-login",
     path: "/en/login",
     auth: false,
@@ -348,11 +359,25 @@ for (const viewport of viewports) {
       }
       await page.locator("body").waitFor({ state: "visible" });
       if (route.detailLinkName) {
-        await page
+        const detailLink = page
           .getByRole("link", { name: route.detailLinkName })
-          .first()
-          .click();
-        await page.waitForURL(route.expectedUrl);
+          .first();
+        await detailLink.waitFor({ state: "visible", timeout: 10_000 });
+        const href = await detailLink.getAttribute("href");
+        if (!href) {
+          failures.push(
+            `[${viewport.name}] ${route.name} detail link did not expose an href.`,
+          );
+          continue;
+        }
+        const targetUrl = new URL(href, origin).toString();
+        if (!route.expectedUrl.test(targetUrl)) {
+          failures.push(
+            `[${viewport.name}] ${route.name} detail link href ${targetUrl} did not match ${route.expectedUrl}.`,
+          );
+          continue;
+        }
+        await page.goto(targetUrl, { waitUntil: "domcontentloaded" });
         await page.locator("body").waitFor({ state: "visible" });
       }
       if (route.afterGoto) {

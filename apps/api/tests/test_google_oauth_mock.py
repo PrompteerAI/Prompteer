@@ -78,7 +78,9 @@ def test_mock_google_private_key_is_generated_to_runtime_file(tmp_path: Path) ->
     )
 
 
-def test_mock_google_private_key_is_loaded_lazily(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_mock_google_private_key_is_initialized_on_startup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     generated = False
 
     def fake_load_or_create_private_key(
@@ -93,7 +95,8 @@ def test_mock_google_private_key_is_loaded_lazily(monkeypatch: pytest.MonkeyPatc
 
     try:
         assert not generated
-        google_mock.public_jwk()
+        with TestClient(create_app()):
+            pass
         assert generated
     finally:
         google_mock.dev_private_key.cache_clear()

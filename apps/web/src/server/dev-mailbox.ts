@@ -2,6 +2,9 @@
 // captured emails through the FastAPI dev mailbox endpoints.
 import { defaultLocalePath } from "@/i18n/paths";
 import { getServerEnv } from "@/lib/env";
+import enMessages from "@/messages/en.json";
+
+const copy = enMessages.devMailbox;
 
 interface MailboxMessage {
   id: string;
@@ -46,29 +49,29 @@ export function mailboxIndexHtml(messages: MailboxMessage[]): string {
     .join("");
 
   return shell(
-    "Mock Mailbox",
+    copy.title,
     `
       <header class="page-header">
         <div>
-          <p>Prompteer</p>
-          <h1>Mock mailbox</h1>
+          <p>${copy.brand}</p>
+          <h1>${copy.heading}</h1>
         </div>
-        <a class="button" href="${defaultLocalePath("/")}">Open app</a>
+        <a class="button" href="${defaultLocalePath("/")}">${copy.openApp}</a>
       </header>
       <section class="panel">
         <table>
           <thead>
             <tr>
-              <th>Subject</th>
-              <th>To</th>
-              <th>From</th>
-              <th>Message</th>
+              <th>${copy.subject}</th>
+              <th>${copy.to}</th>
+              <th>${copy.from}</th>
+              <th>${copy.message}</th>
             </tr>
           </thead>
           <tbody>
             ${
               rows ||
-              `<tr class="empty-row"><td colspan="4" class="empty">No captured messages yet.</td></tr>`
+              `<tr class="empty-row"><td colspan="4" class="empty">${copy.empty}</td></tr>`
             }
           </tbody>
         </table>
@@ -82,16 +85,16 @@ export function mailboxMessageHtml(message: MailboxMessageResponse): string {
     `
       <header class="page-header">
         <div>
-          <p>Mock mailbox</p>
+          <p>${copy.heading}</p>
           <h1>${escapeHtml(message.subject)}</h1>
         </div>
-        <a class="button" href="/dev/mailbox">Back</a>
+        <a class="button" href="/dev/mailbox">${copy.back}</a>
       </header>
       <section class="panel message-meta">
         <dl>
-          <div><dt>To</dt><dd>${escapeHtml(message.to)}</dd></div>
-          <div><dt>From</dt><dd>${escapeHtml(message.from)}</dd></div>
-          <div><dt>Message</dt><dd><code>${escapeHtml(message.id)}</code></dd></div>
+          <div><dt>${copy.to}</dt><dd>${escapeHtml(message.to)}</dd></div>
+          <div><dt>${copy.from}</dt><dd>${escapeHtml(message.from)}</dd></div>
+          <div><dt>${copy.message}</dt><dd><code>${escapeHtml(message.id)}</code></dd></div>
         </dl>
       </section>
       <section class="panel">
@@ -102,14 +105,14 @@ export function mailboxMessageHtml(message: MailboxMessageResponse): string {
 
 export function mailboxErrorHtml(status: number, detail: string): string {
   return shell(
-    "Mailbox unavailable",
+    copy.unavailableTitle,
     `
       <header class="page-header">
         <div>
-          <p>Prompteer</p>
-          <h1>Mailbox unavailable</h1>
+          <p>${copy.brand}</p>
+          <h1>${copy.unavailableTitle}</h1>
         </div>
-        <a class="button" href="${defaultLocalePath("/")}">Open app</a>
+        <a class="button" href="${defaultLocalePath("/")}">${copy.openApp}</a>
       </header>
       <section class="panel error">
         <strong>${status}</strong>
