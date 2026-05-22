@@ -1,3 +1,4 @@
 #!/usr/bin/env sh
-# Runs the same pre-commit checks contributors can invoke from package scripts.
-pnpm run hooks:pre-commit
+# Runs staged JS checks and Python pre-commit hooks before a commit is created.
+pnpm lint-staged
+uv run --project apps/api pre-commit run --hook-stage pre-commit

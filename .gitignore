@@ -5,6 +5,7 @@ AGENTS.override.md
 
 # Environment and secrets
 .env
+.env.*
 .env.local
 .env.*.local
 !.env.example

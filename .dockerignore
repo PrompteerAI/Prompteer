@@ -3,6 +3,7 @@
 AGENTS.md
 AGENTS.override.md
 .env
+.env.*
 .env.local
 .env.*.local
 node_modules

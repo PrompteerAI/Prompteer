@@ -158,15 +158,65 @@ function gitSucceeds(args) {
 
 function checkGitIgnoreContract() {
   const failures = [];
+  const ignoredPaths = [
+    [".env", ".env must be ignored so local credentials never get staged."],
+    [
+      ".env.local",
+      ".env.local must be ignored so local credentials never get staged.",
+    ],
+    [
+      ".env.production",
+      ".env.production must be ignored so environment-specific secrets never get staged.",
+    ],
+    [
+      "node_modules",
+      "node_modules must be ignored so installed dependencies never get staged.",
+    ],
+    [
+      "apps/web/.next",
+      "apps/web/.next must be ignored so Next.js build output never gets staged.",
+    ],
+    [
+      "apps/api/.venv",
+      "apps/api/.venv must be ignored so local Python virtualenvs never get staged.",
+    ],
+    [
+      ".verify",
+      ".verify must be ignored so verification artifacts never get staged.",
+    ],
+    [
+      ".mock/email",
+      ".mock/email must be ignored so captured mock mail never gets staged.",
+    ],
+    [
+      "AGENTS.md",
+      "AGENTS.md must be ignored defensively because it is local agent context.",
+    ],
+    [
+      ".codex/",
+      ".codex must be ignored defensively because it is local agent config.",
+    ],
+  ];
+  const allowedPaths = [
+    [".env.example", ".env.example must stay tracked and must not be ignored."],
+    [
+      "docs/screenshots/01-landing.png",
+      "docs/screenshots/01-landing.png must stay tracked and must not be ignored.",
+    ],
+  ];
 
-  if (!gitSucceeds(["check-ignore", "-q", ".env"])) {
-    failures.push(
-      ".env must be ignored so local credentials never get staged.",
-    );
+  for (const [path, message] of ignoredPaths) {
+    if (!gitSucceeds(["check-ignore", "-q", path])) {
+      failures.push(message);
+    }
   }
-  if (gitSucceeds(["check-ignore", "-q", ".env.example"])) {
-    failures.push(".env.example must stay tracked and must not be ignored.");
+
+  for (const [path, message] of allowedPaths) {
+    if (gitSucceeds(["check-ignore", "-q", path])) {
+      failures.push(message);
+    }
   }
+
   if (gitSucceeds(["ls-files", "--error-unmatch", ".env"])) {
     failures.push(".env must not be tracked.");
   }

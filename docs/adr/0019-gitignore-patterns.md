@@ -20,7 +20,7 @@ Maintain one root `.gitignore` built from current best-practice patterns for the
 - GitHub's maintained Python `.gitignore` template covers Python caches, virtual environments, build outputs, coverage, and tool caches.
 - uv uses local virtual environments and lockfiles; virtual environments are ignored while `uv.lock` stays tracked.
 
-The repo also ignores `AGENTS.md`, `AGENTS.override.md`, `.codex/`, `.verify/`, `.mock/`, local environment files, editor noise, OS junk, logs, and local Compose overrides. `docs/screenshots/` is not ignored because curated README-grade screenshots are public documentation.
+The repo also ignores `AGENTS.md`, `AGENTS.override.md`, `.codex/`, `.verify/`, `.mock/`, local environment files including environment-specific `.env.*` files, editor noise, OS junk, logs, and local Compose overrides. `docs/screenshots/` is not ignored because curated README-grade screenshots are public documentation.
 
 References checked:
 
@@ -43,12 +43,13 @@ Any future tool that writes generated state should update the root `.gitignore`,
 Run:
 
 ```bash
-git check-ignore -v .env node_modules apps/web/.next apps/api/.venv
+make env-check
+git check-ignore -v .env .env.local .env.production node_modules apps/web/.next apps/api/.venv .verify .mock/email AGENTS.md .codex/
 git check-ignore -v docs/screenshots/01-landing.png
 ```
 
-The first command should print matching ignore rules for all four paths. The second command should print nothing and exit with status `1`, confirming curated screenshots are not ignored.
+`make env-check` verifies the canonical environment documentation and the defensive ignore contract. The first `git check-ignore` command should print matching ignore rules for every local-only path. The second command should print nothing and exit with status `1`, confirming curated screenshots are not ignored.
 
-## Alternatives Considered
+## Alternatives considered
 
 Per-directory `.gitignore` files would keep patterns closer to each app but make the public repo contract harder to audit. A generated `.gitignore` would reduce manual maintenance but obscure the explicit security and documentation choices this monorepo needs.

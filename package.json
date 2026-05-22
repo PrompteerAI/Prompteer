@@ -18,7 +18,7 @@
     "audit": "pnpm audit --audit-level moderate",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "hooks:pre-commit": "pnpm exec lint-staged && uv run --project apps/api pre-commit run --all-files",
+    "hooks:pre-commit": "pnpm lint-staged && uv run --project apps/api pre-commit run --hook-stage pre-commit",
     "source-headers": "node scripts/check-source-headers.mjs",
     "commitlint": "commitlint --edit"
   },
