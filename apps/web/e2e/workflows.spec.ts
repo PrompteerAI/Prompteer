@@ -1,7 +1,21 @@
 // End-to-end checks for authenticated prompt, billing, board, and settings flows.
 import { expect, test } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import { loginAs } from "./helpers";
+
+async function clickAndWaitForRoute(
+  page: Page,
+  trigger: Locator,
+  url: RegExp,
+): Promise<void> {
+  await expect(trigger).toBeVisible();
+  await Promise.all([
+    page.waitForURL(url, { waitUntil: "commit" }),
+    trigger.click(),
+  ]);
+  await expect(page).toHaveURL(url);
+}
 
 test("seeded user can run a coding prompt", async ({ page }) => {
   await loginAs(page);
@@ -92,12 +106,11 @@ test("seeded user can browse media challenge lists and details", async ({
   ).toBeVisible();
   await expect(page.getByText("Local preview", { exact: true })).toBeVisible();
 
-  await Promise.all([
-    page.waitForURL(/\/en\/challenges\/image\/[^/]+$/),
-    page
-      .getByRole("link", { name: /View details: Product hero image prompt/ })
-      .click(),
-  ]);
+  await clickAndWaitForRoute(
+    page,
+    page.getByRole("link", { name: /View details: Product hero image prompt/ }),
+    /\/en\/challenges\/image\/[^/]+$/,
+  );
   await expect(
     page.getByRole("heading", { name: "Product hero image prompt" }),
   ).toBeVisible();
@@ -142,12 +155,13 @@ test("seeded user can browse media challenge lists and details", async ({
   await expect(page.getByText("video/mp4")).toBeVisible();
   await expect(page.getByText("16:9 launch teaser storyboard")).toBeVisible();
 
-  await Promise.all([
-    page.waitForURL(/\/en\/challenges\/video\/[^/]+$/),
-    page
-      .getByRole("link", { name: /View details: Launch teaser video prompt/ })
-      .click(),
-  ]);
+  await clickAndWaitForRoute(
+    page,
+    page.getByRole("link", {
+      name: /View details: Launch teaser video prompt/,
+    }),
+    /\/en\/challenges\/video\/[^/]+$/,
+  );
   await expect(
     page.getByRole("heading", { name: "Launch teaser video prompt" }),
   ).toBeVisible();
