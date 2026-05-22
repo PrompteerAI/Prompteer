@@ -13,7 +13,7 @@ async function openLinkedRoute(
   const href = await link.getAttribute("href");
 
   if (href === null) {
-    throw new Error("Expected challenge detail link to expose an href.");
+    throw new Error("Expected navigational link to expose an href.");
   }
   expect(href).toEqual(expect.stringMatching(url));
   await page.goto(href);
@@ -83,14 +83,17 @@ test("seeded user can browse media challenge lists and details", async ({
   await loginAs(page);
 
   await page.goto("/en/challenges/coding");
-  await page.getByRole("link", { name: "Image" }).click();
-  await expect(page).toHaveURL(/\/en\/challenges\/image$/);
-  await expect(
-    page.getByRole("link", { name: "Challenges" }),
-  ).not.toHaveAttribute("aria-current", "page");
   const challengeTypeNav = page.getByRole("navigation", {
     name: "Challenge types",
   });
+  await openLinkedRoute(
+    page,
+    challengeTypeNav.getByRole("link", { exact: true, name: "Image" }),
+    /\/en\/challenges\/image$/,
+  );
+  await expect(
+    page.getByRole("link", { name: "Challenges" }),
+  ).not.toHaveAttribute("aria-current", "page");
   await expect(
     challengeTypeNav.getByRole("link", { exact: true, name: "Image" }),
   ).toHaveAttribute("aria-current", "page");
@@ -134,13 +137,17 @@ test("seeded user can browse media challenge lists and details", async ({
   await expect(page.getByText(/Mock Prompteer response/)).toBeVisible();
   await expect(page.getByText("Published to board")).toBeVisible();
 
-  await page.getByRole("link", { name: "Back to image challenges" }).click();
-  await expect(page).toHaveURL(/\/en\/challenges\/image$/);
+  await openLinkedRoute(
+    page,
+    page.getByRole("link", { name: "Back to image challenges" }),
+    /\/en\/challenges\/image$/,
+  );
 
-  await challengeTypeNav
-    .getByRole("link", { exact: true, name: "Video" })
-    .click();
-  await expect(page).toHaveURL(/\/en\/challenges\/video$/);
+  await openLinkedRoute(
+    page,
+    challengeTypeNav.getByRole("link", { exact: true, name: "Video" }),
+    /\/en\/challenges\/video$/,
+  );
   await expect(
     page
       .getByRole("navigation", { name: "Challenge types" })
