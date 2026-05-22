@@ -2,10 +2,6 @@
 
 Prompt challenge workspace for practicing prompts, comparing deterministic mock outputs, and sharing reviewable challenge runs.
 
-[![CI](https://img.shields.io/github/actions/workflow/status/PrompteerAI/Prompteer/ci.yaml?branch=main&label=ci)](https://github.com/PrompteerAI/Prompteer/actions/workflows/ci.yaml) [![Build](https://img.shields.io/github/actions/workflow/status/PrompteerAI/Prompteer/build.yaml?branch=main&label=build)](https://github.com/PrompteerAI/Prompteer/actions/workflows/build.yaml) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Node](https://img.shields.io/badge/node-22-5FA04E)](.nvmrc) [![Python](https://img.shields.io/badge/python-3.12-3776AB)](apps/api/.python-version) [![GHCR](https://img.shields.io/badge/GHCR-prompteer-2496ED)](https://github.com/orgs/PrompteerAI/packages/container/package/prompteer-web) [![Commit activity](https://img.shields.io/github/commit-activity/m/PrompteerAI/Prompteer)](https://github.com/PrompteerAI/Prompteer/commits/main)
-
-![Prompteer landing workspace](docs/screenshots/01-landing.png)
-
 ## What Is Prompteer
 
 Prompteer is a clean monorepo rebuild of a prompt challenge and sharing prototype. It combines a Next.js app, FastAPI API, seeded demo data, and schema-faithful local mocks for Google OAuth, OpenAI, Anthropic, Stripe, and SendGrid so contributors can run the complete product without external credentials.
