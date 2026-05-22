@@ -34,11 +34,13 @@ test("seeded user can run a coding prompt", async ({ page }) => {
   ).toBeVisible();
 
   await page.getByRole("textbox", { name: "Prompt" }).fill(prompt);
+  const runStartedAt = Date.now();
   await page.getByRole("button", { name: "Run prompt" }).click();
 
   await expect(page.getByText("Mock run result")).toBeVisible({
     timeout: 15_000,
   });
+  expect(Date.now() - runStartedAt).toBeLessThan(2_000);
   await expect(page.getByText(/Mock Prompteer response/)).toBeVisible();
   await expect(page.getByText(/tokens/)).toBeVisible();
   await expect(page.getByText("Published to board")).toBeVisible();
@@ -193,8 +195,8 @@ test("seeded user can browse media challenge lists and details", async ({
   await expect(page.getByText("Published to board")).toBeVisible();
 });
 
-test("paid demo user can complete mock checkout", async ({ page }) => {
-  await loginAs(page, "paid@prompteer.dev");
+test("free demo user can upgrade through mock checkout", async ({ page }) => {
+  await loginAs(page, "free@prompteer.dev");
 
   await page.goto("/en/billing");
   await expect(
@@ -209,7 +211,7 @@ test("paid demo user can complete mock checkout", async ({ page }) => {
 
   await expect(page.getByText("paid", { exact: true })).toBeVisible();
   await expect(
-    page.getByText(/Subscription active for paid@prompteer.dev/),
+    page.getByText(/Subscription active for free@prompteer.dev/),
   ).toBeVisible();
   await expect(page.getByText("checkout.session.completed")).toBeVisible();
 
@@ -224,6 +226,23 @@ test("paid demo user can complete mock checkout", async ({ page }) => {
     page.getByRole("heading", { name: "Checkout complete" }),
   ).toBeVisible();
   await expect(page.getByText(sessionId ?? "")).toBeVisible();
+
+  await page.goto("/dev/mailbox");
+  const receiptRow = page
+    .getByRole("row", {
+      name: /Prompteer Pro receipt free@prompteer\.dev/,
+    })
+    .first();
+  await expect(receiptRow).toBeVisible();
+  await receiptRow.getByRole("link", { name: "Prompteer Pro receipt" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Prompteer Pro receipt" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("free@prompteer.dev", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText(sessionId ?? "")).toBeVisible();
+  await expect(page.getByText("checkout.session.completed")).toBeVisible();
 });
 
 test("billing checkout uses the active session email", async ({ page }) => {
