@@ -13,6 +13,8 @@ from app.core.config import settings
 from app.core.migrations import MigrationState
 from app.main import app
 
+ORIGINAL_CHECK_AUTH_JWKS = health.check_auth_jwks
+
 
 def dependency_check(
     status: Literal["ok", "fail"],
@@ -23,6 +25,9 @@ def dependency_check(
 
 @pytest.fixture(autouse=True)
 def reset_health_settings(monkeypatch: MonkeyPatch) -> None:
+    async def ok_auth_jwks() -> health.DependencyCheck:
+        return dependency_check("ok", "Auth.js JWKS endpoint returned keys.")
+
     monkeypatch.setattr(settings, "env", "development")
     monkeypatch.setattr(settings, "enable_dev_routes", True)
     monkeypatch.setattr(settings, "google_client_id", "")
@@ -35,6 +40,7 @@ def reset_health_settings(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "feature_llm_enabled", True)
     monkeypatch.setattr(settings, "feature_payments_enabled", True)
     monkeypatch.setattr(settings, "feature_email_enabled", True)
+    monkeypatch.setattr(health, "check_auth_jwks", ok_auth_jwks)
 
 
 @pytest.fixture
@@ -92,6 +98,10 @@ def test_readiness_probe_reports_ok(monkeypatch: MonkeyPatch) -> None:
     assert body["status"] == "ok"
     assert body["checks"]["database"] == dependency_check("ok")
     assert body["checks"]["redis"] == dependency_check("ok")
+    assert body["checks"]["auth_jwks"] == dependency_check(
+        "ok",
+        "Auth.js JWKS endpoint returned keys.",
+    )
     assert_integration_statuses(
         body,
         {
@@ -132,6 +142,29 @@ def test_readiness_probe_reports_dependency_failure(monkeypatch: MonkeyPatch) ->
     )
 
 
+def test_readiness_probe_reports_auth_jwks_failure(monkeypatch: MonkeyPatch) -> None:
+    async def ok() -> health.DependencyCheck:
+        return dependency_check("ok")
+
+    async def fail_auth_jwks() -> health.DependencyCheck:
+        return dependency_check("fail", "Auth.js JWKS endpoint returned HTTP 503.")
+
+    monkeypatch.setattr(health, "check_database", ok)
+    monkeypatch.setattr(health, "check_redis", ok)
+    monkeypatch.setattr(health, "check_auth_jwks", fail_auth_jwks)
+
+    client = TestClient(app)
+    response = client.get("/api/v1/health/ready")
+
+    assert response.status_code == 503
+    body = response.json()
+    assert body["status"] == "degraded"
+    assert body["checks"]["auth_jwks"] == dependency_check(
+        "fail",
+        "Auth.js JWKS endpoint returned HTTP 503.",
+    )
+
+
 def test_readiness_probe_reports_real_redis_connection_failure(
     monkeypatch: MonkeyPatch,
 ) -> None:
@@ -160,6 +193,52 @@ def test_readiness_probe_reports_real_redis_connection_failure(
             "email": ("ok", "mock"),
         },
     )
+
+
+@pytest.mark.asyncio
+async def test_auth_jwks_readiness_check_validates_keyset(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "auth_jwks_url", "https://web.example/api/auth/jwks")
+
+    with respx.mock(assert_all_mocked=True) as router:
+        jwks_route = router.get("https://web.example/api/auth/jwks").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "keys": [
+                        {
+                            "kid": "test-key",
+                            "kty": "RSA",
+                            "alg": "RS256",
+                            "use": "sig",
+                            "n": "test-modulus",
+                            "e": "AQAB",
+                        }
+                    ]
+                },
+            )
+        )
+
+        result = await ORIGINAL_CHECK_AUTH_JWKS()
+
+    assert result == {"status": "ok", "detail": "Auth.js JWKS endpoint returned keys."}
+    assert jwks_route.called
+
+
+@pytest.mark.asyncio
+async def test_auth_jwks_readiness_check_rejects_empty_keyset(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "auth_jwks_url", "https://web.example/api/auth/jwks")
+
+    with respx.mock(assert_all_mocked=True) as router:
+        router.get("https://web.example/api/auth/jwks").mock(
+            return_value=httpx.Response(200, json={"keys": []})
+        )
+
+        result = await ORIGINAL_CHECK_AUTH_JWKS()
+
+    assert result["status"] == "fail"
+    assert "unexpected key set" in result["detail"]
 
 
 def test_readiness_probe_reports_all_real_integrations_ok(

@@ -77,7 +77,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          'python -c "import urllib.request; [urllib.request.urlopen(url, timeout=2) for url in (''http://127.0.0.1:8000/api/v1/health/ready'', ''http://127.0.0.1:8000/api/v1/health/startup'')]"',
+          'python -c "import urllib.request; [urllib.request.urlopen(url, timeout=2) for url in (''http://127.0.0.1:8000/api/v1/health/live'', ''http://127.0.0.1:8000/api/v1/health/startup'')]"',
         ]
       interval: 10s
       timeout: 5s

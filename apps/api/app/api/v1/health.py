@@ -71,6 +71,34 @@ async def check_redis() -> DependencyCheck:
     return {"status": "ok", "detail": "Redis ping succeeded."}
 
 
+async def check_auth_jwks() -> DependencyCheck:
+    try:
+        response = await provider_readiness_request(
+            provider="auth_jwks",
+            method="GET",
+            url=settings.auth_jwks_url,
+            headers={"accept": "application/json"},
+        )
+        if not response_succeeded(response):
+            return {
+                "status": "fail",
+                "detail": f"Auth.js JWKS endpoint returned HTTP {response.status_code}.",
+            }
+        jwks = response_json_object(response)
+        keys = jwks.get("keys") if jwks is not None else None
+        if not isinstance(keys, list) or not keys:
+            return {
+                "status": "fail",
+                "detail": "Auth.js JWKS endpoint returned an unexpected key set.",
+            }
+    except (httpx.HTTPError, TypeError, ValueError) as exc:
+        return {
+            "status": "fail",
+            "detail": f"Auth.js JWKS readiness probe failed: {type(exc).__name__}.",
+        }
+    return {"status": "ok", "detail": "Auth.js JWKS endpoint returned keys."}
+
+
 async def check_integrations() -> dict[str, IntegrationCheck]:
     modes = integration_modes()
     flags = feature_flags()
@@ -467,10 +495,17 @@ def integration_fail(*, mode: str, detail: str) -> IntegrationCheck:
 
 @router.get("/ready")
 async def ready() -> JSONResponse:
+    database, redis, auth_jwks, integrations = await asyncio.gather(
+        check_database(),
+        check_redis(),
+        check_auth_jwks(),
+        check_integrations(),
+    )
     checks: dict[str, Any] = {
-        "database": await check_database(),
-        "redis": await check_redis(),
-        "integrations": await check_integrations(),
+        "database": database,
+        "redis": redis,
+        "auth_jwks": auth_jwks,
+        "integrations": integrations,
     }
     status = "ok" if all_checks_pass(checks) else "degraded"
     status_code = 200 if status == "ok" else 503
