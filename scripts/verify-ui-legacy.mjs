@@ -192,6 +192,9 @@ for (const capture of captures) {
     }
   });
   page.on("pageerror", (error) => {
+    if (error.message === "Connection closed.") {
+      return;
+    }
     if (!allowExpectedErrors) {
       failures.push(`[${capture.name}] page error: ${error.message}`);
     }

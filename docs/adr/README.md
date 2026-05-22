@@ -25,6 +25,8 @@ Prompteer uses ADRs to preserve the reasoning behind autonomous rebuild decision
 | Secondary legacy-style frontend preview over rebuilt APIs            | [0017 - Legacy Preview Frontend](0017-legacy-preview-frontend.md)                                 |
 | Typed challenge media reference read contract                        | [0018 - Challenge Media Reference Read Contract](0018-challenge-media-reference-read-contract.md) |
 | Root `.gitignore` provenance and verification contract               | [0019 - Gitignore Patterns](0019-gitignore-patterns.md)                                           |
+| Dependabot tracking backend dependencies with uv                     | [0020 - Dependabot Uses The uv Ecosystem](0020-dependabot-uv-ecosystem.md)                        |
+| FastAPI route, service, repository boundaries                        | [0021 - API Repository Boundaries](0021-api-repository-boundaries.md)                             |
 
 ## Gitignore Note
 

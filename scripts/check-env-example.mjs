@@ -47,6 +47,7 @@ const SYSTEM_ENV_KEYS = new Set([
   "CI",
   "FORCE_COLOR",
   "GITHUB_ENV",
+  "GITHUB_OUTPUT",
   "GITHUB_REF_NAME",
   "GITHUB_REF_TYPE",
   "GITHUB_SHA",

@@ -26,6 +26,7 @@ want the legacy-preview frontend on `WEB_LEGACY_PORT`.
 
 - Branch from `main`.
 - Use Conventional Commits, for example `feat(api): add prompt quota checks`.
+- Use one of the enforced scopes: `web`, `api`, `infra`, `auth`, `integrations`, `db`, `ci`, `docs`, `deps`, `obs`, `i18n`, or `ratelimit`.
 - Keep commits focused. Prefer several reviewable commits over one broad commit.
 - Do not commit `.env`, local databases, mock captures, Playwright traces, or generated verification scratch files.
 
