@@ -29,6 +29,8 @@ jobs:
             ${{ runner.os }}-pnpm-
       - run: pnpm install --frozen-lockfile
       - run: cp .env.example .env
+      - name: Configure CI host volume permissions
+        run: echo "PROMPTEER_HOST_GID=$(id -g)" >> "$GITHUB_ENV"
       - run: scripts/compose-up.sh --build
       - run: make compose-health
       - name: Verify Compose health endpoints

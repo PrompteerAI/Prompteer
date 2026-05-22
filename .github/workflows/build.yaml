@@ -39,6 +39,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: uv sync --project apps/api --dev
       - run: cp .env.example .env
+      - name: Configure CI host volume permissions
+        run: echo "PROMPTEER_HOST_GID=$(id -g)" >> "$GITHUB_ENV"
       - run: pnpm format:check
       - run: make env-check
       - run: make audit
@@ -53,7 +55,9 @@ jobs:
       - name: Reset UI verification state
         run: |
           scripts/compose-down.sh -v
-          rm -rf .mock/email
+          if ! rm -rf .mock/email; then
+            sudo rm -rf .mock/email
+          fi
       - name: Verify primary UI screenshots
         run: make verify-ui-primary PROMPTEER_UPDATE_README_SCREENSHOTS=0
       - name: Verify legacy-preview UI screenshots

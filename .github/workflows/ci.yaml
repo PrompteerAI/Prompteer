@@ -181,6 +181,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: uv sync --project apps/api --dev
       - run: cp .env.example .env
+      - name: Configure CI host volume permissions
+        run: echo "PROMPTEER_HOST_GID=$(id -g)" >> "$GITHUB_ENV"
       - run: docker compose up -d
       - run: make compose-health
       - name: Verify Compose health endpoints
@@ -250,6 +252,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-uv-
       - run: cp .env.example .env
+      - name: Configure CI host volume permissions
+        run: echo "PROMPTEER_HOST_GID=$(id -g)" >> "$GITHUB_ENV"
       - run: docker compose up -d
       - run: make compose-health
       - name: Verify containerized fresh clone
