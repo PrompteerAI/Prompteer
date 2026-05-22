@@ -2,7 +2,8 @@
 
 ## Status
 
-Superseded by [0010 - Single Origin Compose Default](0010-single-origin-compose-default.md)
+Accepted on 2026-05-20. Superseded by
+[0010 - Single Origin Compose Default](0010-single-origin-compose-default.md)
 on 2026-05-21.
 
 ## Context

@@ -1,6 +1,6 @@
 """Deterministic OpenAI and Anthropic LLM mocks.
 
-Schema references verified on 2026-05-22:
+Schema references verified on 2026-05-23:
 - OpenAI Chat Completions: https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create
 - OpenAI Chat Completions streaming: https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events
 - Anthropic Messages: https://platform.claude.com/docs/en/api/messages/create

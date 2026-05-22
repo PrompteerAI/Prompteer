@@ -1,6 +1,6 @@
 """Stripe Checkout mock.
 
-Schema references verified on 2026-05-22:
+Schema references verified on 2026-05-23:
 - https://docs.stripe.com/api/checkout/sessions
 - https://docs.stripe.com/api/checkout/sessions/create
 - https://docs.stripe.com/api/checkout/sessions/retrieve
