@@ -26,27 +26,35 @@ test("seeded user can run a coding prompt", async ({ page }) => {
   await expect(page.getByText(/tokens/)).toBeVisible();
   await expect(page.getByText("Published to board")).toBeVisible();
 
-  await page.getByRole("link", { name: "View board" }).click();
-  await expect(page).toHaveURL(/\/en\/board$/);
+  await Promise.all([
+    page.waitForURL(/\/en\/board$/),
+    page.getByRole("link", { name: "View board" }).click(),
+  ]);
   await expect(page.getByText(prompt)).toBeVisible();
 
-  await page
-    .getByRole("link", { name: /Read prompt share: FizzBuzz prompt repair/ })
-    .first()
-    .click();
-  await expect(page).toHaveURL(/\/en\/board\/shares\//);
+  await Promise.all([
+    page.waitForURL(/\/en\/board\/shares\//),
+    page
+      .getByRole("link", { name: /Read prompt share: FizzBuzz prompt repair/ })
+      .first()
+      .click(),
+  ]);
   await expect(
     page.getByRole("heading", { name: "FizzBuzz prompt repair" }),
   ).toBeVisible();
   await expect(page.getByText(prompt)).toBeVisible();
 
-  await page.getByRole("link", { name: "Back to board" }).click();
-  await expect(page).toHaveURL(/\/en\/board$/);
-  await page
-    .getByRole("link", { name: /Read question:/ })
-    .first()
-    .click();
-  await expect(page).toHaveURL(/\/en\/board\/posts\//);
+  await Promise.all([
+    page.waitForURL(/\/en\/board$/),
+    page.getByRole("link", { name: "Back to board" }).click(),
+  ]);
+  await Promise.all([
+    page.waitForURL(/\/en\/board\/posts\//),
+    page
+      .getByRole("link", { name: /Read question:/ })
+      .first()
+      .click(),
+  ]);
   await expect(
     page.getByRole("heading", { name: /prompt|review|debug|image|video/i }),
   ).toBeVisible();

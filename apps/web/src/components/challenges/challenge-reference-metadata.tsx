@@ -9,6 +9,7 @@ import {
   referenceMetadata,
   type ChallengeReferenceMetadata as ChallengeReferenceMetadataValue,
   type ChallengeReference,
+  type ChallengeReferencePreviewLabels,
 } from "@/lib/challenge-media";
 
 type ChallengeReferenceMetadataProps = {
@@ -20,6 +21,7 @@ type ChallengeReferenceMetadataProps = {
   pathLabel: string;
   reference: ChallengeReference;
   referenceLabel: string;
+  previewLabels: ChallengeReferencePreviewLabels;
   unknownFileTypeLabel: string;
   index: number;
 };
@@ -31,6 +33,7 @@ export function ChallengeReferenceMetadata({
   iconLabel,
   index,
   pathUnavailableLabel,
+  previewLabels,
   pathLabel,
   reference,
   referenceLabel,
@@ -40,6 +43,7 @@ export function ChallengeReferenceMetadata({
     fallbackFileName,
     iconLabel,
     pathUnavailable: pathUnavailableLabel,
+    previewLabels,
     unknownFileType: unknownFileTypeLabel,
   });
   const Icon = metadata.kind === "img" ? FileImage : FileVideo;

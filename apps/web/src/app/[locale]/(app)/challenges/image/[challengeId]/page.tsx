@@ -11,13 +11,13 @@ import { normalizeError } from "@/lib/errors";
 export const dynamic = "force-dynamic";
 
 type Props = {
-  params: Promise<{ challengeId: string }>;
+  params: Promise<{ challengeId: string; locale: string }>;
 };
 
 export default async function ImageChallengeDetailPage({
   params,
 }: Props): Promise<React.ReactElement> {
-  const { challengeId } = await params;
+  const { challengeId, locale } = await params;
   const t = await getTranslations("mediaChallenges.image");
   const sharedT = await getTranslations("mediaChallenges.shared");
   const challengeTypesT = await getTranslations("challengeTypes");
@@ -73,12 +73,24 @@ export default async function ImageChallengeDetailPage({
             noReferences: sharedT("noReferences"),
             pathUnavailable: sharedT("pathUnavailable"),
             pathLabel: sharedT("storedPath"),
+            previewLabels: {
+              generatedLocalImagePreview: sharedT("generatedLocalImagePreview"),
+              generatedLocalVideoPreview: sharedT("generatedLocalVideoPreview"),
+              imageReference: sharedT("imageReference"),
+              launchTeaserSubtitle: sharedT("launchTeaserSubtitle"),
+              launchTeaserTitle: sharedT("launchTeaserTitle"),
+              productHeroSubtitle: sharedT("productHeroSubtitle"),
+              productHeroTitle: sharedT("productHeroTitle"),
+              referenceFile: sharedT("referenceFile"),
+              videoReference: sharedT("videoReference"),
+            },
             referenceLabel: sharedT("reference"),
             referenceUnavailable: sharedT("referenceUnavailable"),
             referencesTitle: sharedT("references"),
             unknownFileType: sharedT("unknownFileType"),
           }}
           kind="img"
+          locale={locale}
         />
       </div>
     </main>

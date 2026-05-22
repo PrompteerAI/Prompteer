@@ -1,4 +1,4 @@
-// Unit tests for the RS256 Auth.js JWTs consumed by the FastAPI API.
+// Unit tests for the RS256 API bearer tokens consumed by the FastAPI API.
 import { describe, expect, it, vi } from "vitest";
 
 describe("auth-jwt", () => {

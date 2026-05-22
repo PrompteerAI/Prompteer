@@ -17,6 +17,18 @@ export type ChallengeReferenceMetadata = {
   preview: ChallengeReferencePreview;
 };
 
+export type ChallengeReferencePreviewLabels = {
+  generatedLocalImagePreview: string;
+  generatedLocalVideoPreview: string;
+  imageReference: string;
+  launchTeaserSubtitle: string;
+  launchTeaserTitle: string;
+  productHeroSubtitle: string;
+  productHeroTitle: string;
+  referenceFile: string;
+  videoReference: string;
+};
+
 export type ChallengeReferencePreview = {
   accentColor: string;
   background: string;
@@ -46,44 +58,6 @@ const PREVIEW_PALETTES = [
       "radial-gradient(circle at 24% 76%, rgba(249, 115, 22, 0.24), transparent 30%), linear-gradient(135deg, #f8fafc 0%, #fee2e2 48%, #fefce8 100%)",
   },
 ] as const;
-
-const SEEDED_PREVIEWS: Record<
-  string,
-  Pick<
-    ChallengeReferencePreview,
-    | "accentColor"
-    | "assetKind"
-    | "assetUrl"
-    | "background"
-    | "eyebrow"
-    | "subtitle"
-    | "title"
-    | "variant"
-  >
-> = {
-  "seed/references/launch-teaser.mp4": {
-    accentColor: "#2563eb",
-    assetKind: "image",
-    assetUrl: "/references/launch-teaser-poster.svg",
-    background:
-      "radial-gradient(circle at 74% 18%, rgba(96, 165, 250, 0.38), transparent 24%), linear-gradient(135deg, #111827 0%, #1d4ed8 48%, #f97316 100%)",
-    eyebrow: "Video reference",
-    subtitle: "16:9 launch teaser storyboard",
-    title: "Launch teaser",
-    variant: "launch-teaser",
-  },
-  "seed/references/product-hero.png": {
-    accentColor: "#059669",
-    assetKind: "image",
-    assetUrl: "/references/product-hero.svg",
-    background:
-      "radial-gradient(circle at 20% 22%, rgba(16, 185, 129, 0.32), transparent 24%), linear-gradient(135deg, #f8fafc 0%, #d1fae5 45%, #bfdbfe 100%)",
-    eyebrow: "Image reference",
-    subtitle: "Hero composition with product focus",
-    title: "Product hero",
-    variant: "product-hero",
-  },
-};
 
 export function challengeMediaRouteSegment(
   kind: ChallengeMediaKind,
@@ -118,13 +92,14 @@ export function referenceMetadata(
     fallbackFileName: string;
     iconLabel: string;
     pathUnavailable: string;
+    previewLabels: ChallengeReferencePreviewLabels;
     unknownFileType: string;
   },
 ): ChallengeReferenceMetadata {
   const filePath = reference.file_path.trim();
   const fileName = fileNameFromPath(filePath) || labels.fallbackFileName;
   const fileType = reference.file_type.trim() || labels.unknownFileType;
-  const preview = referencePreview(reference, fileName);
+  const preview = referencePreview(reference, fileName, labels.previewLabels);
 
   return {
     fileName,
@@ -145,15 +120,16 @@ export function fileNameFromPath(filePath: string): string {
 
 export function referencePreview(
   reference: ChallengeReference,
-  fallbackTitle?: string,
+  fallbackTitle: string | undefined,
+  labels: ChallengeReferencePreviewLabels,
 ): ChallengeReferencePreview {
   const normalizedPath = normalizeStoredPath(reference.file_path);
-  const seededPreview = SEEDED_PREVIEWS[normalizedPath];
   const seed = hashReference(`${normalizedPath}:${reference.kind}`);
   const browserAsset = browserReferenceAsset(
     reference.file_path,
     reference.kind,
   );
+  const seededPreview = seededReferencePreview(normalizedPath, labels);
 
   if (seededPreview) {
     return {
@@ -166,21 +142,66 @@ export function referencePreview(
     PREVIEW_PALETTES[seed % PREVIEW_PALETTES.length] ?? PREVIEW_PALETTES[0];
   const isVideo = reference.kind === "video";
   const title =
-    fallbackTitle || fileNameFromPath(reference.file_path) || "Reference file";
+    fallbackTitle ||
+    fileNameFromPath(reference.file_path) ||
+    labels.referenceFile;
 
   return {
     accentColor: palette.accentColor,
     assetKind: browserAsset?.assetKind ?? null,
     assetUrl: browserAsset?.assetUrl ?? null,
     background: palette.background,
-    eyebrow: isVideo ? "Video reference" : "Image reference",
+    eyebrow: isVideo ? labels.videoReference : labels.imageReference,
     seed,
     subtitle: isVideo
-      ? "Generated local video preview"
-      : "Generated local image preview",
+      ? labels.generatedLocalVideoPreview
+      : labels.generatedLocalImagePreview,
     title,
     variant: isVideo ? "generic-video" : "generic-image",
   };
+}
+
+function seededReferencePreview(
+  normalizedPath: string,
+  labels: ChallengeReferencePreviewLabels,
+): Pick<
+  ChallengeReferencePreview,
+  | "accentColor"
+  | "assetKind"
+  | "assetUrl"
+  | "background"
+  | "eyebrow"
+  | "subtitle"
+  | "title"
+  | "variant"
+> | null {
+  if (normalizedPath === "seed/references/launch-teaser.mp4") {
+    return {
+      accentColor: "#2563eb",
+      assetKind: "image",
+      assetUrl: "/references/launch-teaser-poster.svg",
+      background:
+        "radial-gradient(circle at 74% 18%, rgba(96, 165, 250, 0.38), transparent 24%), linear-gradient(135deg, #111827 0%, #1d4ed8 48%, #f97316 100%)",
+      eyebrow: labels.videoReference,
+      subtitle: labels.launchTeaserSubtitle,
+      title: labels.launchTeaserTitle,
+      variant: "launch-teaser",
+    };
+  }
+  if (normalizedPath === "seed/references/product-hero.png") {
+    return {
+      accentColor: "#059669",
+      assetKind: "image",
+      assetUrl: "/references/product-hero.svg",
+      background:
+        "radial-gradient(circle at 20% 22%, rgba(16, 185, 129, 0.32), transparent 24%), linear-gradient(135deg, #f8fafc 0%, #d1fae5 45%, #bfdbfe 100%)",
+      eyebrow: labels.imageReference,
+      subtitle: labels.productHeroSubtitle,
+      title: labels.productHeroTitle,
+      variant: "product-hero",
+    };
+  }
+  return null;
 }
 
 function browserReferenceAsset(

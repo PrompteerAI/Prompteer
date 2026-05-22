@@ -6,7 +6,6 @@ import type { Provider } from "next-auth/providers";
 
 import { googleProvider } from "@/lib/auth-providers";
 import { getServerEnv } from "@/lib/env";
-import { decodeAuthJwt, encodeAuthJwt } from "@/server/auth-jwt";
 
 interface SeedUser {
   id: string;
@@ -70,10 +69,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
   session: {
     strategy: "jwt",
-  },
-  jwt: {
-    encode: encodeAuthJwt,
-    decode: decodeAuthJwt,
   },
   callbacks: {
     jwt({ token, user, account }) {

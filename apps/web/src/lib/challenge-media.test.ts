@@ -10,7 +10,20 @@ import {
   referencePreview,
   type ChallengeMediaChallenge,
   type ChallengeReference,
+  type ChallengeReferencePreviewLabels,
 } from "./challenge-media";
+
+const previewLabels: ChallengeReferencePreviewLabels = {
+  generatedLocalImagePreview: "Generated local image preview",
+  generatedLocalVideoPreview: "Generated local video preview",
+  imageReference: "Image reference",
+  launchTeaserSubtitle: "16:9 launch teaser storyboard",
+  launchTeaserTitle: "Launch teaser",
+  productHeroSubtitle: "Hero composition with product focus",
+  productHeroTitle: "Product hero",
+  referenceFile: "Reference file",
+  videoReference: "Video reference",
+};
 
 describe("challenge media helpers", () => {
   it("maps API tags to route segments", () => {
@@ -75,6 +88,7 @@ describe("challenge media helpers", () => {
       fallbackFileName: "Reference 1",
       iconLabel: "Video",
       pathUnavailable: "Path unavailable",
+      previewLabels,
       unknownFileType: "Unknown file type",
     });
 
@@ -106,20 +120,24 @@ describe("challenge media helpers", () => {
       file_type: "video/mp4",
     };
 
-    expect(referencePreview(imageReference)).toMatchObject({
+    expect(
+      referencePreview(imageReference, undefined, previewLabels),
+    ).toMatchObject({
       eyebrow: "Image reference",
       subtitle: "Hero composition with product focus",
       title: "Product hero",
       variant: "product-hero",
     });
-    expect(referencePreview(videoReference)).toMatchObject({
+    expect(
+      referencePreview(videoReference, undefined, previewLabels),
+    ).toMatchObject({
       eyebrow: "Video reference",
       subtitle: "16:9 launch teaser storyboard",
       title: "Launch teaser",
       variant: "launch-teaser",
     });
-    expect(referencePreview(imageReference).seed).toBe(
-      referencePreview(imageReference).seed,
-    );
+    expect(
+      referencePreview(imageReference, undefined, previewLabels).seed,
+    ).toBe(referencePreview(imageReference, undefined, previewLabels).seed);
   });
 });

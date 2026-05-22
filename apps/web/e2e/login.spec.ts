@@ -8,9 +8,10 @@ test("mock Google OAuth login completes through the local OIDC server", async ({
   await page.getByRole("button", { name: "Admin demo" }).click();
   await page.waitForURL("/en");
 
-  const claims = await sessionClaims(page);
-  expect(claims.sub).toBe("mock-google-oauth2|admin");
-  expect(claims.email).toBe("admin@prompteer.dev");
+  const user = await sessionUser(page);
+  expect(user.id).toBe("mock-google-oauth2|admin");
+  expect(user.email).toBe("admin@prompteer.dev");
+  await expectSessionCookieIsEncrypted(page);
   await expect(
     page.getByRole("heading", { name: "Prompt challenge workspace" }),
   ).toBeVisible();
@@ -34,15 +35,32 @@ test("signed-out protected routes return to the original path after login", asyn
 test("seed login route issues an Auth.js session", async ({ page }) => {
   await page.goto("/dev/login-as/admin%40prompteer.dev");
   await page.waitForURL("/en");
-  const claims = await sessionClaims(page);
-  expect(claims.sub).toBe("00000000-0000-4000-8000-000000000001");
-  expect(claims.email).toBe("admin@prompteer.dev");
+  const user = await sessionUser(page);
+  expect(user.id).toBe("00000000-0000-4000-8000-000000000001");
+  expect(user.email).toBe("admin@prompteer.dev");
+  await expectSessionCookieIsEncrypted(page);
   await expect(
     page.getByRole("heading", { name: "Prompt challenge workspace" }),
   ).toBeVisible();
 });
 
-async function sessionClaims(page: Page): Promise<Record<string, unknown>> {
+async function sessionUser(page: Page): Promise<Record<string, unknown>> {
+  const sessionResponse = await page.request.get("/api/auth/session");
+  if (!sessionResponse.ok()) {
+    throw new Error(
+      `Auth.js session endpoint returned HTTP ${sessionResponse.status()}.`,
+    );
+  }
+  const session = (await sessionResponse.json()) as {
+    user?: Record<string, unknown>;
+  };
+  if (!session.user) {
+    throw new Error("Auth.js session endpoint did not return a user.");
+  }
+  return session.user;
+}
+
+async function expectSessionCookieIsEncrypted(page: Page): Promise<void> {
   const cookies = await page.context().cookies();
   const sessionCookie = cookies.find((cookie) =>
     ["authjs.session-token", "__Secure-authjs.session-token"].includes(
@@ -52,11 +70,5 @@ async function sessionClaims(page: Page): Promise<Record<string, unknown>> {
   if (!sessionCookie) {
     throw new Error("Auth.js session cookie was not issued.");
   }
-  const [, encodedPayload] = sessionCookie.value.split(".");
-  if (!encodedPayload) {
-    throw new Error("Auth.js session cookie is not a JWT.");
-  }
-  return JSON.parse(
-    Buffer.from(encodedPayload, "base64url").toString("utf8"),
-  ) as Record<string, unknown>;
+  expect(sessionCookie.value.split(".")).toHaveLength(5);
 }

@@ -7,6 +7,7 @@ import {
   challengeDetailPath,
   type ChallengeMediaChallenge,
   type ChallengeMediaKind,
+  type ChallengeReferencePreviewLabels,
 } from "@/lib/challenge-media";
 
 type MediaChallengeListCopy = {
@@ -24,6 +25,7 @@ type MediaChallengeListCopy = {
   referencesLabel: string;
   fileTypeLabel: string;
   pathLabel: string;
+  previewLabels: ChallengeReferencePreviewLabels;
   unknownFileType: string;
 };
 
@@ -132,6 +134,7 @@ function MediaChallengeListItem({
               key={reference.id}
               pathUnavailableLabel={copy.pathUnavailable}
               pathLabel={copy.pathLabel}
+              previewLabels={copy.previewLabels}
               reference={reference}
               referenceLabel={copy.referenceLabel}
               unknownFileTypeLabel={copy.unknownFileType}

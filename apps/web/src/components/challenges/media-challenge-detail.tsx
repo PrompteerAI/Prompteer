@@ -2,11 +2,11 @@
 import { ArrowLeft, FileImage, FileVideo } from "lucide-react";
 
 import { ChallengeReferenceMetadata } from "./challenge-reference-metadata";
-import { Link } from "@/i18n/navigation";
+import { localizedPath } from "@/i18n/paths";
 import {
-  challengeMediaRouteSegment,
   type ChallengeMediaChallenge,
   type ChallengeMediaKind,
+  type ChallengeReferencePreviewLabels,
 } from "@/lib/challenge-media";
 
 type MediaChallengeDetailCopy = {
@@ -21,6 +21,7 @@ type MediaChallengeDetailCopy = {
   noReferences: string;
   pathUnavailable: string;
   pathLabel: string;
+  previewLabels: ChallengeReferencePreviewLabels;
   referenceLabel: string;
   referenceUnavailable: string;
   referencesTitle: string;
@@ -31,28 +32,33 @@ type MediaChallengeDetailProps = {
   challenge: ChallengeMediaChallenge;
   copy: MediaChallengeDetailCopy;
   kind: ChallengeMediaKind;
+  locale: string;
 };
 
 export function MediaChallengeDetail({
   challenge,
   copy,
   kind,
+  locale,
 }: MediaChallengeDetailProps): React.ReactElement {
   const Icon = kind === "img" ? FileImage : FileVideo;
-  const listPath = `/challenges/${challengeMediaRouteSegment(kind)}`;
+  const listPath =
+    kind === "img"
+      ? localizedPath("/challenges/image", locale)
+      : localizedPath("/challenges/video", locale);
   const content = challenge.content?.trim()
     ? challenge.content
     : copy.noContent;
 
   return (
     <article>
-      <Link
+      <a
         className="inline-flex min-h-10 items-center gap-2 rounded-md text-sm font-medium text-zinc-700 transition hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950"
         href={listPath}
       >
         <ArrowLeft aria-hidden="true" className="h-4 w-4" />
         {copy.backLabel}
-      </Link>
+      </a>
       <div className="mt-5 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-emerald-700">
@@ -115,6 +121,7 @@ export function MediaChallengeDetail({
                 key={reference.id}
                 pathUnavailableLabel={copy.pathUnavailable}
                 pathLabel={copy.pathLabel}
+                previewLabels={copy.previewLabels}
                 reference={reference}
                 referenceLabel={copy.referenceLabel}
                 unknownFileTypeLabel={copy.unknownFileType}

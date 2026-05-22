@@ -1,5 +1,5 @@
-// RS256 JWT utilities for Auth.js sessions shared with the FastAPI backend via
-// the web app's JWKS endpoint.
+// RS256 JWT utilities for short-lived API bearer tokens shared with the FastAPI
+// backend via the web app's JWKS endpoint.
 import {
   createPrivateKey,
   createPublicKey,

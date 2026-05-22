@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { ApiUnavailable } from "@/components/system/api-unavailable";
-import { Link } from "@/i18n/navigation";
+import { localizedPath } from "@/i18n/paths";
 import { createPrompteerApiClient, unwrapApiResponse } from "@/lib/api-client";
 import { normalizeError } from "@/lib/errors";
 import type { components } from "@prompteer/shared-types";
@@ -59,13 +59,13 @@ export default async function BoardShareDetailPage({
   return (
     <main className="min-h-screen bg-zinc-50 px-6 py-8 text-zinc-950">
       <article className="mx-auto max-w-4xl">
-        <Link
+        <a
           className="inline-flex min-h-10 items-center gap-2 rounded-md border border-zinc-300 px-3 text-sm font-medium text-zinc-900 transition hover:bg-white"
-          href="/board"
+          href={localizedPath("/board", locale)}
         >
           <ArrowLeft aria-hidden="true" className="h-4 w-4" />
           {t("back")}
-        </Link>
+        </a>
 
         <section className="mt-6 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
