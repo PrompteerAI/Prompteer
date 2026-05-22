@@ -1,6 +1,6 @@
 """Tests for liveness, readiness, startup, and integration status endpoints."""
 
-from typing import Literal
+from typing import Any, Literal, cast
 
 import httpx
 import pytest
@@ -21,6 +21,19 @@ def dependency_check(
     detail: str | None = None,
 ) -> health.DependencyCheck:
     return {"status": status, "detail": detail or f"test dependency {status}."}
+
+
+def assert_problem_details(response: httpx.Response, code: str) -> dict[str, Any]:
+    assert response.headers["content-type"].startswith("application/problem+json")
+    raw_body = response.json()
+    assert isinstance(raw_body, dict)
+    body = cast(dict[str, Any], raw_body)
+    assert body["status"] == response.status_code
+    assert body["code"] == code
+    assert body["type"] == f"https://prompteer.dev/errors/{code.replace('_', '-')}"
+    assert body["health_status"] == "degraded"
+    assert "checks" in body
+    return body
 
 
 @pytest.fixture(autouse=True)
@@ -127,8 +140,7 @@ def test_readiness_probe_reports_dependency_failure(monkeypatch: MonkeyPatch) ->
     response = client.get("/api/v1/health/ready")
 
     assert response.status_code == 503
-    body = response.json()
-    assert body["status"] == "degraded"
+    body = assert_problem_details(response, "readiness_failed")
     assert body["checks"]["database"] == dependency_check("ok")
     assert body["checks"]["redis"] == dependency_check("fail")
     assert_integration_statuses(
@@ -157,8 +169,7 @@ def test_readiness_probe_reports_auth_jwks_failure(monkeypatch: MonkeyPatch) -> 
     response = client.get("/api/v1/health/ready")
 
     assert response.status_code == 503
-    body = response.json()
-    assert body["status"] == "degraded"
+    body = assert_problem_details(response, "readiness_failed")
     assert body["checks"]["auth_jwks"] == dependency_check(
         "fail",
         "Auth.js JWKS endpoint returned HTTP 503.",
@@ -178,8 +189,7 @@ def test_readiness_probe_reports_real_redis_connection_failure(
     response = client.get("/api/v1/health/ready")
 
     assert response.status_code == 503
-    body = response.json()
-    assert body["status"] == "degraded"
+    body = assert_problem_details(response, "readiness_failed")
     assert body["checks"]["database"] == dependency_check("ok")
     assert body["checks"]["redis"]["status"] == "fail"
     assert isinstance(body["checks"]["redis"]["detail"], str)
@@ -377,8 +387,7 @@ def test_readiness_probe_fails_production_real_stripe_missing_webhook_secret(
         response = client.get("/api/v1/health/ready")
 
     assert response.status_code == 503
-    body = response.json()
-    assert body["status"] == "degraded"
+    body = assert_problem_details(response, "readiness_failed")
     stripe = body["checks"]["integrations"]["stripe"]
     assert stripe["status"] == "fail"
     assert stripe["mode"] == "real"
@@ -429,8 +438,7 @@ def test_readiness_probe_reports_real_provider_http_failure(
         response = client.get("/api/v1/health/ready")
 
     assert response.status_code == 503
-    body = response.json()
-    assert body["status"] == "degraded"
+    body = assert_problem_details(response, "readiness_failed")
     assert body["checks"]["integrations"]["llm"]["status"] == "fail"
     assert body["checks"]["integrations"]["llm"]["mode"] == "real"
     assert "503" in body["checks"]["integrations"]["llm"]["detail"]
@@ -451,8 +459,7 @@ def test_readiness_probe_reports_mock_integration_failure_without_dev_routes(
     response = client.get("/api/v1/health/ready")
 
     assert response.status_code == 503
-    body = response.json()
-    assert body["status"] == "degraded"
+    body = assert_problem_details(response, "readiness_failed")
     assert_integration_statuses(
         body,
         {
@@ -478,7 +485,8 @@ def test_readiness_probe_reports_partial_google_credentials(
     response = client.get("/api/v1/health/ready")
 
     assert response.status_code == 503
-    google = response.json()["checks"]["integrations"]["google_oauth"]
+    body = assert_problem_details(response, "readiness_failed")
+    google = body["checks"]["integrations"]["google_oauth"]
     assert google["status"] == "fail"
     assert google["mode"] == "partial"
 
@@ -521,7 +529,8 @@ def test_startup_probe_reports_stale_migration(monkeypatch: MonkeyPatch) -> None
     response = client.get("/api/v1/health/startup")
 
     assert response.status_code == 503
-    assert response.json()["checks"]["migrations"] == {
+    body = assert_problem_details(response, "startup_failed")
+    assert body["checks"]["migrations"] == {
         "status": "fail",
         "current": "old",
         "head": "new",
@@ -534,6 +543,26 @@ def test_dev_mailbox_lists_messages() -> None:
     response = client.get("/api/v1/dev/mailbox")
     assert response.status_code == 200
     assert "messages" in response.json()
+
+
+def test_root_dev_mailbox_lists_messages() -> None:
+    client = TestClient(app)
+    response = client.get("/dev/mailbox")
+    assert response.status_code == 200
+    assert "messages" in response.json()
+
+
+def test_root_dev_mailbox_is_hidden_when_dev_routes_are_disabled(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "enable_dev_routes", False)
+
+    client = TestClient(app)
+    response = client.get("/dev/mailbox")
+
+    assert response.status_code == 404
+    assert response.headers["content-type"].startswith("application/problem+json")
+    assert response.json()["code"] == "not_found"
 
 
 def assert_integration_statuses(

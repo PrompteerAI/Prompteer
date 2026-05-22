@@ -14,6 +14,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 
+from app.api.v1.dev import router as root_dev_router
 from app.api.v1.router import api_router
 from app.core.bootstrap import bootstrap_development_state, integration_modes
 from app.core.config import settings
@@ -194,6 +195,7 @@ def create_app() -> FastAPI:
         return integration_modes()
 
     app.include_router(api_router)
+    app.include_router(root_dev_router)
     app.include_router(mock_google_oauth_router)
     app.include_router(mock_llm_router)
     app.include_router(mock_stripe_router)

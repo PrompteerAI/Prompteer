@@ -41,8 +41,12 @@ const path = process.argv[2];
 const body = JSON.parse(fs.readFileSync(path, "utf8"));
 const redis = body?.checks?.redis;
 
-if (body?.status !== "degraded") {
-  throw new Error(`Expected degraded readiness status, got ${JSON.stringify(body?.status)}.`);
+if (body?.status !== 503 || body?.code !== "readiness_failed") {
+  throw new Error(`Expected readiness Problem Details, got ${JSON.stringify(body)}.`);
+}
+
+if (body?.health_status !== "degraded") {
+  throw new Error(`Expected degraded health status, got ${JSON.stringify(body?.health_status)}.`);
 }
 
 if (!redis || redis.status !== "fail" || typeof redis.detail !== "string") {

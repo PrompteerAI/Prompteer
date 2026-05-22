@@ -6,13 +6,14 @@ from typing import Any, Literal, TypedDict, cast
 from urllib.parse import quote
 
 import httpx
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from redis.asyncio import Redis
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.responses import JSONResponse
 
 from app.core.config import credential_value, integration_modes, settings
+from app.core.errors import problem_response
 from app.core.feature_flags import dev_routes_enabled, feature_flags
 from app.core.migrations import MigrationState, migration_state
 from app.db.session import engine
@@ -494,7 +495,7 @@ def integration_fail(*, mode: str, detail: str) -> IntegrationCheck:
 
 
 @router.get("/ready")
-async def ready() -> JSONResponse:
+async def ready(request: Request) -> JSONResponse:
     database, redis, auth_jwks, integrations = await asyncio.gather(
         check_database(),
         check_redis(),
@@ -507,9 +508,16 @@ async def ready() -> JSONResponse:
         "auth_jwks": auth_jwks,
         "integrations": integrations,
     }
-    status = "ok" if all_checks_pass(checks) else "degraded"
-    status_code = 200 if status == "ok" else 503
-    return JSONResponse(status_code=status_code, content={"status": status, "checks": checks})
+    if all_checks_pass(checks):
+        return JSONResponse(status_code=200, content={"status": "ok", "checks": checks})
+    return problem_response(
+        request=request,
+        status_code=503,
+        title="Service Unavailable",
+        detail="One or more readiness checks failed.",
+        code="readiness_failed",
+        extensions={"health_status": "degraded", "checks": checks},
+    )
 
 
 def all_checks_pass(checks: dict[str, Any]) -> bool:
@@ -524,21 +532,30 @@ def all_checks_pass(checks: dict[str, Any]) -> bool:
 
 
 @router.get("/startup")
-async def startup() -> JSONResponse:
+async def startup(request: Request) -> JSONResponse:
     migrations = check_migrations()
-    status_code = 200 if migrations.status == "ok" else 503
-    return JSONResponse(
-        status_code=status_code,
-        content={
-            "status": "ok" if migrations.status == "ok" else "degraded",
-            "checks": {
-                "migrations": {
-                    "status": migrations.status,
-                    "current": migrations.current,
-                    "head": migrations.head,
-                    "detail": migrations.detail,
-                }
-            },
+    checks = {
+        "migrations": {
+            "status": migrations.status,
+            "current": migrations.current,
+            "head": migrations.head,
+            "detail": migrations.detail,
+        }
+    }
+    if migrations.status == "ok":
+        return JSONResponse(
+            status_code=200,
+            content={"status": "ok", "checks": checks},
+        )
+    return problem_response(
+        request=request,
+        status_code=503,
+        title="Service Unavailable",
+        detail="Startup checks failed.",
+        code="startup_failed",
+        extensions={
+            "health_status": "degraded",
+            "checks": checks,
         },
     )
 
