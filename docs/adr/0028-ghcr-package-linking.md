@@ -24,9 +24,9 @@ Add OCI image labels to both production Dockerfiles:
 - `org.opencontainers.image.version`
 - `org.opencontainers.image.revision`
 
-The image publishing workflow passes the Git SHA into the label build
-arguments, so GHCR images can be traced back to the source revision that built
-them.
+The image publishing workflow passes the Git SHA through `APP_VERSION`, which
+fills both the version and revision labels for published GHCR images. Local
+builds keep the default development version.
 
 ## Consequences
 

@@ -39,12 +39,11 @@ RUN export NODE_ENV=production \
 FROM node:22-alpine@sha256:968df39aedcea65eeb078fb336ed7191baf48f972b4479711397108be0966920 AS runtime
 WORKDIR /app
 ARG APP_VERSION=0.1.0
-ARG VCS_REF=unknown
 LABEL org.opencontainers.image.source="https://github.com/PrompteerAI/Prompteer" \
     org.opencontainers.image.description="Prompteer Next.js web app" \
     org.opencontainers.image.licenses="MIT" \
     org.opencontainers.image.version="${APP_VERSION}" \
-    org.opencontainers.image.revision="${VCS_REF}"
+    org.opencontainers.image.revision="${APP_VERSION}"
 ENV NODE_ENV=production \
     ENV=production
 COPY --from=build --chown=node:node /app/apps/web/.next/standalone ./

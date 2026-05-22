@@ -14,12 +14,11 @@ FROM python:3.12-slim@sha256:9d3abd9fc11d06998ccdbdd93b4dd49b5ad7d67fcbbc11c016e
 
 WORKDIR /app/apps/api
 ARG APP_VERSION=0.1.0
-ARG VCS_REF=unknown
 LABEL org.opencontainers.image.source="https://github.com/PrompteerAI/Prompteer" \
     org.opencontainers.image.description="Prompteer FastAPI service" \
     org.opencontainers.image.licenses="MIT" \
     org.opencontainers.image.version="${APP_VERSION}" \
-    org.opencontainers.image.revision="${VCS_REF}"
+    org.opencontainers.image.revision="${APP_VERSION}"
 
 ENV PATH="/app/apps/api/.venv/bin:${PATH}" \
     PYTHONDONTWRITEBYTECODE=1 \
