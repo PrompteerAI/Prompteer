@@ -17,9 +17,9 @@
   "devDependencies": {
     "@prompteer/eslint-config": "workspace:*",
     "@prompteer/tsconfig": "workspace:*",
-    "eslint": "^9.28.0",
+    "eslint": "^10.4.0",
     "openapi-typescript": "^7.13.0",
-    "typescript": "^5.8.3",
-    "vitest": "^3.2.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.7"
   }
 }
